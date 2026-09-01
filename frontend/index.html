@@ -10,9 +10,23 @@
   <body>
     <main>
       <h1>IntelliCanvas</h1>
-      <p>Frontend shell initialized.</p>
+      <p>Upload an image to create a session in the editor backend.</p>
+
+      <section class="upload-panel">
+        <form id="upload-form">
+          <label for="image-file">Select image</label>
+          <br /><br />
+          <input id="image-file" type="file" accept="image/png,image/jpeg,image/webp,image/bmp" />
+          <br /><br />
+          <button type="submit">Upload image</button>
+        </form>
+
+        <div id="upload-status" class="status" aria-live="polite"></div>
+        <pre id="image-meta" class="image-meta" hidden></pre>
+      </section>
     </main>
 
+    <script src="js/api.js"></script>
     <script src="js/main.js"></script>
   </body>
 </html>

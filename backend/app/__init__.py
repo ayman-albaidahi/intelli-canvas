@@ -12,6 +12,7 @@ from .routes import (
     process_bp,
     transform_bp,
 )
+from .services.image_session_service import ImageSessionService
 
 
 def create_app() -> Flask:
@@ -19,6 +20,8 @@ def create_app() -> Flask:
     app = Flask(__name__)
     app.config.from_object(Config)
     app.config["JSON_SORT_KEYS"] = False
+    app.config["IMAGE_SESSIONS"] = {}
+    app.config["IMAGE_SESSION_SERVICE"] = ImageSessionService(app.config["IMAGE_SESSIONS"])
 
     app.register_blueprint(health_bp)
     app.register_blueprint(images_bp)
