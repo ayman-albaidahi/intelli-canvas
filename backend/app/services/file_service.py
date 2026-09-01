@@ -88,7 +88,7 @@ class FileStorageService:
         if mime_type not in SUPPORTED_MIME_TYPES:
             raise FileValidationError("Invalid or unsupported file content type.")
 
-    def _detect_mime_type(self, file_obj: BinaryIO, filename: str) -> str:
+    def detect_mime_type(self, file_obj: BinaryIO, filename: str) -> str:
         if hasattr(file_obj, "content_type"):
             content_type = getattr(file_obj, "content_type", "")
             if content_type:
@@ -108,6 +108,9 @@ class FileStorageService:
             ".bmp": "image/bmp",
         }
         return mime_map.get(extension, "")
+
+    def _detect_mime_type(self, file_obj: BinaryIO, filename: str) -> str:
+        return self.detect_mime_type(file_obj, filename)
 
     def generate_safe_filename(self, filename: str, *, directory: str | Path | None = None) -> str:
         safe_name = secure_filename(filename)
