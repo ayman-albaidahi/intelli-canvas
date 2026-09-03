@@ -104,10 +104,79 @@ def resize_image():
 
 @transform_bp.post("/rotate")
 def rotate_image():
-    return _not_implemented_response()
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return _error_response(
+            "INVALID_REQUEST", "A JSON request body is required.", 400
+        )
+
+    image_id = payload.get("image_id")
+    angle = payload.get("angle")
+    if not isinstance(image_id, str) or not image_id.strip():
+        return _error_response(
+            "INVALID_IMAGE_ID", "A valid image_id is required.", 400
+        )
+    if isinstance(angle, bool) or angle not in {90, -90, 180}:
+        return _error_response(
+            "INVALID_ROTATION", "Angle must be 90, -90, or 180 degrees.", 400
+        )
+
+    session_service = current_app.config["IMAGE_SESSION_SERVICE"]
+    if session_service.get_session(image_id) is None:
+        return _error_response(
+            "IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404
+        )
+
+    try:
+        result = GeometryService(session_service, FileStorageService()).rotate(
+            image_id, angle
+        )
+    except (FileNotFoundError, FileValidationError) as exc:
+        return _error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError):
+        return _error_response(
+            "ROTATE_FAILED", "The image could not be rotated.", 400
+        )
+
+    return jsonify(success=True, image=result)
 
 
 @transform_bp.post("/flip")
 def flip_image():
-    return _not_implemented_response()
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return _error_response(
+            "INVALID_REQUEST", "A JSON request body is required.", 400
+        )
 
+    image_id = payload.get("image_id")
+    direction = payload.get("direction")
+    if not isinstance(image_id, str) or not image_id.strip():
+        return _error_response(
+            "INVALID_IMAGE_ID", "A valid image_id is required.", 400
+        )
+    if direction not in {"horizontal", "vertical"}:
+        return _error_response(
+            "INVALID_FLIP_DIRECTION",
+            "Direction must be horizontal or vertical.",
+            400,
+        )
+
+    session_service = current_app.config["IMAGE_SESSION_SERVICE"]
+    if session_service.get_session(image_id) is None:
+        return _error_response(
+            "IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404
+        )
+
+    try:
+        result = GeometryService(session_service, FileStorageService()).flip(
+            image_id, direction
+        )
+    except (FileNotFoundError, FileValidationError) as exc:
+        return _error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError):
+        return _error_response(
+            "FLIP_FAILED", "The image could not be flipped.", 400
+        )
+
+    return jsonify(success=True, image=result)

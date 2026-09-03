@@ -87,6 +87,108 @@ class GeometryService:
             "mime_type": session.get("mime_type", "application/octet-stream"),
         }
 
+    def rotate(self, image_id: str, angle: int) -> dict[str, Any]:
+        if angle not in {90, -90, 180}:
+            raise ValueError("Rotation angle must be 90, -90, or 180 degrees.")
+
+        image, session, output_path = self._prepare_transform(image_id)
+        try:
+            transpose = {
+                90: Image.Transpose.ROTATE_270,
+                -90: Image.Transpose.ROTATE_90,
+                180: Image.Transpose.ROTATE_180,
+            }[angle]
+            transformed = image.transpose(transpose)
+            dimensions = transformed.size
+            try:
+                transformed.save(output_path, format=image.format)
+            finally:
+                transformed.close()
+        except Exception:
+            if output_path.exists():
+                output_path.unlink()
+            raise
+        finally:
+            image.close()
+
+        return self._transform_metadata(
+            image_id, session, output_path, dimensions
+        )
+
+    def flip(self, image_id: str, direction: str) -> dict[str, Any]:
+        if direction not in {"horizontal", "vertical"}:
+            raise ValueError("Flip direction must be horizontal or vertical.")
+
+        image, session, output_path = self._prepare_transform(image_id)
+        try:
+            transpose = (
+                Image.Transpose.FLIP_LEFT_RIGHT
+                if direction == "horizontal"
+                else Image.Transpose.FLIP_TOP_BOTTOM
+            )
+            transformed = image.transpose(transpose)
+            dimensions = transformed.size
+            try:
+                transformed.save(output_path, format=image.format)
+            finally:
+                transformed.close()
+        except Exception:
+            if output_path.exists():
+                output_path.unlink()
+            raise
+        finally:
+            image.close()
+
+        return self._transform_metadata(
+            image_id, session, output_path, dimensions
+        )
+
+    def _prepare_transform(
+        self, image_id: str
+    ) -> tuple[Image.Image, dict[str, Any], Path]:
+        session = self.session_service.get_session(image_id)
+        if session is None:
+            raise FileNotFoundError("Image session was not found.")
+
+        stored_filename = session.get("stored_filename")
+        if not isinstance(stored_filename, str) or not stored_filename:
+            raise FileValidationError(
+                "Image session has no valid stored file."
+            )
+
+        uploads_dir = self.storage_service.uploads_dir.resolve()
+        input_path = (uploads_dir / stored_filename).resolve()
+        try:
+            input_path.relative_to(uploads_dir)
+        except ValueError as exc:
+            raise FileValidationError(
+                "Image path escapes the uploads directory."
+            ) from exc
+        if not input_path.is_file():
+            raise FileNotFoundError("Stored image was not found.")
+
+        image = Image.open(input_path)
+        output_name = self.storage_service.generate_safe_filename(
+            input_path.name, directory=self.storage_service.processed_dir
+        )
+        output_path = self.storage_service.processed_dir / output_name
+        return image, session, output_path
+
+    def _transform_metadata(
+        self,
+        image_id: str,
+        session: dict[str, Any],
+        output_path: Path,
+        dimensions: tuple[int, int],
+    ) -> dict[str, Any]:
+        return {
+            "image_id": image_id,
+            "width": dimensions[0],
+            "height": dimensions[1],
+            "format": output_path.suffix.lower().lstrip("."),
+            "mime_type": session.get("mime_type", "application/octet-stream"),
+        }
+
     def _calculate_dimensions(
         self,
         image_path: Path,
