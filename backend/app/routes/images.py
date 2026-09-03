@@ -1,4 +1,4 @@
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, current_app, jsonify, request, send_file
 
 from ..services.file_service import FileStorageService, FileValidationError
 from ..services.image_io_service import ImageIOService
@@ -125,6 +125,41 @@ def convert_image():
 
 @images_bp.post("/export")
 def export_image():
-    return _error_response(
-        "NOT_IMPLEMENTED", "This image operation is not implemented yet.", 501
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return _error_response(
+            "INVALID_REQUEST", "A JSON request body is required.", 400
+        )
+
+    image_id = payload.get("image_id")
+    target_format = payload.get("format")
+    if not isinstance(image_id, str) or not image_id.strip():
+        return _error_response(
+            "INVALID_IMAGE_ID", "A valid image_id is required.", 400
+        )
+    if not isinstance(target_format, str) or not target_format.strip():
+        return _error_response(
+            "INVALID_FORMAT", "A target format is required.", 400
+        )
+    if image_id not in current_app.config["IMAGE_SESSIONS"]:
+        return _error_response(
+            "IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404
+        )
+
+    try:
+        result = ImageIOService(
+            _get_session_service(), FileStorageService()
+        ).convert(image_id, target_format)
+    except (FileNotFoundError, FileValidationError) as exc:
+        return _error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError):
+        return _error_response(
+            "EXPORT_FAILED", "The image could not be exported.", 400
+        )
+
+    return send_file(
+        result["path"],
+        mimetype=result["mime_type"],
+        as_attachment=True,
+        download_name=result["filename"],
     )
