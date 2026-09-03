@@ -1,7 +1,7 @@
 from flask import Blueprint, current_app, jsonify, request
 
-from backend.app.services.file_service import FileStorageService, FileValidationError
-from backend.app.services.image_session_service import ImageSessionService
+from ..services.file_service import FileStorageService, FileValidationError
+from ..services.image_session_service import ImageSessionService
 
 images_bp = Blueprint(
     "images",
