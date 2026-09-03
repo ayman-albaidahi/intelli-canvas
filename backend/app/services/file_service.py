@@ -7,7 +7,7 @@ from typing import BinaryIO
 
 from werkzeug.utils import secure_filename
 
-from backend.app.config import Config
+from ..config import Config
 
 SUPPORTED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
 SUPPORTED_MIME_TYPES = {

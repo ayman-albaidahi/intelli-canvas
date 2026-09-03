@@ -8,7 +8,7 @@ if __package__ in (None, ""):
         sys.path.insert(0, project_root)
     from backend.app import create_app
 else:
-    from app import create_app
+    from .app import create_app
 
 
 app = create_app()
