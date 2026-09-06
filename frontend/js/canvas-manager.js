@@ -11,13 +11,15 @@ class CanvasManager {
     this.imageSource = null;
     this.imageBounds = null;
 
-    this.minZoom = 0.05;
-    this.maxZoom = 10.0;
+    this.baseMinZoom = 0.1;
+    this.maxZoom = 5.0;
     this.zoomLevel = 1.0;
     this.panOffset = { x: 0, y: 0 };
     this.isPanning = false;
     this.panStart = { x: 0, y: 0 };
     this.initialPanOffset = { x: 0, y: 0 };
+
+    this.stagePadding = 24; // Visual margin for fit-to-canvas
 
     this.onZoomChange = null;
 
@@ -38,7 +40,7 @@ class CanvasManager {
       event.preventDefault();
 
       const clientPoint = { x: event.clientX, y: event.clientY };
-      const zoomFactor = event.deltaY < 0 ? 1.15 : 1 / 1.15;
+      const zoomFactor = event.deltaY < 0 ? 1.08 : 1 / 1.08;
       const targetZoom = this.zoomLevel * zoomFactor;
 
       this.setZoom(targetZoom, clientPoint);
@@ -61,6 +63,7 @@ class CanvasManager {
       const dy = event.clientY - this.panStart.y;
       this.panOffset.x = this.initialPanOffset.x + dx;
       this.panOffset.y = this.initialPanOffset.y + dy;
+      this.clampPan();
       this.render();
     };
 
@@ -83,6 +86,13 @@ class CanvasManager {
     this.stage.addEventListener("mousedown", this.handleCanvasStageMouseDown);
     window.addEventListener("mousemove", this.handleMouseMove);
     window.addEventListener("mouseup", this.handleMouseUp);
+  }
+
+  getEffectiveMinZoom() {
+    if (!this.image) return this.baseMinZoom;
+    const fitScale = this.getFitScale();
+    // Allow zooming out to 50% of the fit scale, but never below 10%
+    return Math.max(this.baseMinZoom, Math.min(fitScale * 0.5, 0.25));
   }
 
   async loadImage(source) {
@@ -113,17 +123,43 @@ class CanvasManager {
   getFitScale() {
     if (!this.image) return 1;
     const rect = this.stage?.getBoundingClientRect() || this.canvas.getBoundingClientRect();
-    const cssWidth = Math.max(1, Math.floor(rect.width));
-    const cssHeight = Math.max(1, Math.floor(rect.height));
+    const availableWidth = Math.max(1, Math.floor(rect.width) - this.stagePadding * 2);
+    const availableHeight = Math.max(1, Math.floor(rect.height) - this.stagePadding * 2);
 
-    const scaleX = cssWidth / this.image.naturalWidth;
-    const scaleY = cssHeight / this.image.naturalHeight;
+    const scaleX = availableWidth / this.image.naturalWidth;
+    const scaleY = availableHeight / this.image.naturalHeight;
     return Math.min(scaleX, scaleY, 1.0);
   }
 
+  clampPan() {
+    if (!this.image) return;
+
+    const rect = this.stage?.getBoundingClientRect() || this.canvas.getBoundingClientRect();
+    const cssWidth = Math.max(1, Math.floor(rect.width));
+    const cssHeight = Math.max(1, Math.floor(rect.height));
+
+    const scale = this.zoomLevel;
+    const imgW = this.image.naturalWidth * scale;
+    const imgH = this.image.naturalHeight * scale;
+
+    // Minimum visible portion of the image inside viewport
+    const minVisibleX = Math.min(80, imgW * 0.3);
+    const minVisibleY = Math.min(80, imgH * 0.3);
+
+    const maxPanX = cssWidth / 2 + imgW / 2 - minVisibleX;
+    const minPanX = -(cssWidth / 2 + imgW / 2 - minVisibleX);
+
+    const maxPanY = cssHeight / 2 + imgH / 2 - minVisibleY;
+    const minPanY = -(cssHeight / 2 + imgH / 2 - minVisibleY);
+
+    this.panOffset.x = Math.min(Math.max(this.panOffset.x, minPanX), maxPanX);
+    this.panOffset.y = Math.min(Math.max(this.panOffset.y, minPanY), maxPanY);
+  }
+
   resetZoom() {
-    this.setZoom(1.0);
+    this.zoomLevel = 1.0;
     this.panOffset = { x: 0, y: 0 };
+    this.notifyZoom();
     this.render();
   }
 
@@ -137,14 +173,16 @@ class CanvasManager {
     }
 
     const fitScale = this.getFitScale();
-    this.zoomLevel = Math.min(Math.max(fitScale, this.minZoom), this.maxZoom);
+    const minZoom = this.getEffectiveMinZoom();
+    this.zoomLevel = Math.min(Math.max(fitScale, minZoom), this.maxZoom);
     this.panOffset = { x: 0, y: 0 };
     this.notifyZoom();
     this.render();
   }
 
   setZoom(level, clientPoint = null) {
-    const clampedZoom = Math.min(Math.max(level, this.minZoom), this.maxZoom);
+    const minZoom = this.getEffectiveMinZoom();
+    const clampedZoom = Math.min(Math.max(level, minZoom), this.maxZoom);
     if (Math.abs(clampedZoom - this.zoomLevel) < 0.0001) return;
 
     if (clientPoint && this.image) {
@@ -164,15 +202,16 @@ class CanvasManager {
     }
 
     this.zoomLevel = clampedZoom;
+    this.clampPan();
     this.notifyZoom();
     this.render();
   }
 
-  zoomIn(step = 1.25) {
+  zoomIn(step = 1.15) {
     this.setZoom(this.zoomLevel * step);
   }
 
-  zoomOut(step = 1.25) {
+  zoomOut(step = 1.15) {
     this.setZoom(this.zoomLevel / step);
   }
 
@@ -193,6 +232,7 @@ class CanvasManager {
     this.canvas.style.width = `${cssWidth}px`;
     this.canvas.style.height = `${cssHeight}px`;
 
+    this.clampPan();
     this.render();
   }
 
