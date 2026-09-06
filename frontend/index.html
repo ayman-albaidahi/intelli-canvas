@@ -26,6 +26,31 @@
 
       <section class="workspace" aria-label="Image workspace">
         <section class="canvas-panel glass-panel" aria-label="Canvas">
+          <div class="editor-toolbar" id="editor-toolbar" role="toolbar" aria-label="Editor toolbar" hidden>
+            <div class="toolbar-group toolbar-group-zoom" aria-label="Zoom controls">
+              <button id="zoom-out-btn" type="button" aria-label="Zoom out">−</button>
+              <span id="zoom-level" class="zoom-level">100%</span>
+              <button id="zoom-in-btn" type="button" aria-label="Zoom in">+</button>
+              <button id="zoom-reset-btn" type="button" aria-label="Reset zoom">Reset</button>
+              <button id="zoom-fit-btn" type="button" aria-label="Fit to canvas">Fit</button>
+            </div>
+            <div class="toolbar-group toolbar-group-transform" aria-label="Transform controls">
+              <button id="rotate-left-btn" type="button" aria-label="Rotate left 90°">↺</button>
+              <button id="rotate-right-btn" type="button" aria-label="Rotate right 90°">↻</button>
+              <button id="flip-h-btn" type="button" aria-label="Flip horizontal">⇔</button>
+              <button id="flip-v-btn" type="button" aria-label="Flip vertical">⇕</button>
+            </div>
+            <div class="toolbar-group toolbar-group-export" aria-label="Export controls">
+              <select id="export-format" class="export-format" aria-label="Export format">
+                <option value="png" selected>PNG</option>
+                <option value="jpeg">JPEG</option>
+                <option value="webp">WebP</option>
+              </select>
+              <button id="export-btn" type="button" aria-label="Export image">Export</button>
+              <button id="convert-btn" type="button" aria-label="Convert format">Convert</button>
+            </div>
+          </div>
+
           <div class="canvas-stage" id="canvas-stage">
             <label class="canvas-upload-card" id="canvas-placeholder" for="image-file">
               <span class="upload-card-icon" aria-hidden="true">↑</span>
