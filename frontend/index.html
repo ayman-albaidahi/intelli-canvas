@@ -1,85 +1,89 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="IntelliCanvas image editor" />
-    <title>IntelliCanvas — Image Editor</title>
-    <link rel="stylesheet" href="css/main.css" />
-    <link rel="stylesheet" href="css/editor.css" />
-  </head>
-  <body>
-    <div class="aurora-background" aria-hidden="true">
-      <span class="aurora-orb orb-purple"></span>
-      <span class="aurora-orb orb-pink"></span>
-      <span class="aurora-orb orb-mint"></span>
-      <span class="aurora-orb orb-blue"></span>
-    </div>
 
-    <main class="app-shell">
-      <header class="app-header">
-        <a class="brand" href="./" aria-label="IntelliCanvas home">
-          <span class="brand-mark"><span>IC</span></span>
-          <span class="brand-copy"><strong>IntelliCanvas</strong><small>Image editor</small></span>
-        </a>
-      </header>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="IntelliCanvas image editor" />
+  <title>IntelliCanvas — Image Editor</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/editor.css" />
+</head>
 
-      <section class="workspace" aria-label="Image workspace">
-        <section class="canvas-panel glass-panel" aria-label="Canvas">
-          <div class="editor-toolbar" id="editor-toolbar" role="toolbar" aria-label="Editor toolbar" hidden>
-            <div class="toolbar-group toolbar-group-zoom" aria-label="Zoom controls">
-              <button id="zoom-out-btn" type="button" aria-label="Zoom out">−</button>
-              <span id="zoom-level" class="zoom-level">100%</span>
-              <button id="zoom-in-btn" type="button" aria-label="Zoom in">+</button>
-              <button id="zoom-reset-btn" type="button" aria-label="Reset zoom">Reset</button>
-              <button id="zoom-fit-btn" type="button" aria-label="Fit to canvas">Fit</button>
-            </div>
-            <div class="toolbar-group toolbar-group-transform" aria-label="Transform controls">
-              <button id="rotate-left-btn" type="button" aria-label="Rotate left 90°">↺</button>
-              <button id="rotate-right-btn" type="button" aria-label="Rotate right 90°">↻</button>
-              <button id="flip-h-btn" type="button" aria-label="Flip horizontal">⇔</button>
-              <button id="flip-v-btn" type="button" aria-label="Flip vertical">⇕</button>
-            </div>
-            <div class="toolbar-group toolbar-group-export" aria-label="Export controls">
-              <select id="export-format" class="export-format" aria-label="Export format">
-                <option value="png" selected>PNG</option>
-                <option value="jpeg">JPEG</option>
-                <option value="webp">WebP</option>
-              </select>
-              <button id="export-btn" type="button" aria-label="Export image">Export</button>
-              <button id="convert-btn" type="button" aria-label="Convert format">Convert</button>
-            </div>
+<body>
+  <div class="aurora-background" aria-hidden="true">
+    <span class="aurora-orb orb-purple"></span>
+    <span class="aurora-orb orb-pink"></span>
+    <span class="aurora-orb orb-mint"></span>
+    <span class="aurora-orb orb-blue"></span>
+  </div>
+
+  <main class="app-shell">
+    <header class="app-header">
+      <a class="brand" href="./" aria-label="IntelliCanvas home">
+        <span class="brand-mark"><span>IC</span></span>
+        <span class="brand-copy"><strong>IntelliCanvas</strong><small>Image editor</small></span>
+      </a>
+    </header>
+
+    <section class="workspace" aria-label="Image workspace">
+      <section class="canvas-panel glass-panel" aria-label="Canvas">
+        <div class="editor-toolbar" id="editor-toolbar" role="toolbar" aria-label="Editor toolbar" hidden>
+          <div class="toolbar-group toolbar-group-zoom" aria-label="Zoom controls">
+            <button id="zoom-out-btn" type="button" aria-label="Zoom out">−</button>
+            <span id="zoom-level" class="zoom-level">100%</span>
+            <button id="zoom-in-btn" type="button" aria-label="Zoom in">+</button>
+            <button id="zoom-reset-btn" type="button" aria-label="Reset zoom">Reset</button>
+            <button id="zoom-fit-btn" type="button" aria-label="Fit to canvas">Fit</button>
           </div>
-
-          <div class="canvas-stage" id="canvas-stage">
-            <label class="canvas-upload-card" id="canvas-placeholder" for="image-file">
-              <span class="upload-card-icon" aria-hidden="true">↑</span>
-              <span class="upload-card-title">Drag &amp; drop or click to upload</span>
-              <span class="upload-card-formats">PNG · JPG · JPEG · WEBP</span>
-            </label>
-
-            <form id="upload-form" class="upload-form">
-              <input id="image-file" type="file" accept="image/png,image/jpeg,image/webp" />
-            </form>
-
-            <canvas id="image-canvas" class="image-canvas" aria-label="Active image canvas"></canvas>
-
-            <button id="canvas-upload-button" class="canvas-upload-button" type="button" aria-label="Change image" title="Change image">↥</button>
+          <div class="toolbar-group toolbar-group-transform" aria-label="Transform controls">
+            <button id="rotate-left-btn" type="button" aria-label="Rotate left 90°">↺</button>
+            <button id="rotate-right-btn" type="button" aria-label="Rotate right 90°">↻</button>
+            <button id="flip-h-btn" type="button" aria-label="Flip horizontal">⇔</button>
+            <button id="flip-v-btn" type="button" aria-label="Flip vertical">⇕</button>
           </div>
+          <div class="toolbar-group toolbar-group-export" aria-label="Export controls">
+            <select id="export-format" class="export-format" aria-label="Export format">
+              <option value="png" selected>PNG</option>
+              <option value="jpeg">JPEG</option>
+              <option value="webp">WebP</option>
+            </select>
+            <button id="export-btn" type="button" aria-label="Export image">Export</button>
+            <button id="convert-btn" type="button" aria-label="Convert format">Convert</button>
+          </div>
+        </div>
 
-          <div id="upload-status" class="status" aria-live="polite"></div>
-          <pre id="image-meta" class="image-meta" hidden></pre>
+        <div class="canvas-stage" id="canvas-stage">
+          <label class="canvas-upload-card" id="canvas-placeholder" for="image-file">
+            <span class="upload-card-icon" aria-hidden="true">↑</span>
+            <span class="upload-card-title">Drag &amp; drop or click to upload</span>
+            <span class="upload-card-formats">PNG · JPG · JPEG · WEBP</span>
+          </label>
 
-          <footer class="canvas-footer">
-            <span><i class="footer-dot" aria-hidden="true"></i> Ready</span>
-            <span id="canvas-dimensions">No image</span>
-          </footer>
-        </section>
+          <form id="upload-form" class="upload-form">
+            <input id="image-file" type="file" accept="image/png,image/jpeg,image/webp" />
+          </form>
+
+          <canvas id="image-canvas" class="image-canvas" aria-label="Active image canvas"></canvas>
+
+          <button id="canvas-upload-button" class="canvas-upload-button" type="button" aria-label="Change image"
+            title="Change image">↥</button>
+        </div>
+
+        <div id="upload-status" class="status" aria-live="polite"></div>
+        <pre id="image-meta" class="image-meta" hidden></pre>
+
+        <footer class="canvas-footer">
+          <span><i class="footer-dot" aria-hidden="true"></i> Ready</span>
+          <span id="canvas-dimensions">No image</span>
+        </footer>
       </section>
-    </main>
+    </section>
+  </main>
 
-    <script src="js/canvas-manager.js"></script>
-    <script src="js/api.js"></script>
-    <script src="js/main.js"></script>
-  </body>
+  <script src="js/canvas-manager.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/main.js"></script>
+</body>
+
 </html>
