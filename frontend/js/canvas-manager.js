@@ -9,10 +9,10 @@ class CanvasManager {
     this.context = canvas.getContext("2d");
     this.image = null;
     this.imageSource = null;
-    this.imageBound
+    this.imageBounds = null;
     this.zoomLevel = 1.0;
     this.minZoom = 0.1;
-    this25maxZoom = 10.0;
+    this.maxZoom = 10.0;
     this.panOffset = { x: 0, y: 0 };
     this.isPanning = false;
     this.lastPanPoint = null;
@@ -106,29 +106,22 @@ class CanvasManager {
   }
 
   setZoom(level, clientPoint = null) {
-    const clampedZoom = Math.min(Math.max(Nu
-      mber(level) || this.zoomLevel, this.minZoom), this.maxZo
-o     m);
-    cons,
-    t roundedZoom = Math.round(clampedZoom * 100) / 100;
+    const clampedZoom = Math.min(Math.max(Number(level) || this.zoomLevel, this.minZoom), this.maxZoom);
+    const roundedZoom = Math.round(clampedZoom * 100) / 100;
 
     if (Math.abs(roundedZoom - this.zoomLevel) < 0.0001) return;
 
     if (clientPoint && this.image) {
       const canvasPoint = this.clientToCanvas(clientPoint);
-      const rect = this.stage
-       ?.getBoundingClientRect() || this.canva
-s       .getBoundingClientRect();
+      const rect = this.stage?.getBoundingClientRect() || this.canvas.getBoundingClientRect();
       const cssWidth = Math.max(1, Math.floor(rect.width));
       const cssHeight = Math.max(1, Math.floor(rect.height));
 
       const oldScale = this.zoomLevel;
       const newScale = roundedZoom;
 
-      const imageRelX = (canvasPoi
-      n t.x - (cssWidth / 2 + this.panOffset.x)) / oldScale;
-      const imageRelY = (canvasPoi
-     n  t.y - (cssHeight / 2 + this.panOffset.y)) / oldScale;
+      const imageRelX = (canvasPoint.x - (cssWidth / 2 + this.panOffset.x)) / oldScale;
+      const imageRelY = (canvasPoint.y - (cssHeight / 2 + this.panOffset.y)) / oldScale;
 
       this.panOffset.x = canvasPoint.x - cssWidth / 2 - imageRelX * newScale;
       this.panOffset.y = canvasPoint.y - cssHeight / 2 - imageRelY * newScale;
@@ -162,9 +155,7 @@ s       .getBoundingClientRect();
       return;
     }
 
-    const rect = this.stage
-    ? .getBoundingClientRect() || this.canva
-s     .getBoundingClientRect();
+    const rect = this.stage?.getBoundingClientRect() || this.canvas.getBoundingClientRect();
     const cssWidth = Math.max(1, Math.floor(rect.width));
     const cssHeight = Math.max(1, Math.floor(rect.height));
 
@@ -195,8 +186,7 @@ s     .getBoundingClientRect();
 
   async loadImage(source) {
     const image = await this.createImage(source);
-    const previousObjectUrl = this.image
-     Source instanceof File ? this.image?.src : null;
+    const previousObjectUrl = this.imageSource instanceof File ? this.image?.src : null;
 
     this.image = image;
     this.imageSource = source;
@@ -220,9 +210,7 @@ s     .getBoundingClientRect();
   }
 
   resize() {
-    const rect = this.stage
-?     .getBoundingClientRect() || this.canva
- s    .getBoundingClientRect();
+    const rect = this.stage?.getBoundingClientRect() || this.canvas.getBoundingClientRect();
     const cssWidth = Math.max(1, Math.floor(rect.width));
     const cssHeight = Math.max(1, Math.floor(rect.height));
     const devicePixelRatio = window.devicePixelRatio || 1;
@@ -236,9 +224,7 @@ s     .getBoundingClientRect();
   }
 
   render() {
-    const rect = this.stage
-  ?   .getBoundingClientRect() || this.canva
-s     .getBoundingClientRect();
+    const rect = this.stage?.getBoundingClientRect() || this.canvas.getBoundingClientRect();
     const cssWidth = Math.max(1, Math.floor(rect.width));
     const cssHeight = Math.max(1, Math.floor(rect.height));
     const devicePixelRatio = window.devicePixelRatio || 1;
@@ -261,11 +247,8 @@ s     .getBoundingClientRect();
 
     this.context.save();
     this.context.scale(devicePixelRatio, devicePixelRatio);
-    this.context.translate(this.panOff
-      set.x + cssWidth / 2, this.panOf
-     fset.y + cssHeight / 2);
-    this,
-    .context.scale(this.zoomLevel, this.zoomLevel);
+    this.context.translate(this.panOffset.x + cssWidth / 2, this.panOffset.y + cssHeight / 2);
+    this.context.scale(this.zoomLevel, this.zoomLevel);
     this.context.drawImage(
       this.image,
       -this.image.naturalWidth / 2,
@@ -342,10 +325,5 @@ s     .getBoundingClientRect();
     this.canvas.removeEventListener("mousemove", this.handleMouseMove);
     this.canvas.removeEventListener("mouseup", this.handleMouseUp);
     this.canvas.removeEventListener("mouseleave", this.handleMouseLeave);
-ge.naturalWidth / this.image.naturalHeight,
-      bounds: this.imageBounds,
-    };
   }
-
-  destroy() {
-    this.resizeObserver.disconnect();
+}
