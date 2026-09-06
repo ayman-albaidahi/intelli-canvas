@@ -11,12 +11,13 @@ class CanvasManager {
     this.imageSource = null;
     this.imageBounds = null;
 
-    this.minZoom = 0.1;
+    this.minZoom = 0.05;
     this.maxZoom = 10.0;
     this.zoomLevel = 1.0;
     this.panOffset = { x: 0, y: 0 };
     this.isPanning = false;
-    this.startPan = { x: 0, y: 0 };
+    this.panStart = { x: 0, y: 0 };
+    this.initialPanOffset = { x: 0, y: 0 };
 
     this.onZoomChange = null;
 
@@ -37,7 +38,7 @@ class CanvasManager {
       event.preventDefault();
 
       const clientPoint = { x: event.clientX, y: event.clientY };
-      const zoomFactor = event.deltaY < 0 ? 1.15 : 0.85;
+      const zoomFactor = event.deltaY < 0 ? 1.15 : 1 / 1.15;
       const targetZoom = this.zoomLevel * zoomFactor;
 
       this.setZoom(targetZoom, clientPoint);
@@ -45,21 +46,21 @@ class CanvasManager {
 
     this.handleMouseDown = (event) => {
       if (!this.image) return;
-      // Allow left mouse button drag to pan or middle button
       if (event.button === 0 || event.button === 1) {
         this.isPanning = true;
-        this.startPan = {
-          x: event.clientX - this.panOffset.x,
-          y: event.clientY - this.panOffset.y,
-        };
+        this.panStart = { x: event.clientX, y: event.clientY };
+        this.initialPanOffset = { x: this.panOffset.x, y: this.panOffset.y };
         this.stage.classList.add("is-panning");
+        event.preventDefault();
       }
     };
 
     this.handleMouseMove = (event) => {
       if (!this.isPanning) return;
-      this.panOffset.x = event.clientX - this.startPan.x;
-      this.panOffset.y = event.clientY - this.startPan.y;
+      const dx = event.clientX - this.panStart.x;
+      const dy = event.clientY - this.panStart.y;
+      this.panOffset.x = this.initialPanOffset.x + dx;
+      this.panOffset.y = this.initialPanOffset.y + dy;
       this.render();
     };
 
@@ -70,12 +71,16 @@ class CanvasManager {
       }
     };
 
-    this.canvas.addEventListener("wheel", this.handleWheel, { passive: false });
-    window.addEventListener("mousedown", (e) => {
-      if (e.target === this.canvas || this.stage.contains(e.target)) {
-        this.handleMouseDown(e);
+    this.handleCanvasStageMouseDown = (event) => {
+      if (event.target === this.canvas || this.stage.contains(event.target)) {
+        if (!event.target.closest("button") && !event.target.closest("label") && !event.target.closest("input")) {
+          this.handleMouseDown(event);
+        }
       }
-    });
+    };
+
+    this.canvas.addEventListener("wheel", this.handleWheel, { passive: false });
+    this.stage.addEventListener("mousedown", this.handleCanvasStageMouseDown);
     window.addEventListener("mousemove", this.handleMouseMove);
     window.addEventListener("mouseup", this.handleMouseUp);
   }
@@ -91,7 +96,7 @@ class CanvasManager {
       URL.revokeObjectURL(previousObjectUrl);
     }
 
-    this.resetZoom();
+    this.fitToCanvas();
     this.resize();
     return this.getImageState();
   }
@@ -111,22 +116,29 @@ class CanvasManager {
     const cssWidth = Math.max(1, Math.floor(rect.width));
     const cssHeight = Math.max(1, Math.floor(rect.height));
 
-    return Math.min(
-      cssWidth / this.image.naturalWidth,
-      cssHeight / this.image.naturalHeight,
-    );
+    const scaleX = cssWidth / this.image.naturalWidth;
+    const scaleY = cssHeight / this.image.naturalHeight;
+    return Math.min(scaleX, scaleY, 1.0);
   }
 
   resetZoom() {
-    this.zoomLevel = 1.0;
+    this.setZoom(1.0);
     this.panOffset = { x: 0, y: 0 };
-    this.notifyZoom();
     this.render();
   }
 
   fitToCanvas() {
+    if (!this.image) {
+      this.zoomLevel = 1.0;
+      this.panOffset = { x: 0, y: 0 };
+      this.notifyZoom();
+      this.render();
+      return;
+    }
+
+    const fitScale = this.getFitScale();
+    this.zoomLevel = Math.min(Math.max(fitScale, this.minZoom), this.maxZoom);
     this.panOffset = { x: 0, y: 0 };
-    this.zoomLevel = 1.0;
     this.notifyZoom();
     this.render();
   }
@@ -137,23 +149,18 @@ class CanvasManager {
 
     if (clientPoint && this.image) {
       const canvasPoint = this.clientToCanvas(clientPoint);
-      const baseScale = this.getFitScale();
-
-      const currentEffectiveScale = baseScale * this.zoomLevel;
-      const newEffectiveScale = baseScale * clampedZoom;
-
       const rect = this.stage?.getBoundingClientRect() || this.canvas.getBoundingClientRect();
       const cssWidth = Math.max(1, Math.floor(rect.width));
       const cssHeight = Math.max(1, Math.floor(rect.height));
 
-      const cx = cssWidth / 2 + this.panOffset.x;
-      const cy = cssHeight / 2 + this.panOffset.y;
+      const oldScale = this.zoomLevel;
+      const newScale = clampedZoom;
 
-      const imageRelX = (canvasPoint.x - cx) / currentEffectiveScale;
-      const imageRelY = (canvasPoint.y - cy) / currentEffectiveScale;
+      const centerImageX = (canvasPoint.x - (cssWidth / 2 + this.panOffset.x)) / oldScale;
+      const centerImageY = (canvasPoint.y - (cssHeight / 2 + this.panOffset.y)) / oldScale;
 
-      this.panOffset.x = canvasPoint.x - cssWidth / 2 - imageRelX * newEffectiveScale;
-      this.panOffset.y = canvasPoint.y - cssHeight / 2 - imageRelY * newEffectiveScale;
+      this.panOffset.x = canvasPoint.x - cssWidth / 2 - centerImageX * newScale;
+      this.panOffset.y = canvasPoint.y - cssHeight / 2 - centerImageY * newScale;
     }
 
     this.zoomLevel = clampedZoom;
@@ -203,8 +210,7 @@ class CanvasManager {
       return;
     }
 
-    const baseScale = this.getFitScale();
-    const scale = baseScale * this.zoomLevel;
+    const scale = this.zoomLevel;
     const width = this.image.naturalWidth * scale;
     const height = this.image.naturalHeight * scale;
     const x = (cssWidth - width) / 2 + this.panOffset.x;
@@ -275,6 +281,7 @@ class CanvasManager {
   destroy() {
     this.resizeObserver.disconnect();
     this.canvas.removeEventListener("wheel", this.handleWheel);
+    this.stage.removeEventListener("mousedown", this.handleCanvasStageMouseDown);
     window.removeEventListener("mousemove", this.handleMouseMove);
     window.removeEventListener("mouseup", this.handleMouseUp);
 
