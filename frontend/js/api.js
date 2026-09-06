@@ -7,6 +7,12 @@ async function uploadImage(file) {
     body: formData,
   });
 
-  const result = await response.json();
+  let result;
+  try {
+    result = await response.json();
+  } catch (error) {
+    throw new Error("The API returned an invalid response.");
+  }
+
   return { ok: response.ok, status: response.status, data: result };
 }
