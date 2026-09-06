@@ -8,7 +8,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const stage = document.getElementById("canvas-stage");
   const canvasUploadButton = document.getElementById("canvas-upload-button");
 
+  const zoomInButton = document.getElementById("zoom-in-button");
+  const zoomOutButton = document.getElementById("zoom-out-button");
+  const zoomResetButton = document.getElementById("zoom-reset-button");
+  const zoomFitButton = document.getElementById("zoom-fit-button");
+  const zoomLevelText = document.getElementById("zoom-level-text");
+
   const canvasManager = new CanvasManager(canvas, stage);
+
+  canvasManager.onZoomChange = (zoomPercentage) => {
+    if (zoomLevelText) {
+      zoomLevelText.textContent = `${zoomPercentage}%`;
+    }
+  };
 
   const setStatus = (message, type = "success") => {
     statusEl.textContent = message;
@@ -75,6 +87,19 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("submit", (event) => event.preventDefault());
   fileInput.addEventListener("change", () => handleImage(fileInput.files[0]));
   canvasUploadButton.addEventListener("click", openFilePicker);
+
+  if (zoomInButton) {
+    zoomInButton.addEventListener("click", () => canvasManager.zoomIn());
+  }
+  if (zoomOutButton) {
+    zoomOutButton.addEventListener("click", () => canvasManager.zoomOut());
+  }
+  if (zoomResetButton) {
+    zoomResetButton.addEventListener("click", () => canvasManager.resetZoom());
+  }
+  if (zoomFitButton) {
+    zoomFitButton.addEventListener("click", () => canvasManager.fitToCanvas());
+  }
 
   ["dragenter", "dragover"].forEach((eventName) => {
     stage.addEventListener(eventName, (event) => {
