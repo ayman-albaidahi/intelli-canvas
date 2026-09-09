@@ -32,7 +32,47 @@ def _error_response(code: str, message: str, status_code: int):
 
 @transform_bp.post("/crop")
 def crop_image():
-    return _not_implemented_response()
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return _error_response(
+            "INVALID_REQUEST", "A JSON request body is required.", 400
+        )
+
+    image_id = payload.get("image_id")
+    crop_values = [payload.get(key) for key in ("x", "y", "width", "height")]
+    if not isinstance(image_id, str) or not image_id.strip():
+        return _error_response(
+            "INVALID_IMAGE_ID", "A valid image_id is required.", 400
+        )
+    if any(
+        isinstance(value, bool) or not isinstance(value, int)
+        for value in crop_values
+    ):
+        return _error_response(
+            "INVALID_CROP", "Crop coordinates must be integers.", 400
+        )
+    x, y, width, height = crop_values
+    if min(x, y, width, height) < 0 or width <= 0 or height <= 0:
+        return _error_response(
+            "INVALID_CROP", "Crop dimensions must be positive.", 400
+        )
+
+    session_service = current_app.config["IMAGE_SESSION_SERVICE"]
+    if session_service.get_session(image_id) is None:
+        return _error_response(
+            "IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404
+        )
+
+    try:
+        result = GeometryService(session_service, FileStorageService()).crop(
+            image_id, x, y, width, height
+        )
+    except (FileNotFoundError, FileValidationError) as exc:
+        return _error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError) as exc:
+        return _error_response("CROP_FAILED", str(exc), 400)
+
+    return jsonify(success=True, image=result)
 
 
 @transform_bp.post("/resize")

@@ -87,6 +87,48 @@ class GeometryService:
             "mime_type": session.get("mime_type", "application/octet-stream"),
         }
 
+    def crop(
+        self,
+        image_id: str,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+    ) -> dict[str, Any]:
+        if min(x, y, width, height) < 0 or width <= 0 or height <= 0:
+            raise ValueError(
+                "Crop coordinates and dimensions must be positive."
+            )
+
+        image, session, output_path = self._prepare_transform(image_id)
+        try:
+            right = x + width
+            bottom = y + height
+            if right > image.width or bottom > image.height:
+                raise ValueError("Crop region must remain inside the image.")
+
+            cropped = image.crop((x, y, right, bottom))
+            try:
+                image_format = image.format or output_path.suffix.lstrip(
+                    "."
+                ).upper()
+                if image_format == "JPEG" and cropped.mode not in {"RGB", "L"}:
+                    cropped = cropped.convert("RGB")
+                cropped.save(output_path, format=image_format)
+                dimensions = cropped.size
+            finally:
+                cropped.close()
+        except Exception:
+            if output_path.exists():
+                output_path.unlink()
+            raise
+        finally:
+            image.close()
+
+        return self._transform_metadata(
+            image_id, session, output_path, dimensions
+        )
+
     def rotate(self, image_id: str, angle: int) -> dict[str, Any]:
         if angle not in {90, -90, 180}:
             raise ValueError("Rotation angle must be 90, -90, or 180 degrees.")
