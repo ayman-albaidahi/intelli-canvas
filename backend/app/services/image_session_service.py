@@ -15,7 +15,12 @@ class ImageSessionService:
         while image_id in self.session_store:
             image_id = uuid.uuid4().hex
 
-        payload = {"image_id": image_id, **metadata}
+        payload = {
+            "image_id": image_id,
+            **metadata,
+            "current_filename": metadata.get("stored_filename"),
+            "current_storage": "uploads",
+        }
         self.session_store[image_id] = payload
         return payload
 
@@ -24,3 +29,16 @@ class ImageSessionService:
 
     def get_session(self, image_id: str) -> dict[str, Any] | None:
         return self.session_store.get(image_id)
+
+    def update_current_image(
+        self,
+        image_id: str,
+        filename: str,
+        storage: str = "processed",
+    ) -> dict[str, Any]:
+        session = self.get_session(image_id)
+        if session is None:
+            raise FileNotFoundError("Image session was not found.")
+        session["current_filename"] = filename
+        session["current_storage"] = storage
+        return session

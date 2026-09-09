@@ -76,16 +76,22 @@ class ImageIOService:
         if session is None:
             raise FileNotFoundError("Image session was not found.")
 
-        stored_filename = session.get("stored_filename")
+        stored_filename = session.get("current_filename") or session.get(
+            "stored_filename"
+        )
         if not isinstance(stored_filename, str) or not stored_filename:
             raise FileValidationError(
                 "Image session has no valid stored file."
             )
 
-        uploads_dir = self.storage_service.uploads_dir.resolve()
-        source_path = (uploads_dir / stored_filename).resolve()
+        source_dir = (
+            self.storage_service.processed_dir
+            if session.get("current_storage") == "processed"
+            else self.storage_service.uploads_dir
+        ).resolve()
+        source_path = (source_dir / stored_filename).resolve()
         try:
-            source_path.relative_to(uploads_dir)
+            source_path.relative_to(source_dir)
         except ValueError as exc:
             raise FileValidationError(
                 "Image path escapes the uploads directory."

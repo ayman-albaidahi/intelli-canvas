@@ -123,6 +123,41 @@ def convert_image():
     )
 
 
+@images_bp.get("/<image_id>/content")
+def image_content(image_id: str):
+    session = _get_session_service().get_session(image_id)
+    if session is None:
+        return _error_response(
+            "IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404
+        )
+
+    filename = session.get("current_filename") or session.get("stored_filename")
+    if not isinstance(filename, str) or not filename:
+        return _error_response(
+            "IMAGE_NOT_AVAILABLE", "Image is not available.", 404
+        )
+
+    storage_service = FileStorageService()
+    directory = (
+        storage_service.processed_dir
+        if session.get("current_storage") == "processed"
+        else storage_service.uploads_dir
+    ).resolve()
+    image_path = (directory / filename).resolve()
+    try:
+        image_path.relative_to(directory)
+    except ValueError:
+        return _error_response(
+            "IMAGE_NOT_AVAILABLE", "Image is not available.", 404
+        )
+    if not image_path.is_file():
+        return _error_response(
+            "IMAGE_NOT_AVAILABLE", "Image is not available.", 404
+        )
+
+    return send_file(image_path, mimetype=session.get("mime_type"))
+
+
 @images_bp.post("/export")
 def export_image():
     payload = request.get_json(silent=True)

@@ -18,11 +18,18 @@
 
     <main class="app-shell">
       <header class="app-header">
-        <a class="brand" href="./" aria-label="IntelliCanvas home">
+          <a class="brand" href="./" aria-label="IntelliCanvas home">
           <span class="brand-mark"><span>IC</span></span>
           <span class="brand-copy"><strong>IntelliCanvas</strong><small>Image editor</small></span>
-        </a>
+          </a>
       </header>
+
+      <nav class="editor-toolbar" aria-label="Image transformations">
+        <button type="button" data-transform="rotate-left" disabled>Rotate Left</button>
+        <button type="button" data-transform="rotate-right" disabled>Rotate Right</button>
+        <button type="button" data-transform="flip-horizontal" disabled>Flip Horizontal</button>
+        <button type="button" data-transform="flip-vertical" disabled>Flip Vertical</button>
+      </nav>
 
       <section class="workspace" aria-label="Image workspace">
         <section class="canvas-panel glass-panel" aria-label="Canvas">

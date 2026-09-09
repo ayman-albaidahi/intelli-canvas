@@ -31,24 +31,7 @@ class GeometryService:
         if session is None:
             raise FileNotFoundError("Image session was not found.")
 
-        stored_filename = session.get("stored_filename")
-        if not isinstance(stored_filename, str) or not stored_filename:
-            raise FileValidationError(
-                "Image session has no valid stored file."
-            )
-
-        uploads_dir = self.storage_service.uploads_dir
-        input_path = (uploads_dir / stored_filename).resolve()
-        try:
-            input_path.relative_to(uploads_dir.resolve())
-        except ValueError as exc:
-            raise FileValidationError(
-                "Image path escapes the uploads directory."
-            ) from exc
-
-        if not input_path.is_file():
-            raise FileNotFoundError("Stored image was not found.")
-
+        input_path = self._resolve_current_path(session)
         output_width, output_height = self._calculate_dimensions(
             image_path=input_path,
             width=width,
@@ -79,6 +62,9 @@ class GeometryService:
                 output_path.unlink()
             raise
 
+        self.session_service.update_current_image(
+            image_id, output_path.name, storage="processed"
+        )
         return {
             "image_id": image_id,
             "width": output_width,
@@ -111,9 +97,10 @@ class GeometryService:
         finally:
             image.close()
 
-        return self._transform_metadata(
-            image_id, session, output_path, dimensions
+        self.session_service.update_current_image(
+            image_id, output_path.name, storage="processed"
         )
+        return self._transform_metadata(image_id, session, output_path, dimensions)
 
     def flip(self, image_id: str, direction: str) -> dict[str, Any]:
         if direction not in {"horizontal", "vertical"}:
@@ -139,9 +126,33 @@ class GeometryService:
         finally:
             image.close()
 
-        return self._transform_metadata(
-            image_id, session, output_path, dimensions
+        self.session_service.update_current_image(
+            image_id, output_path.name, storage="processed"
         )
+        return self._transform_metadata(image_id, session, output_path, dimensions)
+
+    def _resolve_current_path(self, session: dict[str, Any]) -> Path:
+        stored_filename = session.get("current_filename") or session.get(
+            "stored_filename"
+        )
+        if not isinstance(stored_filename, str) or not stored_filename:
+            raise FileValidationError("Image session has no valid stored file.")
+
+        source_dir = (
+            self.storage_service.processed_dir
+            if session.get("current_storage") == "processed"
+            else self.storage_service.uploads_dir
+        ).resolve()
+        input_path = (source_dir / stored_filename).resolve()
+        try:
+            input_path.relative_to(source_dir)
+        except ValueError as exc:
+            raise FileValidationError(
+                "Image path escapes the storage directory."
+            ) from exc
+        if not input_path.is_file():
+            raise FileNotFoundError("Stored image was not found.")
+        return input_path
 
     def _prepare_transform(
         self, image_id: str
@@ -150,23 +161,7 @@ class GeometryService:
         if session is None:
             raise FileNotFoundError("Image session was not found.")
 
-        stored_filename = session.get("stored_filename")
-        if not isinstance(stored_filename, str) or not stored_filename:
-            raise FileValidationError(
-                "Image session has no valid stored file."
-            )
-
-        uploads_dir = self.storage_service.uploads_dir.resolve()
-        input_path = (uploads_dir / stored_filename).resolve()
-        try:
-            input_path.relative_to(uploads_dir)
-        except ValueError as exc:
-            raise FileValidationError(
-                "Image path escapes the uploads directory."
-            ) from exc
-        if not input_path.is_file():
-            raise FileNotFoundError("Stored image was not found.")
-
+        input_path = self._resolve_current_path(session)
         image = Image.open(input_path)
         output_name = self.storage_service.generate_safe_filename(
             input_path.name, directory=self.storage_service.processed_dir
