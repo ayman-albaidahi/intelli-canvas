@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from threading import RLock
 from typing import Any
 
 
@@ -9,6 +10,7 @@ class ImageSessionService:
 
     def __init__(self, session_store: dict[str, dict[str, Any]] | None = None):
         self.session_store = session_store if session_store is not None else {}
+        self._locks: dict[str, RLock] = {}
 
     def create_session(self, metadata: dict[str, Any]) -> dict[str, Any]:
         image_id = uuid.uuid4().hex
@@ -22,7 +24,12 @@ class ImageSessionService:
             "current_storage": "uploads",
         }
         self.session_store[image_id] = payload
+        self._locks[image_id] = RLock()
         return payload
+
+    def lock_for(self, image_id: str) -> RLock:
+        """Return a per-image lock for serializing stateful operations."""
+        return self._locks.setdefault(image_id, RLock())
 
     def list_sessions(self) -> list[dict[str, Any]]:
         return list(self.session_store.values())

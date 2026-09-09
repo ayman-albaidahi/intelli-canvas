@@ -86,12 +86,13 @@ def resize_image():
         )
 
     try:
-        result = GeometryService(session_service, FileStorageService()).resize(
-            image_id=image_id,
-            width=width,
-            height=height,
-            lock_aspect_ratio=lock_aspect_ratio,
-        )
+        with session_service.lock_for(image_id):
+            result = GeometryService(session_service, FileStorageService()).resize(
+                image_id=image_id,
+                width=width,
+                height=height,
+                lock_aspect_ratio=lock_aspect_ratio,
+            )
     except (FileNotFoundError, FileValidationError) as exc:
         return _error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
     except (OSError, ValueError):
@@ -128,9 +129,10 @@ def rotate_image():
         )
 
     try:
-        result = GeometryService(session_service, FileStorageService()).rotate(
-            image_id, angle
-        )
+        with session_service.lock_for(image_id):
+            result = GeometryService(session_service, FileStorageService()).rotate(
+                image_id, angle
+            )
     except (FileNotFoundError, FileValidationError) as exc:
         return _error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
     except (OSError, ValueError):
@@ -169,9 +171,10 @@ def flip_image():
         )
 
     try:
-        result = GeometryService(session_service, FileStorageService()).flip(
-            image_id, direction
-        )
+        with session_service.lock_for(image_id):
+            result = GeometryService(session_service, FileStorageService()).flip(
+                image_id, direction
+            )
     except (FileNotFoundError, FileValidationError) as exc:
         return _error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
     except (OSError, ValueError):
