@@ -26,10 +26,18 @@
       </header>
 
       <nav class="editor-toolbar" aria-label="Image transformations">
-        <button type="button" data-transform="rotate-left" disabled>Rotate Left</button>
-        <button type="button" data-transform="rotate-right" disabled>Rotate Right</button>
-        <button type="button" data-transform="flip-horizontal" disabled>Flip Horizontal</button>
-        <button type="button" data-transform="flip-vertical" disabled>Flip Vertical</button>
+        <button class="icon-button" type="button" data-transform="rotate-left" aria-label="Rotate left" title="Rotate left" disabled>
+          <svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/icons.svg#rotate-left"></use></svg>
+        </button>
+        <button class="icon-button" type="button" data-transform="rotate-right" aria-label="Rotate right" title="Rotate right" disabled>
+          <svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/icons.svg#rotate-right"></use></svg>
+        </button>
+        <button class="icon-button" type="button" data-transform="flip-horizontal" aria-label="Flip horizontally" title="Flip horizontally" disabled>
+          <svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/icons.svg#flip-horizontal"></use></svg>
+        </button>
+        <button class="icon-button" type="button" data-transform="flip-vertical" aria-label="Flip vertically" title="Flip vertically" disabled>
+          <svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/icons.svg#flip-vertical"></use></svg>
+        </button>
       </nav>
 
       <section class="workspace" aria-label="Image workspace">
