@@ -16,6 +16,14 @@ class CanvasManager {
     this.panOffset = { x: 0, y: 0 };
     this.isPanning = false;
     this.lastPanPoint = null;
+    this.cropMode = false;
+    this.cropSelection = null;
+    this.cropInteraction = null;
+    this.cropOverlay = document.createElement("div");
+    this.cropOverlay.className = "crop-overlay";
+    this.cropOverlay.hidden = true;
+    this.stage.appendChild(this.cropOverlay);
+    this.createCropHandles();
 
     if (!this.context) {
       throw new Error("The browser could not create a 2D canvas context.");
@@ -75,6 +83,171 @@ class CanvasManager {
     this.canvas.addEventListener("mousemove", this.handleMouseMove);
     this.canvas.addEventListener("mouseup", this.handleMouseUp);
     this.canvas.addEventListener("mouseleave", this.handleMouseLeave);
+    this.cropOverlay.addEventListener(
+      "pointerdown",
+      this.handleCropPointerDown,
+    );
+    window.addEventListener("pointermove", this.handleCropPointerMove);
+    window.addEventListener("pointerup", this.handleCropPointerUp);
+  }
+
+  createCropHandles() {
+    ["nw", "n", "ne", "e", "se", "s", "sw", "w"].forEach((handle) => {
+      const element = document.createElement("button");
+      element.type = "button";
+      element.className = `crop-handle crop-handle-${handle}`;
+      element.dataset.handle = handle;
+      element.setAttribute("aria-label", `Resize crop ${handle}`);
+      this.cropOverlay.appendChild(element);
+    });
+  }
+
+  startCrop() {
+    if (!this.image || !this.imageBounds) return false;
+
+    const marginX = this.image.naturalWidth * 0.1;
+    const marginY = this.image.naturalHeight * 0.1;
+    this.cropMode = true;
+    this.cropSelection = {
+      x: marginX,
+      y: marginY,
+      width: this.image.naturalWidth - marginX * 2,
+      height: this.image.naturalHeight - marginY * 2,
+    };
+    this.updateCropOverlay();
+    return true;
+  }
+
+  cancelCrop() {
+    this.cropMode = false;
+    this.cropSelection = null;
+    this.cropInteraction = null;
+    this.cropOverlay.hidden = true;
+    this.render();
+  }
+
+  getCropSelection() {
+    if (!this.cropSelection) return null;
+    return {
+      x: Math.round(this.cropSelection.x),
+      y: Math.round(this.cropSelection.y),
+      width: Math.round(this.cropSelection.width),
+      height: Math.round(this.cropSelection.height),
+    };
+  }
+
+  async applyCrop() {
+    const selection = this.getCropSelection();
+    if (!selection || !this.image) return null;
+
+    const output = document.createElement("canvas");
+    output.width = selection.width;
+    output.height = selection.height;
+    output
+      .getContext("2d")
+      .drawImage(
+        this.image,
+        selection.x,
+        selection.y,
+        selection.width,
+        selection.height,
+        0,
+        0,
+        selection.width,
+        selection.height,
+      );
+    const imageState = await this.loadImage(output.toDataURL("image/png"));
+    this.cropMode = false;
+    this.cropSelection = null;
+    this.cropOverlay.hidden = true;
+    return { selection, imageState };
+  }
+
+  handleCropPointerDown = (event) => {
+    if (!this.cropMode || !this.cropSelection) return;
+    event.preventDefault();
+    const imagePoint = this.clientToImage({
+      x: event.clientX,
+      y: event.clientY,
+    });
+    if (!imagePoint) return;
+    this.cropInteraction = {
+      start: imagePoint,
+      initial: { ...this.cropSelection },
+      handle: event.target.dataset.handle || "move",
+    };
+  };
+
+  handleCropPointerMove = (event) => {
+    if (!this.cropInteraction || !this.image) return;
+    const point = this.clientToImage({ x: event.clientX, y: event.clientY });
+    if (!point) return;
+    this.updateCropSelection(point);
+    this.updateCropOverlay();
+  };
+
+  handleCropPointerUp = () => {
+    this.cropInteraction = null;
+  };
+
+  updateCropSelection(point) {
+    const { start, initial, handle } = this.cropInteraction;
+    const maxWidth = this.image.naturalWidth;
+    const maxHeight = this.image.naturalHeight;
+    const dx = point.x - start.x;
+    const dy = point.y - start.y;
+    const minSize = 10;
+
+    if (handle === "move") {
+      this.cropSelection.x = Math.min(
+        Math.max(0, initial.x + dx),
+        maxWidth - initial.width,
+      );
+      this.cropSelection.y = Math.min(
+        Math.max(0, initial.y + dy),
+        maxHeight - initial.height,
+      );
+      return;
+    }
+
+    let left = initial.x;
+    let top = initial.y;
+    let right = initial.x + initial.width;
+    let bottom = initial.y + initial.height;
+    if (handle.includes("w"))
+      left = Math.max(0, Math.min(right - minSize, initial.x + dx));
+    if (handle.includes("e"))
+      right = Math.min(
+        maxWidth,
+        Math.max(left + minSize, initial.x + initial.width + dx),
+      );
+    if (handle.includes("n"))
+      top = Math.max(0, Math.min(bottom - minSize, initial.y + dy));
+    if (handle.includes("s"))
+      bottom = Math.min(
+        maxHeight,
+        Math.max(top + minSize, initial.y + initial.height + dy),
+      );
+    this.cropSelection = {
+      x: left,
+      y: top,
+      width: right - left,
+      height: bottom - top,
+    };
+  }
+
+  updateCropOverlay() {
+    if (!this.cropSelection || !this.imageBounds) return;
+    const topLeft = this.imageToCanvas(this.cropSelection);
+    const bottomRight = this.imageToCanvas({
+      x: this.cropSelection.x + this.cropSelection.width,
+      y: this.cropSelection.y + this.cropSelection.height,
+    });
+    this.cropOverlay.hidden = false;
+    this.cropOverlay.style.left = `${topLeft.x}px`;
+    this.cropOverlay.style.top = `${topLeft.y}px`;
+    this.cropOverlay.style.width = `${bottomRight.x - topLeft.x}px`;
+    this.cropOverlay.style.height = `${bottomRight.y - topLeft.y}px`;
   }
 
   startPan(point) {
@@ -106,22 +279,29 @@ class CanvasManager {
   }
 
   setZoom(level, clientPoint = null) {
-    const clampedZoom = Math.min(Math.max(Number(level) || this.zoomLevel, this.minZoom), this.maxZoom);
+    const clampedZoom = Math.min(
+      Math.max(Number(level) || this.zoomLevel, this.minZoom),
+      this.maxZoom,
+    );
     const roundedZoom = Math.round(clampedZoom * 100) / 100;
 
     if (Math.abs(roundedZoom - this.zoomLevel) < 0.0001) return;
 
     if (clientPoint && this.image) {
       const canvasPoint = this.clientToCanvas(clientPoint);
-      const rect = this.stage?.getBoundingClientRect() || this.canvas.getBoundingClientRect();
+      const rect =
+        this.stage?.getBoundingClientRect() ||
+        this.canvas.getBoundingClientRect();
       const cssWidth = Math.max(1, Math.floor(rect.width));
       const cssHeight = Math.max(1, Math.floor(rect.height));
 
       const oldScale = this.zoomLevel;
       const newScale = roundedZoom;
 
-      const imageRelX = (canvasPoint.x - (cssWidth / 2 + this.panOffset.x)) / oldScale;
-      const imageRelY = (canvasPoint.y - (cssHeight / 2 + this.panOffset.y)) / oldScale;
+      const imageRelX =
+        (canvasPoint.x - (cssWidth / 2 + this.panOffset.x)) / oldScale;
+      const imageRelY =
+        (canvasPoint.y - (cssHeight / 2 + this.panOffset.y)) / oldScale;
 
       this.panOffset.x = canvasPoint.x - cssWidth / 2 - imageRelX * newScale;
       this.panOffset.y = canvasPoint.y - cssHeight / 2 - imageRelY * newScale;
@@ -155,7 +335,9 @@ class CanvasManager {
       return;
     }
 
-    const rect = this.stage?.getBoundingClientRect() || this.canvas.getBoundingClientRect();
+    const rect =
+      this.stage?.getBoundingClientRect() ||
+      this.canvas.getBoundingClientRect();
     const cssWidth = Math.max(1, Math.floor(rect.width));
     const cssHeight = Math.max(1, Math.floor(rect.height));
 
@@ -186,7 +368,8 @@ class CanvasManager {
 
   async loadImage(source) {
     const image = await this.createImage(source);
-    const previousObjectUrl = this.imageSource instanceof File ? this.image?.src : null;
+    const previousObjectUrl =
+      this.imageSource instanceof File ? this.image?.src : null;
 
     this.image = image;
     this.imageSource = source;
@@ -210,7 +393,9 @@ class CanvasManager {
   }
 
   resize() {
-    const rect = this.stage?.getBoundingClientRect() || this.canvas.getBoundingClientRect();
+    const rect =
+      this.stage?.getBoundingClientRect() ||
+      this.canvas.getBoundingClientRect();
     const cssWidth = Math.max(1, Math.floor(rect.width));
     const cssHeight = Math.max(1, Math.floor(rect.height));
     const devicePixelRatio = window.devicePixelRatio || 1;
@@ -224,7 +409,9 @@ class CanvasManager {
   }
 
   render() {
-    const rect = this.stage?.getBoundingClientRect() || this.canvas.getBoundingClientRect();
+    const rect =
+      this.stage?.getBoundingClientRect() ||
+      this.canvas.getBoundingClientRect();
     const cssWidth = Math.max(1, Math.floor(rect.width));
     const cssHeight = Math.max(1, Math.floor(rect.height));
     const devicePixelRatio = window.devicePixelRatio || 1;
@@ -234,6 +421,7 @@ class CanvasManager {
 
     if (!this.image) {
       this.imageBounds = null;
+      this.cropOverlay.hidden = true;
       return;
     }
 
@@ -247,7 +435,10 @@ class CanvasManager {
 
     this.context.save();
     this.context.scale(devicePixelRatio, devicePixelRatio);
-    this.context.translate(this.panOffset.x + cssWidth / 2, this.panOffset.y + cssHeight / 2);
+    this.context.translate(
+      this.panOffset.x + cssWidth / 2,
+      this.panOffset.y + cssHeight / 2,
+    );
     this.context.scale(this.zoomLevel, this.zoomLevel);
     this.context.drawImage(
       this.image,
@@ -257,6 +448,7 @@ class CanvasManager {
       this.image.naturalHeight,
     );
     this.context.restore();
+    if (this.cropMode) this.updateCropOverlay();
   }
 
   canvasToImage(point) {
@@ -325,5 +517,12 @@ class CanvasManager {
     this.canvas.removeEventListener("mousemove", this.handleMouseMove);
     this.canvas.removeEventListener("mouseup", this.handleMouseUp);
     this.canvas.removeEventListener("mouseleave", this.handleMouseLeave);
+    this.cropOverlay.removeEventListener(
+      "pointerdown",
+      this.handleCropPointerDown,
+    );
+    window.removeEventListener("pointermove", this.handleCropPointerMove);
+    window.removeEventListener("pointerup", this.handleCropPointerUp);
+    this.cropOverlay.remove();
   }
 }

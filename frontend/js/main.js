@@ -7,6 +7,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const canvas = document.getElementById("image-canvas");
   const stage = document.getElementById("canvas-stage");
   const canvasUploadButton = document.getElementById("canvas-upload-button");
+  const cropButton = document.getElementById("btn-crop");
+  const cropApplyButton = document.getElementById("btn-crop-apply");
+  const cropCancelButton = document.getElementById("btn-crop-cancel");
+  let activeImageId = null;
 
   const canvasManager = new CanvasManager(canvas, stage);
 
@@ -48,15 +52,24 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const image = result.data.image;
-      metaEl.textContent = JSON.stringify({
-        ...image,
-        width: imageState.width,
-        height: imageState.height,
-        aspect_ratio: imageState.aspectRatio.toFixed(4),
-      }, null, 2);
+      activeImageId = image.image_id;
+      document.getElementById("editor-toolbar").hidden = false;
+      metaEl.textContent = JSON.stringify(
+        {
+          ...image,
+          width: imageState.width,
+          height: imageState.height,
+          aspect_ratio: imageState.aspectRatio.toFixed(4),
+        },
+        null,
+        2,
+      );
       setStatus(`Image ready · ${image.original_filename}`, "success");
     } catch (error) {
-      setStatus("Image displayed, but the upload session could not be created.", "error");
+      setStatus(
+        "Image displayed, but the upload session could not be created.",
+        "error",
+      );
       console.error(error);
     }
   };
@@ -75,6 +88,53 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("submit", (event) => event.preventDefault());
   fileInput.addEventListener("change", () => handleImage(fileInput.files[0]));
   canvasUploadButton.addEventListener("click", openFilePicker);
+
+  cropButton.addEventListener("click", () => {
+    if (!activeImageId || !canvasManager.startCrop()) {
+      setStatus("Upload an image before cropping.", "error");
+      return;
+    }
+    cropButton.hidden = true;
+    cropApplyButton.hidden = false;
+    cropCancelButton.hidden = false;
+    setStatus("Drag the crop area or resize its handles.", "pending");
+  });
+
+  cropCancelButton.addEventListener("click", () => {
+    canvasManager.cancelCrop();
+    cropButton.hidden = false;
+    cropApplyButton.hidden = true;
+    cropCancelButton.hidden = true;
+    setStatus("Crop cancelled.", "success");
+  });
+
+  cropApplyButton.addEventListener("click", async () => {
+    const selection = canvasManager.getCropSelection();
+    if (!selection || !activeImageId) return;
+    cropApplyButton.disabled = true;
+    try {
+      const result = await cropImage(
+        activeImageId,
+        selection.x,
+        selection.y,
+        selection.width,
+        selection.height,
+      );
+      if (!result.ok) {
+        throw new Error(result.data?.error?.message || "Crop failed.");
+      }
+      await canvasManager.applyCrop();
+      dimensionsEl.textContent = `${result.data.image.width} × ${result.data.image.height}px`;
+      cropButton.hidden = false;
+      cropApplyButton.hidden = true;
+      cropCancelButton.hidden = true;
+      setStatus("Crop applied.", "success");
+    } catch (error) {
+      setStatus(error.message || "Crop failed.", "error");
+    } finally {
+      cropApplyButton.disabled = false;
+    }
+  });
 
   ["dragenter", "dragover"].forEach((eventName) => {
     stage.addEventListener(eventName, (event) => {

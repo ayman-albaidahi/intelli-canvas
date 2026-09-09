@@ -72,8 +72,13 @@ async function resizeImage(imageId, width, height, lockAspectRatio = true) {
   if (!imageId || typeof imageId !== "string") {
     throw new Error("A valid imageId string is required.");
   }
-  if ((width === undefined || width === null) && (height === undefined || height === null)) {
-    throw new Error("At least one dimension (width or height) must be provided.");
+  if (
+    (width === undefined || width === null) &&
+    (height === undefined || height === null)
+  ) {
+    throw new Error(
+      "At least one dimension (width or height) must be provided.",
+    );
   }
 
   const response = await fetch(`${API_BASE_URL}/transform/resize`, {
@@ -87,6 +92,20 @@ async function resizeImage(imageId, width, height, lockAspectRatio = true) {
       height,
       lock_aspect_ratio: lockAspectRatio,
     }),
+  });
+
+  return handleApiResponse(response);
+}
+
+async function cropImage(imageId, x, y, width, height) {
+  if (!imageId || typeof imageId !== "string") {
+    throw new Error("A valid imageId string is required.");
+  }
+
+  const response = await fetch(`${API_BASE_URL}/transform/crop`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image_id: imageId, x, y, width, height }),
   });
 
   return handleApiResponse(response);
@@ -164,7 +183,8 @@ async function exportImage(imageId, format = "png") {
   }
 
   const validFormats = ["png", "jpeg", "jpg", "webp"];
-  const normalizedFormat = typeof format === "string" ? format.toLowerCase() : "";
+  const normalizedFormat =
+    typeof format === "string" ? format.toLowerCase() : "";
   if (!validFormats.includes(normalizedFormat)) {
     throw new Error("Format must be one of: 'png', 'jpeg', 'jpg', 'webp'.");
   }
@@ -205,9 +225,12 @@ async function convertImage(imageId, targetFormat) {
   }
 
   const validFormats = ["png", "jpeg", "jpg", "webp"];
-  const normalizedFormat = typeof targetFormat === "string" ? targetFormat.toLowerCase() : "";
+  const normalizedFormat =
+    typeof targetFormat === "string" ? targetFormat.toLowerCase() : "";
   if (!validFormats.includes(normalizedFormat)) {
-    throw new Error("Target format must be one of: 'png', 'jpeg', 'jpg', 'webp'.");
+    throw new Error(
+      "Target format must be one of: 'png', 'jpeg', 'jpg', 'webp'.",
+    );
   }
 
   const response = await fetch(`${API_BASE_URL}/images/convert`, {
