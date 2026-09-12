@@ -6,6 +6,7 @@ import { bindTransformTools } from './transform-tools.js';
 import { CropTool } from './crop-tool.js';
 import { initResizeTool } from './resize-tool.js';
 import { LayerManager } from './layer-manager.js';
+import { ObjectManager } from './object-manager.js';
 
 initThemeManager();
 initUI();
@@ -20,6 +21,10 @@ bindTransformTools(canvasManager, showToast);
 const cropTool = new CropTool(canvasManager, document.querySelector('#canvas-card'), showToast);
 initResizeTool(canvasManager, showToast);
 const layerManager = new LayerManager({ list: document.querySelector('#layers-list'), empty: document.querySelector('#layers-empty'), count: document.querySelector('#layer-count'), showToast });
+const objectManager = new ObjectManager(document.querySelector('#object-canvas'), layerManager, showToast);
+document.querySelectorAll('[data-tool="brush"], [data-tool="eraser"], [data-tool="shape"], [data-tool="text"]').forEach((button) => button.addEventListener('click', () => objectManager.pointerDownConfigure()));
+objectManager.setInteractive(false);
+document.addEventListener('appstatechange', ({ detail }) => objectManager.setInteractive(['brush', 'eraser', 'shape', 'text'].includes(detail.activeTool)));
 document.querySelectorAll('[data-action="add-layer"]').forEach((button) => button.addEventListener('click', () => { layerManager.add('shape'); showToast('Empty layer added'); }));
 document.querySelector('#crop-overlay').addEventListener('pointerdown', (event) => cropTool.onPointerDown(event));
 document.querySelector('#crop-overlay').addEventListener('pointermove', (event) => cropTool.onPointerMove(event));
