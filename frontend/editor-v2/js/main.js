@@ -2,6 +2,7 @@ import { appState, setState } from './app-state.js';
 import { initThemeManager } from './theme-manager.js';
 import { initUI, showToast } from './ui-manager.js';
 import { CanvasManager } from './canvas-manager.js';
+import { bindTransformTools } from './transform-tools.js';
 
 initThemeManager();
 initUI();
@@ -12,6 +13,7 @@ const emptyCanvas = document.querySelector('#empty-canvas');
 const mockArtboard = document.querySelector('#mock-artboard');
 const statusMessage = document.querySelector('#status-message');
 const canvasManager = new CanvasManager(document.querySelector('#image-canvas'), document.querySelector('#canvas-card'));
+bindTransformTools(canvasManager, showToast);
 
 for (const button of document.querySelectorAll('[data-action]')) {
   if (button.dataset.action === 'zoom-in') button.addEventListener('click', () => canvasManager.setZoom(10));
