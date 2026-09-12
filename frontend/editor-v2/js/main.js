@@ -170,6 +170,27 @@ document.querySelector('[data-action="process-sharpen"]')?.addEventListener('cli
   }
 });
 
+document.querySelector('[data-action="process-saturation"]')?.addEventListener('click', async (event) => {
+  const button = event.currentTarget;
+  if (!apiClient.imageId) return showToast('Upload an image before processing it');
+  const value = Number(document.querySelector('[data-adjustment="saturation"]')?.value || 100);
+  button.disabled = true;
+  statusMessage.textContent = 'Python is processing color saturation…';
+  showToast(`Sending saturation ${value}% to Python…`);
+  try {
+    const result = await apiClient.process('saturation', { value });
+    await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
+    document.querySelector('#save-state').textContent = 'Processed by Python';
+    statusMessage.textContent = `Saturation ${value}% processed by Python`;
+    showToast('Color saturation completed by Python');
+  } catch (error) {
+    statusMessage.textContent = 'Python saturation processing failed';
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
 document.addEventListener('keydown', (event) => {
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'o') { event.preventDefault(); fileInput.click(); }
   if (event.key.toLowerCase() === 'b') document.querySelector('[data-tool="brush"]')?.click();

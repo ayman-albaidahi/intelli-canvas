@@ -56,3 +56,13 @@ POST /api/process/sharpen
 ```
 
 It accepts an integer `value` from `0` to `5`, with `0` neutral and `5` the strongest supported sharpening level. Pillow's `ImageEnhance.Sharpness` applies the operation, saves a new processed PNG, updates the session, and returns result metadata. The editor exposes **Apply sharpen in Python** below a new Sharpen control and reloads the backend result after processing.
+
+## Color Saturation extension in PR #61
+
+The shared process pipeline now also includes:
+
+```text
+POST /api/process/saturation
+```
+
+It accepts an integer `value` from `0` to `200`, with `100` neutral, `0` fully desaturated, and values above `100` increasing color intensity. Pillow's `ImageEnhance.Color` applies the operation, saves a new processed PNG, updates the session, and returns result metadata. The editor exposes **Apply saturation in Python** below the Saturation slider and reloads the backend result after processing.
