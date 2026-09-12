@@ -66,6 +66,26 @@ fileInput.addEventListener('change', async ({ target }) => {
   }
 });
 
+document.querySelector('[data-action="process-grayscale"]')?.addEventListener('click', async (event) => {
+  const button = event.currentTarget;
+  if (!apiClient.imageId) return showToast('Upload an image before processing it');
+  button.disabled = true;
+  statusMessage.textContent = 'Python is processing grayscale…';
+  showToast('Sending grayscale operation to Python…');
+  try {
+    const result = await apiClient.process('grayscale');
+    await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
+    document.querySelector('#save-state').textContent = 'Processed by Python';
+    statusMessage.textContent = 'Grayscale processed by Python';
+    showToast('Grayscale completed by Python');
+  } catch (error) {
+    statusMessage.textContent = 'Python processing failed';
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
 document.addEventListener('keydown', (event) => {
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'o') { event.preventDefault(); fileInput.click(); }
   if (event.key.toLowerCase() === 'b') document.querySelector('[data-tool="brush"]')?.click();
