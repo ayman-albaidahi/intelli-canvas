@@ -28,6 +28,12 @@ export class ApiClient {
     return payload.image;
   }
 
+  async process(operation, data = {}) {
+    if (!this.imageId) throw new Error('Upload an image before processing it.');
+    const payload = await parseResponse(await fetch(`${this.baseUrl}/process/${operation}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, ...data }) }));
+    return payload.image;
+  }
+
   async export(format = 'png') {
     if (!this.imageId) throw new Error('Upload an image before exporting it.');
     const response = await fetch(`${this.baseUrl}/images/export`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, format }) });
