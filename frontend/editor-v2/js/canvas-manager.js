@@ -13,6 +13,7 @@ export class CanvasManager {
     this.flipX = 1;
     this.flipY = 1;
     this.crop = { x: 0, y: 0, width: 1, height: 1 };
+    this.documentSize = { width: 0, height: 0 };
     this.history = [];
     this.future = [];
     this.drag = null;
@@ -67,6 +68,7 @@ export class CanvasManager {
         this.flipX = 1;
         this.flipY = 1;
         this.crop = { x: 0, y: 0, width: 1, height: 1 };
+        this.documentSize = { width: image.naturalWidth, height: image.naturalHeight };
         this.history = [];
         this.future = [];
         setState({ hasImage: true });
@@ -80,8 +82,8 @@ export class CanvasManager {
   fit() {
     if (!this.image) return;
     const bounds = this.stage.getBoundingClientRect();
-    const sourceWidth = this.image.naturalWidth * this.crop.width;
-    const sourceHeight = this.image.naturalHeight * this.crop.height;
+    const sourceWidth = this.documentSize.width * this.crop.width;
+    const sourceHeight = this.documentSize.height * this.crop.height;
     const rotatedWidth = Math.abs(this.rotation % 180) === 90 ? sourceHeight : sourceWidth;
     const rotatedHeight = Math.abs(this.rotation % 180) === 90 ? sourceWidth : sourceHeight;
     this.fitScale = Math.min((bounds.width - 100) / rotatedWidth, (bounds.height - 100) / rotatedHeight, 1);
@@ -101,10 +103,14 @@ export class CanvasManager {
 
   hasImage() { return Boolean(this.image); }
 
+  getSourceDimensions() { return { ...this.documentSize }; }
+
+  resizeImage(width, height) { this.commit(); this.documentSize = { width, height }; this.crop = { x: 0, y: 0, width: 1, height: 1 }; this.fit(); document.querySelector('#canvas-size').textContent = `${width} × ${height}`; }
+
   getImageRect() {
     if (!this.image) return null;
-    const width = this.image.naturalWidth * this.crop.width * this.scale;
-    const height = this.image.naturalHeight * this.crop.height * this.scale;
+    const width = this.documentSize.width * this.crop.width * this.scale;
+    const height = this.documentSize.height * this.crop.height * this.scale;
     return { x: this.offset.x - width / 2, y: this.offset.y - height / 2, width, height };
   }
 
@@ -120,11 +126,11 @@ export class CanvasManager {
     this.fit();
   }
 
-  snapshot() { return { rotation: this.rotation, flipX: this.flipX, flipY: this.flipY, crop: { ...this.crop } }; }
+  snapshot() { return { rotation: this.rotation, flipX: this.flipX, flipY: this.flipY, crop: { ...this.crop }, documentSize: { ...this.documentSize } }; }
 
   commit() { this.history.push(this.snapshot()); if (this.history.length > 30) this.history.shift(); this.future = []; }
 
-  restore(snapshot) { this.rotation = snapshot.rotation; this.flipX = snapshot.flipX; this.flipY = snapshot.flipY; this.crop = { ...snapshot.crop }; this.fit(); }
+  restore(snapshot) { this.rotation = snapshot.rotation; this.flipX = snapshot.flipX; this.flipY = snapshot.flipY; this.crop = { ...snapshot.crop }; this.documentSize = { ...snapshot.documentSize }; this.fit(); }
 
   rotate(degrees) { this.commit(); this.rotation = (this.rotation + degrees + 360) % 360; this.fit(); }
 
@@ -150,8 +156,8 @@ export class CanvasManager {
     const sourceY = this.image.naturalHeight * this.crop.y;
     const sourceWidth = this.image.naturalWidth * this.crop.width;
     const sourceHeight = this.image.naturalHeight * this.crop.height;
-    const width = sourceWidth * this.scale;
-    const height = sourceHeight * this.scale;
+    const width = this.documentSize.width * this.crop.width * this.scale;
+    const height = this.documentSize.height * this.crop.height * this.scale;
     this.ctx.save();
     this.ctx.translate(this.offset.x, this.offset.y);
     this.ctx.rotate(this.rotation * Math.PI / 180);

@@ -27,6 +27,7 @@
           <button class="icon-button" data-action="rotate-right" aria-label="Rotate right" title="Rotate right">↻</button>
           <button class="icon-button" data-action="flip-horizontal" aria-label="Flip horizontal" title="Flip horizontal">⇋</button>
           <button class="icon-button" data-action="flip-vertical" aria-label="Flip vertical" title="Flip vertical">⇵</button>
+          <button class="icon-button" data-action="resize" aria-label="Resize canvas" title="Resize canvas">⤢</button>
           <button class="icon-button" data-action="undo" aria-label="Undo" title="Undo">↶</button>
           <button class="icon-button" data-action="redo" aria-label="Redo" title="Redo">↷</button>
           <button class="icon-button theme-toggle" data-action="theme" aria-label="Toggle color theme" title="Toggle theme">☼</button>
@@ -101,6 +102,7 @@
       </div>
     </div>
     <input type="file" id="file-input" accept="image/png,image/jpeg,image/webp,image/bmp" hidden />
+    <div id="resize-dialog" class="dialog-backdrop" hidden><form id="resize-form" class="dialog-card"><div class="dialog-heading"><div><span class="eyebrow">Canvas setup</span><h2>Resize canvas</h2></div><button type="button" id="resize-cancel" class="icon-button" aria-label="Close">×</button></div><p class="dialog-copy">Set the working dimensions for your image canvas.</p><div class="resize-fields"><label>Width<input id="resize-width" type="number" min="1" max="12000" required /></label><span>×</span><label>Height<input id="resize-height" type="number" min="1" max="12000" required /></label></div><label class="check-row"><input id="resize-ratio" type="checkbox" checked /> Maintain aspect ratio</label><div class="dialog-actions"><button type="button" id="resize-cancel-secondary" class="button button-secondary">Cancel</button><button class="button button-primary" type="submit">Apply resize</button></div></form></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script type="module" src="js/main.js"></script>
   </body>
