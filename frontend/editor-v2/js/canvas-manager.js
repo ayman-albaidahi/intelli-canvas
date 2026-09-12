@@ -83,6 +83,7 @@ export class CanvasManager {
   loadFromUrl(url, metadata = {}) {
     return new Promise((resolve, reject) => {
       const image = new Image();
+      image.crossOrigin = 'anonymous';
       image.addEventListener('load', () => {
         this.image = image;
         this.rotation = 0;

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from flask import Flask, send_from_directory
+from flask import Flask, request, send_from_directory
 
 from .config import Config
 from .routes import (
@@ -40,7 +40,9 @@ def create_app() -> Flask:
 
     @app.after_request
     def add_dev_cors_headers(response):
-        response.headers.setdefault("Access-Control-Allow-Origin", "http://localhost:5500")
+        origin = request.headers.get("Origin", "")
+        allowed_origins = {"http://localhost:5500", "http://127.0.0.1:5500"}
+        response.headers.setdefault("Access-Control-Allow-Origin", origin if origin in allowed_origins else "http://localhost:5500")
         response.headers.setdefault("Access-Control-Allow-Headers", "Content-Type")
         response.headers.setdefault("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         return response
