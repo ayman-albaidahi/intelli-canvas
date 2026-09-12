@@ -103,6 +103,8 @@ export class CanvasManager {
 
   hasImage() { return Boolean(this.image); }
 
+  getImage() { return this.image; }
+
   getSourceDimensions() { return { ...this.documentSize }; }
 
   resizeImage(width, height) { this.commit(); this.documentSize = { width, height }; this.crop = { x: 0, y: 0, width: 1, height: 1 }; this.fit(); document.querySelector('#canvas-size').textContent = `${width} × ${height}`; }
