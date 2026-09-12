@@ -101,6 +101,25 @@ export class CanvasManager {
 
   hasImage() { return Boolean(this.image); }
 
+  getImageRect() {
+    if (!this.image) return null;
+    const width = this.image.naturalWidth * this.crop.width * this.scale;
+    const height = this.image.naturalHeight * this.crop.height * this.scale;
+    return { x: this.offset.x - width / 2, y: this.offset.y - height / 2, width, height };
+  }
+
+  applyCropSelection(selection) {
+    const imageRect = this.getImageRect();
+    if (!imageRect) return;
+    this.commit();
+    const left = Math.max(0, Math.min(1, (selection.x - imageRect.x) / imageRect.width));
+    const top = Math.max(0, Math.min(1, (selection.y - imageRect.y) / imageRect.height));
+    const width = Math.max(0.05, Math.min(1 - left, selection.width / imageRect.width));
+    const height = Math.max(0.05, Math.min(1 - top, selection.height / imageRect.height));
+    this.crop = { x: this.crop.x + this.crop.width * left, y: this.crop.y + this.crop.height * top, width: this.crop.width * width, height: this.crop.height * height };
+    this.fit();
+  }
+
   snapshot() { return { rotation: this.rotation, flipX: this.flipX, flipY: this.flipY, crop: { ...this.crop } }; }
 
   commit() { this.history.push(this.snapshot()); if (this.history.length > 30) this.history.shift(); this.future = []; }

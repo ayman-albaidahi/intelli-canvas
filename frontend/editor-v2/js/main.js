@@ -3,6 +3,7 @@ import { initThemeManager } from './theme-manager.js';
 import { initUI, showToast } from './ui-manager.js';
 import { CanvasManager } from './canvas-manager.js';
 import { bindTransformTools } from './transform-tools.js';
+import { CropTool } from './crop-tool.js';
 
 initThemeManager();
 initUI();
@@ -14,6 +15,10 @@ const mockArtboard = document.querySelector('#mock-artboard');
 const statusMessage = document.querySelector('#status-message');
 const canvasManager = new CanvasManager(document.querySelector('#image-canvas'), document.querySelector('#canvas-card'));
 bindTransformTools(canvasManager, showToast);
+const cropTool = new CropTool(canvasManager, document.querySelector('#canvas-card'), showToast);
+document.querySelector('#crop-overlay').addEventListener('pointerdown', (event) => cropTool.onPointerDown(event));
+document.querySelector('#crop-overlay').addEventListener('pointermove', (event) => cropTool.onPointerMove(event));
+document.querySelector('#crop-overlay').addEventListener('pointerup', () => cropTool.stopDrag());
 
 for (const button of document.querySelectorAll('[data-action]')) {
   if (button.dataset.action === 'zoom-in') button.addEventListener('click', () => canvasManager.setZoom(10));
