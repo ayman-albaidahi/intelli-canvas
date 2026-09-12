@@ -149,6 +149,27 @@ document.querySelector('[data-action="process-blur"]')?.addEventListener('click'
   }
 });
 
+document.querySelector('[data-action="process-sharpen"]')?.addEventListener('click', async (event) => {
+  const button = event.currentTarget;
+  if (!apiClient.imageId) return showToast('Upload an image before processing it');
+  const value = Number(document.querySelector('[data-adjustment="sharpen"]')?.value || 0);
+  button.disabled = true;
+  statusMessage.textContent = 'Python is processing sharpen…';
+  showToast(`Sending sharpen ${value}/5 to Python…`);
+  try {
+    const result = await apiClient.process('sharpen', { value });
+    await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
+    document.querySelector('#save-state').textContent = 'Processed by Python';
+    statusMessage.textContent = `Sharpen ${value}/5 processed by Python`;
+    showToast('Sharpen completed by Python');
+  } catch (error) {
+    statusMessage.textContent = 'Python sharpen processing failed';
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
 document.addEventListener('keydown', (event) => {
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'o') { event.preventDefault(); fileInput.click(); }
   if (event.key.toLowerCase() === 'b') document.querySelector('[data-tool="brush"]')?.click();

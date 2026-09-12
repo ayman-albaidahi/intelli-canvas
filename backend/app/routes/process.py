@@ -92,4 +92,17 @@ def blur_image():
 
 @process_bp.post("/sharpen")
 def sharpen_image():
-    return _error_response("NOT_IMPLEMENTED", "Sharpen processing is not implemented yet.", 501)
+    image_id, error = _image_id_from_payload()
+    if error:
+        return error
+    payload = request.get_json(silent=True) or {}
+    value = payload.get("value", 0)
+    if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 5:
+        return _error_response("INVALID_SHARPEN", "Sharpen value must be an integer from 0 to 5.", 400)
+    try:
+        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], FileStorageService()).sharpen(image_id, value)
+    except (FileNotFoundError, FileValidationError) as exc:
+        return _error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError):
+        return _error_response("SHARPEN_FAILED", "The image could not be sharpened.", 400)
+    return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})

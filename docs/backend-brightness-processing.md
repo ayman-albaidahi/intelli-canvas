@@ -46,3 +46,13 @@ POST /api/process/blur
 ```
 
 It accepts an integer `value` from `0` to `20`, interpreted as the Gaussian blur radius in pixels. Pillow's `ImageFilter.GaussianBlur` applies the operation, saves a new processed PNG, updates the session, and returns result metadata. The editor exposes **Apply blur in Python** below the blur slider and reloads the backend result after processing.
+
+## Sharpen extension in PR #61
+
+The shared process pipeline now also includes:
+
+```text
+POST /api/process/sharpen
+```
+
+It accepts an integer `value` from `0` to `5`, with `0` neutral and `5` the strongest supported sharpening level. Pillow's `ImageEnhance.Sharpness` applies the operation, saves a new processed PNG, updates the session, and returns result metadata. The editor exposes **Apply sharpen in Python** below a new Sharpen control and reloads the backend result after processing.
