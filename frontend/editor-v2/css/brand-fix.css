@@ -1,0 +1,2 @@
+/* Defensive layout styles: keep the supplied logo inside the header brand block. */
+.brand-block{display:flex;align-items:center;gap:10px;min-width:0}.brand-logo{display:block;width:118px;height:42px;max-width:118px;object-fit:contain;object-position:center}.brand-block>div{min-width:0}.brand-block strong,.brand-block span{white-space:nowrap}.canvas-card{position:relative}.empty-canvas{position:relative;z-index:10;pointer-events:auto}
