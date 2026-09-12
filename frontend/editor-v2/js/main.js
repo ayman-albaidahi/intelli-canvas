@@ -8,6 +8,7 @@ import { initResizeTool } from './resize-tool.js';
 import { LayerManager } from './layer-manager.js';
 import { ObjectManager } from './object-manager.js';
 import { ComparisonTool } from './comparison-tool.js';
+import { AdjustmentsManager } from './adjustments-manager.js';
 
 initThemeManager();
 initUI();
@@ -24,6 +25,7 @@ initResizeTool(canvasManager, showToast);
 const layerManager = new LayerManager({ list: document.querySelector('#layers-list'), empty: document.querySelector('#layers-empty'), count: document.querySelector('#layer-count'), showToast });
 const objectManager = new ObjectManager(document.querySelector('#object-canvas'), layerManager, showToast);
 new ComparisonTool(canvasManager, showToast);
+new AdjustmentsManager(canvasManager, showToast);
 document.querySelectorAll('[data-tool="brush"], [data-tool="eraser"], [data-tool="shape"], [data-tool="text"]').forEach((button) => button.addEventListener('click', () => objectManager.pointerDownConfigure()));
 objectManager.setInteractive(true);
 document.addEventListener('appstatechange', ({ detail }) => objectManager.setInteractive(['select', 'brush', 'eraser', 'shape', 'text'].includes(detail.activeTool)));

@@ -16,6 +16,7 @@ export class CanvasManager {
     this.documentSize = { width: 0, height: 0 };
     this.history = [];
     this.future = [];
+    this.adjustments = { brightness: 100, contrast: 100, saturation: 100, blur: 0, grayscale: false, negative: false };
     this.drag = null;
     this.bindEvents();
     this.resize();
@@ -103,6 +104,12 @@ export class CanvasManager {
 
   hasImage() { return Boolean(this.image); }
 
+  getImage() { return this.image; }
+
+  setAdjustments(next) { this.adjustments = { ...this.adjustments, ...next }; this.render(); }
+
+  adjustmentSummary() { const active = Object.entries(this.adjustments).filter(([key, value]) => (typeof value === 'boolean' && value) || (typeof value === 'number' && ((key === 'blur' && value > 0) || (key !== 'blur' && value !== 100)))); return active.length ? `${active.length} active` : 'Neutral'; }
+
   getSourceDimensions() { return { ...this.documentSize }; }
 
   resizeImage(width, height) { this.commit(); this.documentSize = { width, height }; this.crop = { x: 0, y: 0, width: 1, height: 1 }; this.fit(); document.querySelector('#canvas-size').textContent = `${width} × ${height}`; }
@@ -126,11 +133,11 @@ export class CanvasManager {
     this.fit();
   }
 
-  snapshot() { return { rotation: this.rotation, flipX: this.flipX, flipY: this.flipY, crop: { ...this.crop }, documentSize: { ...this.documentSize } }; }
+  snapshot() { return { rotation: this.rotation, flipX: this.flipX, flipY: this.flipY, crop: { ...this.crop }, documentSize: { ...this.documentSize }, adjustments: { ...this.adjustments } }; }
 
   commit() { this.history.push(this.snapshot()); if (this.history.length > 30) this.history.shift(); this.future = []; }
 
-  restore(snapshot) { this.rotation = snapshot.rotation; this.flipX = snapshot.flipX; this.flipY = snapshot.flipY; this.crop = { ...snapshot.crop }; this.documentSize = { ...snapshot.documentSize }; this.fit(); }
+  restore(snapshot) { this.rotation = snapshot.rotation; this.flipX = snapshot.flipX; this.flipY = snapshot.flipY; this.crop = { ...snapshot.crop }; this.documentSize = { ...snapshot.documentSize }; this.adjustments = { ...this.adjustments, ...(snapshot.adjustments || {}) }; this.fit(); }
 
   rotate(degrees) { this.commit(); this.rotation = (this.rotation + degrees + 360) % 360; this.fit(); }
 
@@ -162,6 +169,8 @@ export class CanvasManager {
     this.ctx.translate(this.offset.x, this.offset.y);
     this.ctx.rotate(this.rotation * Math.PI / 180);
     this.ctx.scale(this.flipX, this.flipY);
+    const a = this.adjustments;
+    this.ctx.filter = `brightness(${a.brightness}%) contrast(${a.contrast}%) saturate(${a.saturation}%) blur(${a.blur}px) grayscale(${a.grayscale ? 1 : 0}) invert(${a.negative ? 1 : 0})`;
     this.ctx.drawImage(this.image, sourceX, sourceY, sourceWidth, sourceHeight, -width / 2, -height / 2, width, height);
     this.ctx.restore();
   }
