@@ -1,0 +1,1 @@
+@media(max-width:1240px){.editor-frame{grid-template-columns:72px minmax(480px,1fr) 260px}.tool-button{width:56px}.tool-button small{font-size:8px}.topbar{padding:0 16px}.document-name{display:none}.inspector-content{padding:18px 14px}}@media(max-width:900px){body{min-width:0}.editor-frame{grid-template-columns:68px 1fr}.inspector{display:none}.canvas-card{width:min(720px,82%)}}
