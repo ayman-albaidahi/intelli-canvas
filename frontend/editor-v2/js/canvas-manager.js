@@ -9,6 +9,12 @@ export class CanvasManager {
     this.scale = 1;
     this.fitScale = 1;
     this.offset = { x: 0, y: 0 };
+    this.rotation = 0;
+    this.flipX = 1;
+    this.flipY = 1;
+    this.crop = { x: 0, y: 0, width: 1, height: 1 };
+    this.history = [];
+    this.future = [];
     this.drag = null;
     this.bindEvents();
     this.resize();
@@ -57,6 +63,12 @@ export class CanvasManager {
       const image = new Image();
       image.addEventListener('load', () => {
         this.image = image;
+        this.rotation = 0;
+        this.flipX = 1;
+        this.flipY = 1;
+        this.crop = { x: 0, y: 0, width: 1, height: 1 };
+        this.history = [];
+        this.future = [];
         setState({ hasImage: true });
         this.fit();
       });
@@ -68,7 +80,11 @@ export class CanvasManager {
   fit() {
     if (!this.image) return;
     const bounds = this.stage.getBoundingClientRect();
-    this.fitScale = Math.min((bounds.width - 100) / this.image.naturalWidth, (bounds.height - 100) / this.image.naturalHeight, 1);
+    const sourceWidth = this.image.naturalWidth * this.crop.width;
+    const sourceHeight = this.image.naturalHeight * this.crop.height;
+    const rotatedWidth = Math.abs(this.rotation % 180) === 90 ? sourceHeight : sourceWidth;
+    const rotatedHeight = Math.abs(this.rotation % 180) === 90 ? sourceWidth : sourceHeight;
+    this.fitScale = Math.min((bounds.width - 100) / rotatedWidth, (bounds.height - 100) / rotatedHeight, 1);
     this.scale = this.fitScale;
     this.offset = { x: bounds.width / 2, y: bounds.height / 2 };
     setState({ zoom: Math.round(this.scale * 100) });
@@ -83,12 +99,45 @@ export class CanvasManager {
     this.render();
   }
 
+  hasImage() { return Boolean(this.image); }
+
+  snapshot() { return { rotation: this.rotation, flipX: this.flipX, flipY: this.flipY, crop: { ...this.crop } }; }
+
+  commit() { this.history.push(this.snapshot()); if (this.history.length > 30) this.history.shift(); this.future = []; }
+
+  restore(snapshot) { this.rotation = snapshot.rotation; this.flipX = snapshot.flipX; this.flipY = snapshot.flipY; this.crop = { ...snapshot.crop }; this.fit(); }
+
+  rotate(degrees) { this.commit(); this.rotation = (this.rotation + degrees + 360) % 360; this.fit(); }
+
+  flip(axis) { this.commit(); if (axis === 'horizontal') this.flipX *= -1; if (axis === 'vertical') this.flipY *= -1; this.render(); }
+
+  cropCenter() {
+    this.commit();
+    const marginX = this.crop.width * 0.1;
+    const marginY = this.crop.height * 0.1;
+    this.crop = { x: this.crop.x + marginX, y: this.crop.y + marginY, width: this.crop.width * 0.8, height: this.crop.height * 0.8 };
+    this.fit();
+  }
+
+  undo() { const previous = this.history.pop(); if (!previous) return false; this.future.push(this.snapshot()); this.restore(previous); return true; }
+
+  redo() { const next = this.future.pop(); if (!next) return false; this.history.push(this.snapshot()); this.restore(next); return true; }
+
   render() {
     const bounds = this.stage.getBoundingClientRect();
     this.ctx.clearRect(0, 0, bounds.width, bounds.height);
     if (!this.image) return;
-    const width = this.image.naturalWidth * this.scale;
-    const height = this.image.naturalHeight * this.scale;
-    this.ctx.drawImage(this.image, this.offset.x - width / 2, this.offset.y - height / 2, width, height);
+    const sourceX = this.image.naturalWidth * this.crop.x;
+    const sourceY = this.image.naturalHeight * this.crop.y;
+    const sourceWidth = this.image.naturalWidth * this.crop.width;
+    const sourceHeight = this.image.naturalHeight * this.crop.height;
+    const width = sourceWidth * this.scale;
+    const height = sourceHeight * this.scale;
+    this.ctx.save();
+    this.ctx.translate(this.offset.x, this.offset.y);
+    this.ctx.rotate(this.rotation * Math.PI / 180);
+    this.ctx.scale(this.flipX, this.flipY);
+    this.ctx.drawImage(this.image, sourceX, sourceY, sourceWidth, sourceHeight, -width / 2, -height / 2, width, height);
+    this.ctx.restore();
   }
 }
