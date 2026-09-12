@@ -9,6 +9,7 @@ import { LayerManager } from './layer-manager.js';
 import { ObjectManager } from './object-manager.js';
 import { ComparisonTool } from './comparison-tool.js';
 import { AdjustmentsManager } from './adjustments-manager.js';
+import { ApiClient } from './api-client.js';
 
 initThemeManager();
 initUI();
@@ -19,6 +20,7 @@ const emptyCanvas = document.querySelector('#empty-canvas');
 const mockArtboard = document.querySelector('#mock-artboard');
 const statusMessage = document.querySelector('#status-message');
 const canvasManager = new CanvasManager(document.querySelector('#image-canvas'), document.querySelector('#canvas-card'));
+const apiClient = new ApiClient();
 bindTransformTools(canvasManager, showToast);
 const cropTool = new CropTool(canvasManager, document.querySelector('#canvas-card'), showToast);
 initResizeTool(canvasManager, showToast);
@@ -41,17 +43,27 @@ for (const button of document.querySelectorAll('[data-action]')) {
   if (button.dataset.action === 'open') button.addEventListener('click', () => fileInput.click());
 }
 
-fileInput.addEventListener('change', ({ target }) => {
+fileInput.addEventListener('change', async ({ target }) => {
   const file = target.files?.[0];
   if (!file) return;
-  canvasManager.load(file);
-  layerManager.addImage(file.name);
-  emptyCanvas.hidden = true;
-  mockArtboard.hidden = true;
-  document.querySelector('#document-name').textContent = file.name;
-  document.querySelector('#save-state').textContent = 'Local preview';
-  statusMessage.textContent = 'Image loaded — preview mode';
-  showToast(`${file.name} added to the canvas`);
+  statusMessage.textContent = 'Uploading image…';
+  showToast('Uploading image to IntelliCanvas API…');
+  try {
+    const image = await apiClient.upload(file);
+    await canvasManager.loadFromUrl(apiClient.contentUrl(image.image_id), image);
+    layerManager.addImage(image.original_filename);
+    emptyCanvas.hidden = true;
+    mockArtboard.hidden = true;
+    document.querySelector('#document-name').textContent = image.original_filename;
+    document.querySelector('#save-state').textContent = 'Saved in API session';
+    statusMessage.textContent = 'Image loaded — backend session ready';
+    showToast(`${image.original_filename} uploaded successfully`);
+  } catch (error) {
+    statusMessage.textContent = 'Upload failed';
+    showToast(error.message);
+  } finally {
+    target.value = '';
+  }
 });
 
 document.addEventListener('keydown', (event) => {

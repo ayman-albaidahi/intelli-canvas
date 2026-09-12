@@ -80,6 +80,27 @@ export class CanvasManager {
     reader.readAsDataURL(file);
   }
 
+  loadFromUrl(url, metadata = {}) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.addEventListener('load', () => {
+        this.image = image;
+        this.rotation = 0;
+        this.flipX = 1;
+        this.flipY = 1;
+        this.crop = { x: 0, y: 0, width: 1, height: 1 };
+        this.documentSize = { width: image.naturalWidth || metadata.width, height: image.naturalHeight || metadata.height };
+        this.history = [];
+        this.future = [];
+        setState({ hasImage: true });
+        this.fit();
+        resolve(image);
+      });
+      image.addEventListener('error', () => reject(new Error('The uploaded image could not be displayed.')));
+      image.src = url;
+    });
+  }
+
   fit() {
     if (!this.image) return;
     const bounds = this.stage.getBoundingClientRect();
