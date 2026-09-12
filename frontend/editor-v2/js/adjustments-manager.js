@@ -22,6 +22,7 @@ export class AdjustmentsManager {
       contrast: Number(document.querySelector('[data-adjustment="contrast"]')?.value || 100),
       saturation: Number(document.querySelector('[data-adjustment="saturation"]')?.value || 100),
       blur: Number(document.querySelector('[data-adjustment="blur"]')?.value || 0),
+      sharpen: Number(document.querySelector('[data-adjustment="sharpen"]')?.value || 0),
       grayscale: document.querySelector('[data-adjustment="grayscale"]')?.checked || false,
       negative: document.querySelector('[data-adjustment="negative"]')?.checked || false,
     };
@@ -33,7 +34,7 @@ export class AdjustmentsManager {
   }
 
   reset() {
-    const defaults = { brightness: 100, contrast: 100, saturation: 100, blur: 0, grayscale: false, negative: false };
+    const defaults = { brightness: 100, contrast: 100, saturation: 100, blur: 0, sharpen: 0, grayscale: false, negative: false };
     Object.entries(defaults).forEach(([key, value]) => {
       const input = document.querySelector(`[data-adjustment="${key}"]`);
       if (!input) return;

@@ -38,19 +38,89 @@ def convert_to_grayscale():
 
 @process_bp.post("/brightness")
 def adjust_brightness():
-    return _error_response("NOT_IMPLEMENTED", "Brightness processing is not implemented yet.", 501)
+    image_id, error = _image_id_from_payload()
+    if error:
+        return error
+    payload = request.get_json(silent=True) or {}
+    value = payload.get("value", 100)
+    if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 200:
+        return _error_response("INVALID_BRIGHTNESS", "Brightness value must be an integer from 0 to 200.", 400)
+    try:
+        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], FileStorageService()).brightness(image_id, value)
+    except (FileNotFoundError, FileValidationError) as exc:
+        return _error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError):
+        return _error_response("BRIGHTNESS_FAILED", "The image brightness could not be adjusted.", 400)
+    return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})
 
 
 @process_bp.post("/contrast")
 def adjust_contrast():
-    return _error_response("NOT_IMPLEMENTED", "Contrast processing is not implemented yet.", 501)
+    image_id, error = _image_id_from_payload()
+    if error:
+        return error
+    payload = request.get_json(silent=True) or {}
+    value = payload.get("value", 100)
+    if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 200:
+        return _error_response("INVALID_CONTRAST", "Contrast value must be an integer from 0 to 200.", 400)
+    try:
+        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], FileStorageService()).contrast(image_id, value)
+    except (FileNotFoundError, FileValidationError) as exc:
+        return _error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError):
+        return _error_response("CONTRAST_FAILED", "The image contrast could not be adjusted.", 400)
+    return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})
 
 
 @process_bp.post("/blur")
 def blur_image():
-    return _error_response("NOT_IMPLEMENTED", "Blur processing is not implemented yet.", 501)
+    image_id, error = _image_id_from_payload()
+    if error:
+        return error
+    payload = request.get_json(silent=True) or {}
+    value = payload.get("value", 0)
+    if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 20:
+        return _error_response("INVALID_BLUR", "Blur value must be an integer from 0 to 20.", 400)
+    try:
+        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], FileStorageService()).blur(image_id, value)
+    except (FileNotFoundError, FileValidationError) as exc:
+        return _error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError):
+        return _error_response("BLUR_FAILED", "The image could not be blurred.", 400)
+    return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})
 
 
 @process_bp.post("/sharpen")
 def sharpen_image():
-    return _error_response("NOT_IMPLEMENTED", "Sharpen processing is not implemented yet.", 501)
+    image_id, error = _image_id_from_payload()
+    if error:
+        return error
+    payload = request.get_json(silent=True) or {}
+    value = payload.get("value", 0)
+    if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 5:
+        return _error_response("INVALID_SHARPEN", "Sharpen value must be an integer from 0 to 5.", 400)
+    try:
+        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], FileStorageService()).sharpen(image_id, value)
+    except (FileNotFoundError, FileValidationError) as exc:
+        return _error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError):
+        return _error_response("SHARPEN_FAILED", "The image could not be sharpened.", 400)
+    return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})
+
+
+@process_bp.post("/saturation")
+def adjust_saturation():
+    image_id, error = _image_id_from_payload()
+    if error:
+        return error
+    payload = request.get_json(silent=True) or {}
+    value = payload.get("value", 100)
+    if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 200:
+        return _error_response("INVALID_SATURATION", "Saturation value must be an integer from 0 to 200.", 400)
+    try:
+        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], FileStorageService()).saturation(image_id, value)
+    except (FileNotFoundError, FileValidationError) as exc:
+        return _error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError):
+        return _error_response("SATURATION_FAILED", "The image saturation could not be adjusted.", 400)
+    return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})

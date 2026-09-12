@@ -86,6 +86,111 @@ document.querySelector('[data-action="process-grayscale"]')?.addEventListener('c
   }
 });
 
+document.querySelector('[data-action="process-brightness"]')?.addEventListener('click', async (event) => {
+  const button = event.currentTarget;
+  if (!apiClient.imageId) return showToast('Upload an image before processing it');
+  const value = Number(document.querySelector('[data-adjustment="brightness"]')?.value || 100);
+  button.disabled = true;
+  statusMessage.textContent = 'Python is processing brightness…';
+  showToast(`Sending brightness ${value}% to Python…`);
+  try {
+    const result = await apiClient.process('brightness', { value });
+    await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
+    document.querySelector('#save-state').textContent = 'Processed by Python';
+    statusMessage.textContent = `Brightness ${value}% processed by Python`;
+    showToast('Brightness completed by Python');
+  } catch (error) {
+    statusMessage.textContent = 'Python brightness processing failed';
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+document.querySelector('[data-action="process-contrast"]')?.addEventListener('click', async (event) => {
+  const button = event.currentTarget;
+  if (!apiClient.imageId) return showToast('Upload an image before processing it');
+  const value = Number(document.querySelector('[data-adjustment="contrast"]')?.value || 100);
+  button.disabled = true;
+  statusMessage.textContent = 'Python is processing contrast…';
+  showToast(`Sending contrast ${value}% to Python…`);
+  try {
+    const result = await apiClient.process('contrast', { value });
+    await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
+    document.querySelector('#save-state').textContent = 'Processed by Python';
+    statusMessage.textContent = `Contrast ${value}% processed by Python`;
+    showToast('Contrast completed by Python');
+  } catch (error) {
+    statusMessage.textContent = 'Python contrast processing failed';
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+document.querySelector('[data-action="process-blur"]')?.addEventListener('click', async (event) => {
+  const button = event.currentTarget;
+  if (!apiClient.imageId) return showToast('Upload an image before processing it');
+  const value = Number(document.querySelector('[data-adjustment="blur"]')?.value || 0);
+  button.disabled = true;
+  statusMessage.textContent = 'Python is processing blur…';
+  showToast(`Sending blur ${value}px to Python…`);
+  try {
+    const result = await apiClient.process('blur', { value });
+    await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
+    document.querySelector('#save-state').textContent = 'Processed by Python';
+    statusMessage.textContent = `Blur ${value}px processed by Python`;
+    showToast('Blur completed by Python');
+  } catch (error) {
+    statusMessage.textContent = 'Python blur processing failed';
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+document.querySelector('[data-action="process-sharpen"]')?.addEventListener('click', async (event) => {
+  const button = event.currentTarget;
+  if (!apiClient.imageId) return showToast('Upload an image before processing it');
+  const value = Number(document.querySelector('[data-adjustment="sharpen"]')?.value || 0);
+  button.disabled = true;
+  statusMessage.textContent = 'Python is processing sharpen…';
+  showToast(`Sending sharpen ${value}/5 to Python…`);
+  try {
+    const result = await apiClient.process('sharpen', { value });
+    await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
+    document.querySelector('#save-state').textContent = 'Processed by Python';
+    statusMessage.textContent = `Sharpen ${value}/5 processed by Python`;
+    showToast('Sharpen completed by Python');
+  } catch (error) {
+    statusMessage.textContent = 'Python sharpen processing failed';
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+document.querySelector('[data-action="process-saturation"]')?.addEventListener('click', async (event) => {
+  const button = event.currentTarget;
+  if (!apiClient.imageId) return showToast('Upload an image before processing it');
+  const value = Number(document.querySelector('[data-adjustment="saturation"]')?.value || 100);
+  button.disabled = true;
+  statusMessage.textContent = 'Python is processing color saturation…';
+  showToast(`Sending saturation ${value}% to Python…`);
+  try {
+    const result = await apiClient.process('saturation', { value });
+    await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
+    document.querySelector('#save-state').textContent = 'Processed by Python';
+    statusMessage.textContent = `Saturation ${value}% processed by Python`;
+    showToast('Color saturation completed by Python');
+  } catch (error) {
+    statusMessage.textContent = 'Python saturation processing failed';
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
 document.addEventListener('keydown', (event) => {
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'o') { event.preventDefault(); fileInput.click(); }
   if (event.key.toLowerCase() === 'b') document.querySelector('[data-tool="brush"]')?.click();
