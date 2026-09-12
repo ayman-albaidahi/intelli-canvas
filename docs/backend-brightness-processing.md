@@ -36,3 +36,13 @@ POST /api/process/contrast
 It accepts an integer `value` from `0` to `200`, with `100` as neutral. Pillow's `ImageEnhance.Contrast` applies the operation, saves a new processed PNG, updates the session, and returns result metadata. The editor exposes **Apply contrast in Python** below the contrast slider and reloads the backend result after the request completes.
 
 The Network panel should show `POST /api/process/contrast` followed by `GET /api/images/{image_id}/content`. The Flask terminal and `backend/storage/processed` provide an additional confirmation that the operation ran in Python.
+
+## Blur extension in PR #61
+
+The shared process pipeline now also includes:
+
+```text
+POST /api/process/blur
+```
+
+It accepts an integer `value` from `0` to `20`, interpreted as the Gaussian blur radius in pixels. Pillow's `ImageFilter.GaussianBlur` applies the operation, saves a new processed PNG, updates the session, and returns result metadata. The editor exposes **Apply blur in Python** below the blur slider and reloads the backend result after processing.

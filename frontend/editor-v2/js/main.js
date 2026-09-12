@@ -128,6 +128,27 @@ document.querySelector('[data-action="process-contrast"]')?.addEventListener('cl
   }
 });
 
+document.querySelector('[data-action="process-blur"]')?.addEventListener('click', async (event) => {
+  const button = event.currentTarget;
+  if (!apiClient.imageId) return showToast('Upload an image before processing it');
+  const value = Number(document.querySelector('[data-adjustment="blur"]')?.value || 0);
+  button.disabled = true;
+  statusMessage.textContent = 'Python is processing blur…';
+  showToast(`Sending blur ${value}px to Python…`);
+  try {
+    const result = await apiClient.process('blur', { value });
+    await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
+    document.querySelector('#save-state').textContent = 'Processed by Python';
+    statusMessage.textContent = `Blur ${value}px processed by Python`;
+    showToast('Blur completed by Python');
+  } catch (error) {
+    statusMessage.textContent = 'Python blur processing failed';
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
 document.addEventListener('keydown', (event) => {
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'o') { event.preventDefault(); fileInput.click(); }
   if (event.key.toLowerCase() === 'b') document.querySelector('[data-tool="brush"]')?.click();
