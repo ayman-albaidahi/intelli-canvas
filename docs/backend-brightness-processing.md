@@ -24,3 +24,15 @@ The editor exposes **Apply brightness in Python** directly below the brightness 
 ## Verification
 
 Open `http://localhost:5000/editor-v2/`, upload an image, choose a brightness value, and click the Python button. Confirm `POST /api/process/brightness` returns `200`, followed by the content request. The UI should report that brightness was processed by Python, and a new processed file should appear under `backend/storage/processed`.
+
+## Contrast extension in PR #61
+
+The same processing contract now also includes:
+
+```text
+POST /api/process/contrast
+```
+
+It accepts an integer `value` from `0` to `200`, with `100` as neutral. Pillow's `ImageEnhance.Contrast` applies the operation, saves a new processed PNG, updates the session, and returns result metadata. The editor exposes **Apply contrast in Python** below the contrast slider and reloads the backend result after the request completes.
+
+The Network panel should show `POST /api/process/contrast` followed by `GET /api/images/{image_id}/content`. The Flask terminal and `backend/storage/processed` provide an additional confirmation that the operation ran in Python.
