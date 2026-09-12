@@ -5,6 +5,7 @@ import { CanvasManager } from './canvas-manager.js';
 import { bindTransformTools } from './transform-tools.js';
 import { CropTool } from './crop-tool.js';
 import { initResizeTool } from './resize-tool.js';
+import { LayerManager } from './layer-manager.js';
 
 initThemeManager();
 initUI();
@@ -18,6 +19,8 @@ const canvasManager = new CanvasManager(document.querySelector('#image-canvas'),
 bindTransformTools(canvasManager, showToast);
 const cropTool = new CropTool(canvasManager, document.querySelector('#canvas-card'), showToast);
 initResizeTool(canvasManager, showToast);
+const layerManager = new LayerManager({ list: document.querySelector('#layers-list'), empty: document.querySelector('#layers-empty'), count: document.querySelector('#layer-count'), showToast });
+document.querySelectorAll('[data-action="add-layer"]').forEach((button) => button.addEventListener('click', () => { layerManager.add('shape'); showToast('Empty layer added'); }));
 document.querySelector('#crop-overlay').addEventListener('pointerdown', (event) => cropTool.onPointerDown(event));
 document.querySelector('#crop-overlay').addEventListener('pointermove', (event) => cropTool.onPointerMove(event));
 document.querySelector('#crop-overlay').addEventListener('pointerup', () => cropTool.stopDrag());
@@ -33,6 +36,7 @@ fileInput.addEventListener('change', ({ target }) => {
   const file = target.files?.[0];
   if (!file) return;
   canvasManager.load(file);
+  layerManager.addImage(file.name);
   emptyCanvas.hidden = true;
   mockArtboard.hidden = true;
   document.querySelector('#document-name').textContent = file.name;
