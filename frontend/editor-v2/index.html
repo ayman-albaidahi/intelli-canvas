@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="IntelliCanvas — professional image editor workspace" />
+    <title>IntelliCanvas — Editor Foundation</title>
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/responsive.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <div class="brand-mark" aria-hidden="true"><span>IC</span></div>
+          <div><strong>IntelliCanvas</strong><span>Studio workspace</span></div>
+        </div>
+        <div class="document-name"><span class="status-dot"></span><span id="document-name">Untitled project</span><small id="save-state">Saved locally</small></div>
+        <nav class="top-actions" aria-label="Project actions">
+          <button class="button button-ghost" data-action="new">New</button>
+          <button class="button button-ghost" data-action="open">Open</button>
+          <button class="button button-primary" data-action="export">Export <span aria-hidden="true">↗</span></button>
+          <button class="icon-button" data-action="undo" aria-label="Undo" title="Undo">↶</button>
+          <button class="icon-button" data-action="redo" aria-label="Redo" title="Redo">↷</button>
+          <button class="icon-button theme-toggle" data-action="theme" aria-label="Toggle color theme" title="Toggle theme">☼</button>
+          <button class="avatar" aria-label="Account menu">AY</button>
+        </nav>
+      </header>
+
+      <div class="editor-frame">
+        <aside class="tool-rail" aria-label="Editor tools">
+          <div class="tool-group">
+            <button class="tool-button is-active" data-tool="select" title="Select (V)"><span>↖</span><small>Select</small></button>
+            <button class="tool-button" data-tool="move" title="Move (M)"><span>✥</span><small>Move</small></button>
+            <button class="tool-button" data-tool="crop" title="Crop (C)"><span>⌗</span><small>Crop</small></button>
+          </div>
+          <div class="tool-divider"></div>
+          <div class="tool-group">
+            <button class="tool-button" data-tool="brush" title="Brush (B)"><span>╱</span><small>Brush</small></button>
+            <button class="tool-button" data-tool="eraser" title="Eraser (E)"><span>⌫</span><small>Eraser</small></button>
+            <button class="tool-button" data-tool="shape" title="Shapes (U)"><span>◇</span><small>Shapes</small></button>
+            <button class="tool-button" data-tool="text" title="Text (T)"><span>T</span><small>Text</small></button>
+          </div>
+          <div class="tool-divider"></div>
+          <div class="tool-group">
+            <button class="tool-button" data-panel="adjustments" title="Adjustments"><span>◐</span><small>Adjust</small></button>
+            <button class="tool-button" data-panel="filters" title="Filters"><span>✧</span><small>Filters</small></button>
+            <button class="tool-button" data-panel="background" title="Background"><span>▧</span><small>Backdrop</small></button>
+          </div>
+          <div class="tool-spacer"></div>
+          <button class="tool-button" data-panel="shortcuts" title="Keyboard shortcuts"><span>⌘</span><small>Keys</small></button>
+          <div class="rail-collapse" aria-hidden="true">‹</div>
+        </aside>
+
+        <main class="workspace">
+          <div class="workspace-header">
+            <div class="breadcrumbs"><span>Projects</span><b>/</b><strong>Untitled project</strong></div>
+            <div class="workspace-controls">
+              <button class="view-button" data-action="compare">◐ <span>Compare</span></button>
+              <span class="control-separator"></span>
+              <button class="zoom-button" data-action="zoom-out">−</button><span id="zoom-value">75%</span><button class="zoom-button" data-action="zoom-in">+</button>
+              <button class="view-button" data-action="fit">Fit</button>
+            </div>
+          </div>
+          <section class="canvas-zone" id="canvas-zone" aria-label="Canvas workspace">
+            <div class="canvas-grid" aria-hidden="true"></div>
+            <div class="canvas-card" id="canvas-card">
+              <div class="empty-canvas" id="empty-canvas">
+                <div class="empty-icon">✦</div>
+                <h1>Start with an image</h1>
+                <p>Drop an image here or choose a file to begin your canvas.</p>
+                <button class="button button-primary button-large" data-action="open">Choose image <span>↑</span></button>
+                <span class="file-hint">PNG, JPG, WEBP or BMP · up to 50 MB</span>
+              </div>
+              <div class="mock-artboard" id="mock-artboard" hidden>
+                <div class="mock-sun"></div><div class="mock-mountain mountain-back"></div><div class="mock-mountain mountain-front"></div><div class="mock-ground"></div><span class="mock-label">PREVIEW CANVAS</span>
+              </div>
+            </div>
+            <div class="canvas-overlay overlay-top"><span class="badge badge-soft">Original canvas</span></div>
+            <div class="canvas-overlay overlay-bottom"><span>⌘ 0</span><span>Drag to pan</span></div>
+          </section>
+          <footer class="statusbar"><div><span class="status-led"></span><span id="status-message">Ready for your next idea</span></div><div><span>RGB / 8-bit</span><span>•</span><span id="canvas-size">1920 × 1080</span><span>•</span><span>Local draft</span></div></footer>
+        </main>
+
+        <aside class="inspector" aria-label="Inspector panels">
+          <div class="inspector-tabs"><button class="inspector-tab is-active" data-inspector="properties">Properties</button><button class="inspector-tab" data-inspector="layers">Layers <span class="count-pill">0</span></button></div>
+          <section class="inspector-content" id="properties-panel"><div class="panel-heading"><div><span class="eyebrow">Workspace</span><h2>Properties</h2></div><button class="more-button">•••</button></div><div class="empty-panel"><div class="panel-icon">⌁</div><strong>Select an element</strong><p>Choose a layer or tool to view its controls here.</p></div><div class="panel-section"><div class="section-heading"><span>Quick actions</span><span class="muted">⌘</span></div><button class="list-action" data-panel="adjustments"><span class="action-icon">◐</span><span>Adjust image</span><b>›</b></button><button class="list-action" data-panel="filters"><span class="action-icon">✧</span><span>Browse filters</span><b>›</b></button><button class="list-action" data-panel="background"><span class="action-icon">▧</span><span>Remove background</span><b>›</b></button></div></section>
+          <section class="inspector-content" id="layers-panel" hidden><div class="panel-heading"><div><span class="eyebrow">Composition</span><h2>Layers <span class="count-pill">0</span></h2></div><button class="add-button" aria-label="Add layer">+</button></div><div class="empty-panel"><div class="panel-icon">▱</div><strong>Your canvas is clear</strong><p>Layers will appear here as you add images, shapes and text.</p></div><button class="button button-secondary full-width" data-action="add-layer">+ Add empty layer</button></section>
+          <div class="inspector-bottom"><button class="bottom-link" data-panel="history">◴ <span>History</span><b>›</b></button><button class="bottom-link" data-panel="pipeline">≋ <span>Processing pipeline</span><b>›</b></button><button class="bottom-link" data-panel="analysis">◌ <span>Image analysis</span><b>›</b></button></div>
+        </aside>
+      </div>
+    </div>
+    <input type="file" id="file-input" accept="image/png,image/jpeg,image/webp,image/bmp" hidden />
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
