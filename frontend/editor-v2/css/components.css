@@ -1,1 +1,1 @@
-/* Component-specific overrides are intentionally kept separate for the next editor stages. */
+.image-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:2;cursor:grab;touch-action:none}.image-canvas.is-panning{cursor:grabbing}.canvas-card:has(.image-canvas:not(:empty)){background:var(--surface)}

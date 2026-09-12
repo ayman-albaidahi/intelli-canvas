@@ -1,6 +1,7 @@
 import { appState, setState } from './app-state.js';
 import { initThemeManager } from './theme-manager.js';
 import { initUI, showToast } from './ui-manager.js';
+import { CanvasManager } from './canvas-manager.js';
 
 initThemeManager();
 initUI();
@@ -10,20 +11,21 @@ const fileInput = document.querySelector('#file-input');
 const emptyCanvas = document.querySelector('#empty-canvas');
 const mockArtboard = document.querySelector('#mock-artboard');
 const statusMessage = document.querySelector('#status-message');
+const canvasManager = new CanvasManager(document.querySelector('#image-canvas'), document.querySelector('#canvas-card'));
 
 for (const button of document.querySelectorAll('[data-action]')) {
-  if (button.dataset.action === 'zoom-in') button.addEventListener('click', () => updateZoom(10));
-  if (button.dataset.action === 'zoom-out') button.addEventListener('click', () => updateZoom(-10));
-  if (button.dataset.action === 'fit') button.addEventListener('click', () => { setState({ zoom: 75 }); renderZoom(); showToast('Canvas fitted to workspace'); });
+  if (button.dataset.action === 'zoom-in') button.addEventListener('click', () => canvasManager.setZoom(10));
+  if (button.dataset.action === 'zoom-out') button.addEventListener('click', () => canvasManager.setZoom(-10));
+  if (button.dataset.action === 'fit') button.addEventListener('click', () => { canvasManager.fit(); showToast('Canvas fitted to workspace'); });
   if (button.dataset.action === 'open') button.addEventListener('click', () => fileInput.click());
 }
 
 fileInput.addEventListener('change', ({ target }) => {
   const file = target.files?.[0];
   if (!file) return;
-  setState({ hasImage: true });
+  canvasManager.load(file);
   emptyCanvas.hidden = true;
-  mockArtboard.hidden = false;
+  mockArtboard.hidden = true;
   document.querySelector('#document-name').textContent = file.name;
   document.querySelector('#save-state').textContent = 'Local preview';
   statusMessage.textContent = 'Image loaded — preview mode';
@@ -38,9 +40,9 @@ document.addEventListener('keydown', (event) => {
 });
 
 function updateZoom(delta) {
-  setState({ zoom: Math.max(25, Math.min(200, appState.zoom + delta)) });
-  renderZoom();
+  canvasManager.setZoom(delta);
 }
 
 function renderZoom() { zoomValue.textContent = `${appState.zoom}%`; }
+document.addEventListener('appstatechange', renderZoom);
 renderZoom();
