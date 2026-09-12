@@ -20,12 +20,6 @@ export function bindTransformTools(canvasManager, showToast) {
     });
   });
 
-  document.querySelector('[data-tool="crop"]')?.addEventListener('dblclick', () => {
-    if (!canvasManager.hasImage()) return showToast('Choose an image before cropping');
-    canvasManager.cropCenter();
-    showToast('Center crop applied');
-  });
-
   document.querySelector('[data-action="undo"]')?.addEventListener('click', () => {
     if (canvasManager.undo()) showToast('Undid last transform');
     else showToast('Nothing to undo');
