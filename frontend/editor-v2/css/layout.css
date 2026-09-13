@@ -45,3 +45,29 @@ details.panel-accordion.is-flash .accordion-body{animation:ic-flash 1.1s var(--e
 .tool-button.is-disabled:hover,.button.is-disabled:hover,.bottom-link.is-disabled:hover,.list-action.is-disabled:hover{background:transparent;color:var(--muted)}
 .canvas-zone.is-drop-target{outline:3px dashed var(--accent);outline-offset:-10px}
 .canvas-zone.is-drop-target::after{content:"Drop your image to start";position:absolute;inset:0;display:grid;place-items:center;background:color-mix(in srgb,var(--accent-wash) 78%,transparent);color:var(--accent-strong);font-size:15px;font-weight:750;letter-spacing:.02em;z-index:7;pointer-events:none}
+
+/* Phase 3: real layers and object properties. */
+.layer-row{display:flex;align-items:center;gap:5px;padding:5px 6px;border:1px solid transparent;border-radius:8px;cursor:pointer}
+.layer-row:hover{background:var(--surface-muted)}
+.layer-row.is-selected{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 25%,transparent)}
+.layer-row.is-drop-before{box-shadow:0 -2px 0 var(--accent)}
+.layer-vis,.layer-lock,.layer-more{background:none;border:0;color:var(--muted);font-size:12px;padding:3px;cursor:pointer}
+.layer-vis:hover,.layer-lock:hover,.layer-more:hover{color:var(--accent-strong)}
+.layer-thumb{width:22px;height:22px;border-radius:6px;background:var(--surface-muted);display:grid;place-items:center;color:var(--accent);font-size:12px;flex:0 0 auto}
+.layer-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;font-weight:650}
+.layer-type{font-size:8px;color:var(--muted-2);flex:0 0 auto}
+.layer-rename{width:100%;font-size:10px;padding:3px 5px;border:1px solid var(--accent);border-radius:6px;background:var(--surface);color:var(--text)}
+.layer-menu{position:fixed;z-index:40;display:flex;flex-direction:column;min-width:140px;padding:5px;border:1px solid var(--line);border-radius:10px;background:var(--surface);box-shadow:var(--shadow)}
+.layer-menu button{background:none;border:0;text-align:left;padding:7px 10px;font-size:11px;border-radius:7px;color:var(--text)}
+.layer-menu button:hover{background:var(--surface-muted)}
+.layer-menu .danger{color:#c0392b}
+.layer-add-row{display:flex;gap:6px;margin-bottom:12px}
+.layer-add-row .button{flex:1;padding:7px 4px;font-size:10px}
+.obj-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:11px}
+.obj-grid label{display:flex;flex-direction:column;gap:4px;font-size:9px;color:var(--muted);font-weight:700}
+.obj-grid input{padding:7px;border:1px solid var(--line-strong);border-radius:7px;background:var(--surface-soft);color:var(--text);font-size:12px;width:100%}
+.obj-actions{display:flex;gap:6px;margin-top:12px}
+.obj-actions .button{flex:1}
+.property-field select,.property-field input[type=number],.property-field input[type=text]{padding:8px;border:1px solid var(--line-strong);border-radius:7px;background:var(--surface-soft);color:var(--text);font-size:12px;width:100%}
+#object-properties{border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:6px}
+.button.danger{color:#c0392b}

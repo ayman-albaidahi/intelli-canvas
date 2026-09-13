@@ -23,14 +23,29 @@ const apiClient = new ApiClient();
 bindTransformTools(canvasManager, showToast);
 const cropTool = new CropTool(canvasManager, document.querySelector('#canvas-card'), showToast);
 initResizeTool(canvasManager, showToast);
-const layerManager = new LayerManager({ list: document.querySelector('#layers-list'), empty: document.querySelector('#layers-empty'), count: document.querySelector('#layer-count'), showToast });
-const objectManager = new ObjectManager(document.querySelector('#object-canvas'), layerManager, showToast);
+const objectManager = new ObjectManager(document.querySelector('#object-canvas'), showToast);
+window.__om = objectManager;
+const layerManager = new LayerManager(objectManager, { list: document.querySelector('#layers-list'), empty: document.querySelector('#layers-empty'), count: document.querySelector('#layer-count'), showToast });
 new ComparisonTool(canvasManager, showToast);
 new AdjustmentsManager({ canvasManager, apiClient, showToast });
-document.querySelectorAll('[data-tool="brush"], [data-tool="eraser"], [data-tool="shape"], [data-tool="text"]').forEach((button) => button.addEventListener('click', () => objectManager.pointerDownConfigure()));
 objectManager.setInteractive(true);
 document.addEventListener('appstatechange', ({ detail }) => objectManager.setInteractive(['select', 'brush', 'eraser', 'shape', 'text'].includes(detail.activeTool)));
-document.querySelectorAll('[data-action="add-layer"]').forEach((button) => button.addEventListener('click', () => { layerManager.add('shape'); showToast('Empty layer added'); }));
+document.querySelectorAll('[data-action="add-layer"]').forEach((button) => button.remove());
+document.querySelector('[data-action="add-image-layer"]')?.addEventListener('click', () => document.querySelector('#layer-image-input').click());
+document.querySelector('[data-action="add-shape-layer"]')?.addEventListener('click', () => { document.querySelector('[data-tool="shape"]').click(); showToast('Drag on the canvas to draw the shape'); });
+document.querySelector('[data-action="add-text-layer"]')?.addEventListener('click', () => { document.querySelector('[data-tool="text"]').click(); showToast('Click on the canvas to place the text'); });
+document.querySelector('#layer-image-input')?.addEventListener('change', ({ target }) => {
+  const file = target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.addEventListener('load', () => {
+    const img = new Image();
+    img.addEventListener('load', () => objectManager.addImageLayer(img, file.name));
+    img.src = reader.result;
+  });
+  reader.readAsDataURL(file);
+  target.value = '';
+});
 document.querySelector('#crop-overlay').addEventListener('pointerdown', (event) => cropTool.onPointerDown(event));
 document.querySelector('#crop-overlay').addEventListener('pointermove', (event) => cropTool.onPointerMove(event));
 document.querySelector('#crop-overlay').addEventListener('pointerup', () => cropTool.stopDrag());
@@ -57,7 +72,6 @@ async function uploadImageFile(file) {
   try {
     const image = await apiClient.upload(file);
     await canvasManager.loadFromUrl(apiClient.contentUrl(image.image_id), image);
-    layerManager.addImage(image.original_filename);
     emptyCanvas.hidden = true;
     mockArtboard.hidden = true;
     document.querySelector('#document-name').textContent = image.original_filename;
