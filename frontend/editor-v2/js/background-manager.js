@@ -128,8 +128,9 @@ export class BackgroundManager {
     try {
       const backgrounds = await this.apiClient.listBackgrounds();
       if (!this.controls.library) return;
+      const escapeHtml = (value) => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       this.controls.library.innerHTML = '<option value="">— choose background —</option>'
-        + backgrounds.map((name) => `<option value="${name}">${name}</option>`).join('');
+        + backgrounds.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
     } catch {
       /* library stays empty when the API is offline */
     }

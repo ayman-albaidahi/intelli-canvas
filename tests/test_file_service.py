@@ -1,7 +1,9 @@
 import io
+
 from pathlib import Path
 
 import pytest
+from PIL import Image
 
 from backend.app.services.file_service import FileStorageService, FileValidationError
 
@@ -11,22 +13,42 @@ def storage_service(tmp_path):
     return FileStorageService(storage_root=tmp_path / "storage", max_file_size=10 * 1024 * 1024)
 
 
+def _png_bytes(color=(200, 100, 50), size=(2, 2)):
+    image = Image.new("RGB", size, color)
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
 @pytest.mark.parametrize("filename", ["test.png", "photo.jpg", "image.jpeg", "sample.webp", "image.bmp"])
 def test_valid_image_extensions_are_accepted(storage_service, filename):
-    file_obj = io.BytesIO(b"fake-image-content")
+    file_obj = io.BytesIO(_png_bytes())
 
     storage_service.validate_file(file_obj, filename)
 
 
+def test_non_image_content_is_rejected_even_with_image_extension(storage_service):
+    file_obj = io.BytesIO(b"this is definitely not an image payload")
+
+    with pytest.raises(FileValidationError):
+        storage_service.validate_file(file_obj, "innocent.png")
+
+
+def test_valid_png_content_is_accepted_with_any_supported_extension(storage_service):
+    file_obj = io.BytesIO(_png_bytes())
+
+    storage_service.validate_file(file_obj, "renamed.jpg")
+
+
 def test_unsupported_extension_is_rejected(storage_service):
-    file_obj = io.BytesIO(b"fake-image-content")
+    file_obj = io.BytesIO(_png_bytes())
 
     with pytest.raises(FileValidationError):
         storage_service.validate_file(file_obj, "document.txt")
 
 
 def test_invalid_mime_type_is_rejected(storage_service):
-    file_obj = io.BytesIO(b"fake-image-content")
+    file_obj = io.BytesIO(_png_bytes())
     file_obj.content_type = "text/plain"
 
     with pytest.raises(FileValidationError):
@@ -75,7 +97,7 @@ def test_path_traversal_is_blocked(storage_service):
 
 
 def test_valid_file_is_saved_to_expected_directory(storage_service):
-    file_obj = io.BytesIO(b"PNGDATA")
+    file_obj = io.BytesIO(_png_bytes())
     saved_path = storage_service.save_file(file_obj, "example.png")
 
     assert saved_path.parent == storage_service.uploads_dir
@@ -84,8 +106,8 @@ def test_valid_file_is_saved_to_expected_directory(storage_service):
 
 
 def test_generated_filename_does_not_overwrite_existing_file(storage_service):
-    first = io.BytesIO(b"first")
-    second = io.BytesIO(b"second")
+    first = io.BytesIO(_png_bytes())
+    second = io.BytesIO(_png_bytes())
 
     first_path = storage_service.save_file(first, "duplicate.png")
     second_path = storage_service.save_file(second, "duplicate.png")

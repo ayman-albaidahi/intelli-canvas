@@ -192,13 +192,19 @@ def export_image():
     height = payload.get("height")
     for dimension, value in (("width", width), ("height", height)):
         if value is not None and (
-            isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 20000
+            isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 8000
         ):
             return _error_response(
                 "INVALID_DIMENSIONS",
-                f"{dimension.capitalize()} must be an integer from 1 to 20000.",
+                f"{dimension.capitalize()} must be an integer from 1 to 8000.",
                 400,
             )
+    if width and height and width * height > 24_000_000:
+        return _error_response(
+            "INVALID_DIMENSIONS",
+            "The export area is too large (max 24 megapixels).",
+            400,
+        )
 
     try:
         result = ImageIOService(
