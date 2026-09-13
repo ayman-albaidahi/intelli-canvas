@@ -53,16 +53,41 @@ export class ApiClient {
     return payload.image;
   }
 
-  async export(format = 'png') {
+  async export(format, quality = null, width = null, height = null) {
     if (!this.imageId) throw new Error('Upload an image before exporting it.');
     let response;
     try {
-      response = await fetch(`${this.baseUrl}/images/export`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, format }) });
+      response = await fetch(`${this.baseUrl}/images/export`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, format, quality, width, height }) });
     } catch {
       throw new Error(OFFLINE_MESSAGE);
     }
     if (!response.ok) throw new Error('The image could not be exported.');
     return response.blob();
+  }
+
+  async history(imageId = this.imageId) {
+    const payload = await request(`${this.baseUrl}/history?image_id=${encodeURIComponent(imageId)}`);
+    return payload.image;
+  }
+
+  async gotoHistory(imageId, index) {
+    const payload = await request(`${this.baseUrl}/history/goto`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, index }) });
+    return payload.image;
+  }
+
+  async undoHistory(imageId = this.imageId) {
+    const payload = await request(`${this.baseUrl}/history/undo`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId }) });
+    return payload.image;
+  }
+
+  async redoHistory(imageId = this.imageId) {
+    const payload = await request(`${this.baseUrl}/history/redo`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId }) });
+    return payload.image;
+  }
+
+  async clearHistory(imageId = this.imageId) {
+    const payload = await request(`${this.baseUrl}/history/clear`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId }) });
+    return payload.image;
   }
 
   async maskPreview(params) {

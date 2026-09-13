@@ -27,7 +27,15 @@ class ImageIOService:
         self.session_service = session_service
         self.storage_service = storage_service or FileStorageService()
 
-    def convert(self, image_id: str, target_format: str) -> dict[str, Any]:
+    def convert(
+        self,
+        image_id: str,
+        target_format: str,
+        *,
+        quality: int | None = None,
+        width: int | None = None,
+        height: int | None = None,
+    ) -> dict[str, Any]:
         export_format = SUPPORTED_EXPORT_FORMATS.get(target_format.lower())
         if export_format is None:
             raise ValueError("Unsupported export format.")
@@ -45,13 +53,28 @@ class ImageIOService:
 
         try:
             with Image.open(source_path) as source:
-                image = (
-                    source.convert("RGB")
-                    if pillow_format == "JPEG"
-                    else source.copy()
-                )
+                if pillow_format == "JPEG":
+                    if source.mode in ("RGBA", "LA", "P"):
+                        flattened = Image.new("RGB", source.size, (255, 255, 255))
+                        flattened.paste(source.convert("RGBA"), (0, 0), source.convert("RGBA").split()[-1])
+                        image = flattened
+                    else:
+                        image = source.convert("RGB")
+                else:
+                    image = source.copy()
+                if width or height:
+                    if width and height:
+                        target = (width, height)
+                    elif width:
+                        target = (width, max(1, round(image.height * width / image.width)))
+                    else:
+                        target = (max(1, round(image.width * height / image.height)), height)
+                    image = image.resize(target, Image.Resampling.LANCZOS)
                 try:
-                    image.save(output_path, format=pillow_format)
+                    save_kwargs: dict[str, Any] = {}
+                    if pillow_format in ("JPEG", "WEBP") and quality is not None:
+                        save_kwargs["quality"] = quality
+                    image.save(output_path, format=pillow_format, **save_kwargs)
                 finally:
                     image.close()
         except Exception:

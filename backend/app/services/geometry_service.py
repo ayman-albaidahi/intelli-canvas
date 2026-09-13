@@ -43,6 +43,7 @@ class GeometryService:
             self._output_base_name(session, input_path),
             directory=self.storage_service.processed_dir,
         )
+        label_Resize = f"Resize {output_width}x{output_height}"
         output_path = self.storage_service.processed_dir / output_name
 
         try:
@@ -63,7 +64,8 @@ class GeometryService:
             raise
 
         self.session_service.update_current_image(
-            image_id, output_path.name, storage="processed"
+            image_id, output_path.name, storage="processed",
+            operation=label_Resize,
         )
         return {
             "image_id": image_id,
@@ -77,6 +79,7 @@ class GeometryService:
         if angle not in {90, -90, 180}:
             raise ValueError("Rotation angle must be 90, -90, or 180 degrees.")
 
+        label_Rotate = f"Rotate {angle}"
         image, session, output_path = self._prepare_transform(image_id)
         try:
             transpose = {
@@ -98,7 +101,8 @@ class GeometryService:
             image.close()
 
         self.session_service.update_current_image(
-            image_id, output_path.name, storage="processed"
+            image_id, output_path.name, storage="processed",
+            operation=label_Rotate,
         )
         return self._transform_metadata(image_id, session, output_path, dimensions)
 
@@ -106,6 +110,7 @@ class GeometryService:
         if direction not in {"horizontal", "vertical"}:
             raise ValueError("Flip direction must be horizontal or vertical.")
 
+        label_Flip = f"Flip {direction}"
         image, session, output_path = self._prepare_transform(image_id)
         try:
             transpose = (
@@ -127,7 +132,8 @@ class GeometryService:
             image.close()
 
         self.session_service.update_current_image(
-            image_id, output_path.name, storage="processed"
+            image_id, output_path.name, storage="processed",
+            operation=label_Flip,
         )
         return self._transform_metadata(image_id, session, output_path, dimensions)
 

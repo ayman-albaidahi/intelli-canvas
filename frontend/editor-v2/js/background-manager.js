@@ -111,6 +111,7 @@ export class BackgroundManager {
         : await this.apiClient.replaceBackground(payload);
       this.canvasManager.setMaskOverlay(null);
       await this.canvasManager.loadFromUrl(this.apiClient.contentUrl(image.image_id), image);
+      document.dispatchEvent(new CustomEvent('ic-operation'));
       this.controls.status.textContent = operation === 'remove'
         ? 'Background removed by Python'
         : 'Background replaced by Python';
