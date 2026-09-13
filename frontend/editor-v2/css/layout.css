@@ -71,3 +71,7 @@ details.panel-accordion.is-flash .accordion-body{animation:ic-flash 1.1s var(--e
 .property-field select,.property-field input[type=number],.property-field input[type=text]{padding:8px;border:1px solid var(--line-strong);border-radius:7px;background:var(--surface-soft);color:var(--text);font-size:12px;width:100%}
 #object-properties{border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:6px}
 .button.danger{color:#c0392b}
+
+/* Background studio. */
+.bg-row{display:flex;gap:6px;margin-bottom:12px}
+.bg-row .button{flex:1;padding:8px 4px;font-size:10px}
