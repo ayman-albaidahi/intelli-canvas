@@ -50,9 +50,17 @@ def create_app() -> Flask:
         response.headers.setdefault("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         return response
 
+    @app.after_request
+    def add_security_headers(response):
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        return response
+
     @app.get("/")
     def frontend_index():
-        return app.send_static_file("index.html")
+        # The legacy root frontend is retired; the editor is the product.
+        return app.send_static_file("editor-v2/index.html")
 
     @app.get("/editor-v2/")
     def editor_v2_index():

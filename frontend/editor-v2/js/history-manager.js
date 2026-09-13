@@ -1,3 +1,5 @@
+import { escapeHtml } from './escape-html.js';
+
 export class HistoryManager {
   constructor({ canvasManager, apiClient, showToast }) {
     this.canvasManager = canvasManager;
@@ -94,7 +96,7 @@ export class HistoryManager {
       row.type = 'button';
       row.className = 'history-row' + (entry.current ? ' is-current' : '');
       row.dataset.index = entry.index;
-      row.innerHTML = `<span class="history-marker">${entry.current ? '●' : '○'}</span><span class="history-name">${entry.operation}</span><span class="history-time">${new Date(entry.time * 1000).toLocaleTimeString()}</span>`;
+      row.innerHTML = `<span class="history-marker">${entry.current ? '●' : '○'}</span><span class="history-name">${escapeHtml(entry.operation)}</span><span class="history-time">${new Date(entry.time * 1000).toLocaleTimeString()}</span>`;
       this.list.appendChild(row);
     });
     if (this.undoButton) this.undoButton.disabled = !state.entries?.length || state.index === 0;

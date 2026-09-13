@@ -18,6 +18,20 @@ SUPPORTED_MIME_TYPES = {
 }
 
 
+def _sniff_image_format(head: bytes) -> str | None:
+    """Content sniffing by magic bytes — a declared MIME type is client
+    controlled and cannot be trusted."""
+    if head.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if head.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if head.startswith(b"BM"):
+        return "image/bmp"
+    if head[:4] == b"RIFF" and head[8:12] == b"WEBP":
+        return "image/webp"
+    return None
+
+
 class FileValidationError(ValueError):
     """Raised when a file fails backend validation."""
 
@@ -83,6 +97,12 @@ class FileStorageService:
             raise FileValidationError("File is empty.")
         if size > max_size:
             raise FileValidationError("File exceeds the allowed size.")
+
+        file_obj.seek(position)
+        head = file_obj.read(16)
+        file_obj.seek(position)
+        if _sniff_image_format(head) is None:
+            raise FileValidationError("File content is not a valid image.")
 
         mime_type = self._detect_mime_type(file_obj, filename)
         if mime_type not in SUPPORTED_MIME_TYPES:

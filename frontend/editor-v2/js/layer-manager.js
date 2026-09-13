@@ -1,4 +1,5 @@
 import { TYPE_GLYPH, TYPE_LABEL, BLEND_MODES } from './object-manager.js';
+import { escapeHtml } from './escape-html.js';
 
 export class LayerManager {
   constructor(objectManager, { list, empty, count, showToast }) {
@@ -50,7 +51,7 @@ export class LayerManager {
     row.innerHTML = `
       <button class="layer-vis" title="Show / hide">${object.visible ? '👁' : '🚫'}</button>
       <span class="layer-thumb" title="${TYPE_LABEL[object.type]}">${TYPE_GLYPH[object.type]}</span>
-      <span class="layer-name" title="Double-click to rename">${object.name}</span>
+      <span class="layer-name" title="Double-click to rename">${escapeHtml(object.name)}</span>
       <span class="layer-type">${TYPE_LABEL[object.type]}${object.locked ? ' · 🔒' : ''}</span>
       <button class="layer-lock" title="Lock / unlock">${object.locked ? '🔒' : '🔓'}</button>
       <button class="layer-more" title="More actions">⋯</button>`;
