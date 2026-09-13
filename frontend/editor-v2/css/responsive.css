@@ -61,3 +61,10 @@
   background:transparent;
 }
 .canvas-card .empty-canvas{background:transparent}
+/* Anchor the shell to the REAL window height: with fractional Windows display
+   scaling, 100vh can overshoot the visible area by a few pixels and push the
+   statusbar/toolbar under the taskbar. Percentage heights track the actual
+   viewport exactly. */
+html{height:100%}
+body{height:100%;overflow:hidden}
+.app-shell{height:100%;max-height:100%}
