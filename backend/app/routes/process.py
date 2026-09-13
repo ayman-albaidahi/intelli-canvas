@@ -124,3 +124,17 @@ def adjust_saturation():
     except (OSError, ValueError):
         return _error_response("SATURATION_FAILED", "The image saturation could not be adjusted.", 400)
     return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})
+
+
+@process_bp.post("/negative")
+def invert_image():
+    image_id, error = _image_id_from_payload()
+    if error:
+        return error
+    try:
+        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], FileStorageService()).negative(image_id)
+    except (FileNotFoundError, FileValidationError) as exc:
+        return _error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError):
+        return _error_response("NEGATIVE_FAILED", "The image could not be inverted.", 400)
+    return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})
