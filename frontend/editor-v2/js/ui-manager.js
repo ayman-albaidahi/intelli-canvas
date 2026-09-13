@@ -3,6 +3,8 @@ import { appState, setState } from './app-state.js';
 const toast = document.querySelector('#toast');
 let toastTimer;
 
+const READY_PANELS = new Set(['adjustments']);
+
 export function initUI() {
   document.querySelectorAll('[data-tool]').forEach((button) => {
     button.addEventListener('click', () => {
@@ -18,13 +20,40 @@ export function initUI() {
   });
 
   document.querySelectorAll('[data-panel]').forEach((button) => {
-    button.addEventListener('click', () => showToast(`${label(button.dataset.panel)} panel is ready for the next stage`));
+    const panel = button.dataset.panel;
+    if (READY_PANELS.has(panel)) {
+      button.addEventListener('click', () => focusPanel(panel));
+    } else {
+      button.classList.add('is-disabled');
+      button.setAttribute('aria-disabled', 'true');
+      button.title = 'Arrives in a later stage';
+      button.addEventListener('click', () => showToast(`${label(panel)} arrives in a later stage`));
+    }
   });
 
-  document.querySelector('[data-action="compare"]')?.addEventListener('click', () => showToast('Live comparison will be connected in the comparison stage'));
-  document.querySelector('[data-action="export"]')?.addEventListener('click', () => showToast('Export is ready for the image pipeline stage'));
-  document.querySelector('[data-action="new"]')?.addEventListener('click', () => showToast('New project workspace is ready'));
+  markNotReady('[data-action="export"]', 'Export');
+  markNotReady('[data-action="new"]', 'New project');
   document.querySelector('[data-action="add-layer"]')?.addEventListener('click', () => showToast('Layer creation will be enabled in the layers stage'));
+}
+
+function markNotReady(selector, name) {
+  const button = document.querySelector(selector);
+  if (!button) return;
+  button.classList.add('is-disabled');
+  button.setAttribute('aria-disabled', 'true');
+  button.title = `${name} arrives in a later stage`;
+}
+
+function focusPanel(panel) {
+  switchInspector('properties');
+  const section = document.querySelector(`#${panel}-accordion`);
+  if (!section) return;
+  section.open = true;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  section.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' });
+  section.classList.remove('is-flash');
+  void section.offsetWidth;
+  section.classList.add('is-flash');
 }
 
 export function switchInspector(name) {

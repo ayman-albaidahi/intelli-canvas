@@ -34,8 +34,11 @@ class ImageIOService:
 
         source_path, session = self._resolve_source(image_id)
         pillow_format, extension, mime_type = export_format
+        base_stem = session.get("base_stem")
+        if not isinstance(base_stem, str) or not base_stem:
+            base_stem = source_path.stem
         output_name = self.storage_service.generate_safe_filename(
-            f"{source_path.stem}{extension}",
+            f"{base_stem}{extension}",
             directory=self.storage_service.processed_dir,
         )
         output_path = self.storage_service.processed_dir / output_name

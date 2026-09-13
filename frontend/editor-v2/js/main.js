@@ -14,7 +14,6 @@ import { ApiClient } from './api-client.js';
 initThemeManager();
 initUI();
 
-const zoomValue = document.querySelector('#zoom-value');
 const fileInput = document.querySelector('#file-input');
 const emptyCanvas = document.querySelector('#empty-canvas');
 const mockArtboard = document.querySelector('#mock-artboard');
@@ -24,175 +23,100 @@ const apiClient = new ApiClient();
 bindTransformTools(canvasManager, showToast);
 const cropTool = new CropTool(canvasManager, document.querySelector('#canvas-card'), showToast);
 initResizeTool(canvasManager, showToast);
-const layerManager = new LayerManager({ list: document.querySelector('#layers-list'), empty: document.querySelector('#layers-empty'), count: document.querySelector('#layer-count'), showToast });
-const objectManager = new ObjectManager(document.querySelector('#object-canvas'), layerManager, showToast);
+const objectManager = new ObjectManager(document.querySelector('#object-canvas'), showToast);
+window.__om = objectManager;
+const layerManager = new LayerManager(objectManager, { list: document.querySelector('#layers-list'), empty: document.querySelector('#layers-empty'), count: document.querySelector('#layer-count'), showToast });
 new ComparisonTool(canvasManager, showToast);
-new AdjustmentsManager(canvasManager, showToast);
-document.querySelectorAll('[data-tool="brush"], [data-tool="eraser"], [data-tool="shape"], [data-tool="text"]').forEach((button) => button.addEventListener('click', () => objectManager.pointerDownConfigure()));
+new AdjustmentsManager({ canvasManager, apiClient, showToast });
 objectManager.setInteractive(true);
 document.addEventListener('appstatechange', ({ detail }) => objectManager.setInteractive(['select', 'brush', 'eraser', 'shape', 'text'].includes(detail.activeTool)));
-document.querySelectorAll('[data-action="add-layer"]').forEach((button) => button.addEventListener('click', () => { layerManager.add('shape'); showToast('Empty layer added'); }));
+document.querySelectorAll('[data-action="add-layer"]').forEach((button) => button.remove());
+document.querySelector('[data-action="add-image-layer"]')?.addEventListener('click', () => document.querySelector('#layer-image-input').click());
+document.querySelector('[data-action="add-shape-layer"]')?.addEventListener('click', () => { document.querySelector('[data-tool="shape"]').click(); showToast('Drag on the canvas to draw the shape'); });
+document.querySelector('[data-action="add-text-layer"]')?.addEventListener('click', () => { document.querySelector('[data-tool="text"]').click(); showToast('Click on the canvas to place the text'); });
+document.querySelector('#layer-image-input')?.addEventListener('change', ({ target }) => {
+  const file = target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.addEventListener('load', () => {
+    const img = new Image();
+    img.addEventListener('load', () => objectManager.addImageLayer(img, file.name));
+    img.src = reader.result;
+  });
+  reader.readAsDataURL(file);
+  target.value = '';
+});
 document.querySelector('#crop-overlay').addEventListener('pointerdown', (event) => cropTool.onPointerDown(event));
 document.querySelector('#crop-overlay').addEventListener('pointermove', (event) => cropTool.onPointerMove(event));
 document.querySelector('#crop-overlay').addEventListener('pointerup', () => cropTool.stopDrag());
 
+const canvasViewActions = {
+  'zoom-in': () => canvasManager.zoomStep(10),
+  'zoom-out': () => canvasManager.zoomStep(-10),
+  'zoom-reset': () => canvasManager.setHundredPercent(),
+  'zoom-100': () => canvasManager.setHundredPercent(),
+  'zoom-actual': () => canvasManager.setActualPixels(),
+  'fit': () => { canvasManager.fit(); showToast('Canvas fitted to workspace'); },
+  'fit-width': () => { canvasManager.fitWidth(); showToast('Canvas fitted to width'); },
+  'fullscreen': () => canvasManager.toggleFullscreen(),
+  'open': () => fileInput.click(),
+};
 for (const button of document.querySelectorAll('[data-action]')) {
-  if (button.dataset.action === 'zoom-in') button.addEventListener('click', () => canvasManager.setZoom(10));
-  if (button.dataset.action === 'zoom-out') button.addEventListener('click', () => canvasManager.setZoom(-10));
-  if (button.dataset.action === 'fit') button.addEventListener('click', () => { canvasManager.fit(); showToast('Canvas fitted to workspace'); });
-  if (button.dataset.action === 'open') button.addEventListener('click', () => fileInput.click());
+  const action = canvasViewActions[button.dataset.action];
+  if (action) button.addEventListener('click', action);
 }
 
-fileInput.addEventListener('change', async ({ target }) => {
-  const file = target.files?.[0];
-  if (!file) return;
+async function uploadImageFile(file) {
   statusMessage.textContent = 'Uploading image…';
   showToast('Uploading image to IntelliCanvas API…');
   try {
     const image = await apiClient.upload(file);
     await canvasManager.loadFromUrl(apiClient.contentUrl(image.image_id), image);
-    layerManager.addImage(image.original_filename);
     emptyCanvas.hidden = true;
     mockArtboard.hidden = true;
     document.querySelector('#document-name').textContent = image.original_filename;
+    document.querySelector('#canvas-size').textContent = `${image.width ?? canvasManager.getSourceDimensions().width} × ${image.height ?? canvasManager.getSourceDimensions().height}`;
     document.querySelector('#save-state').textContent = 'Saved in API session';
     statusMessage.textContent = 'Image loaded — backend session ready';
     showToast(`${image.original_filename} uploaded successfully`);
   } catch (error) {
-    statusMessage.textContent = 'Upload failed';
+    statusMessage.textContent = error.message.startsWith('Could not reach') ? 'Backend offline' : 'Upload failed';
     showToast(error.message);
-  } finally {
-    target.value = '';
   }
+}
+
+fileInput.addEventListener('change', ({ target }) => {
+  const file = target.files?.[0];
+  if (!file) return;
+  uploadImageFile(file);
+  target.value = '';
 });
 
-document.querySelector('[data-action="process-grayscale"]')?.addEventListener('click', async (event) => {
-  const button = event.currentTarget;
-  if (!apiClient.imageId) return showToast('Upload an image before processing it');
-  button.disabled = true;
-  statusMessage.textContent = 'Python is processing grayscale…';
-  showToast('Sending grayscale operation to Python…');
-  try {
-    const result = await apiClient.process('grayscale');
-    await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
-    document.querySelector('#save-state').textContent = 'Processed by Python';
-    statusMessage.textContent = 'Grayscale processed by Python';
-    showToast('Grayscale completed by Python');
-  } catch (error) {
-    statusMessage.textContent = 'Python processing failed';
-    showToast(error.message);
-  } finally {
-    button.disabled = false;
-  }
+const canvasZone = document.querySelector('#canvas-zone');
+['dragenter', 'dragover'].forEach((type) => canvasZone.addEventListener(type, (event) => {
+  event.preventDefault();
+  canvasZone.classList.add('is-drop-target');
+}));
+canvasZone.addEventListener('dragleave', (event) => {
+  if (event.target === canvasZone) canvasZone.classList.remove('is-drop-target');
 });
-
-document.querySelector('[data-action="process-brightness"]')?.addEventListener('click', async (event) => {
-  const button = event.currentTarget;
-  if (!apiClient.imageId) return showToast('Upload an image before processing it');
-  const value = Number(document.querySelector('[data-adjustment="brightness"]')?.value || 100);
-  button.disabled = true;
-  statusMessage.textContent = 'Python is processing brightness…';
-  showToast(`Sending brightness ${value}% to Python…`);
-  try {
-    const result = await apiClient.process('brightness', { value });
-    await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
-    document.querySelector('#save-state').textContent = 'Processed by Python';
-    statusMessage.textContent = `Brightness ${value}% processed by Python`;
-    showToast('Brightness completed by Python');
-  } catch (error) {
-    statusMessage.textContent = 'Python brightness processing failed';
-    showToast(error.message);
-  } finally {
-    button.disabled = false;
-  }
-});
-
-document.querySelector('[data-action="process-contrast"]')?.addEventListener('click', async (event) => {
-  const button = event.currentTarget;
-  if (!apiClient.imageId) return showToast('Upload an image before processing it');
-  const value = Number(document.querySelector('[data-adjustment="contrast"]')?.value || 100);
-  button.disabled = true;
-  statusMessage.textContent = 'Python is processing contrast…';
-  showToast(`Sending contrast ${value}% to Python…`);
-  try {
-    const result = await apiClient.process('contrast', { value });
-    await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
-    document.querySelector('#save-state').textContent = 'Processed by Python';
-    statusMessage.textContent = `Contrast ${value}% processed by Python`;
-    showToast('Contrast completed by Python');
-  } catch (error) {
-    statusMessage.textContent = 'Python contrast processing failed';
-    showToast(error.message);
-  } finally {
-    button.disabled = false;
-  }
-});
-
-document.querySelector('[data-action="process-blur"]')?.addEventListener('click', async (event) => {
-  const button = event.currentTarget;
-  if (!apiClient.imageId) return showToast('Upload an image before processing it');
-  const value = Number(document.querySelector('[data-adjustment="blur"]')?.value || 0);
-  button.disabled = true;
-  statusMessage.textContent = 'Python is processing blur…';
-  showToast(`Sending blur ${value}px to Python…`);
-  try {
-    const result = await apiClient.process('blur', { value });
-    await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
-    document.querySelector('#save-state').textContent = 'Processed by Python';
-    statusMessage.textContent = `Blur ${value}px processed by Python`;
-    showToast('Blur completed by Python');
-  } catch (error) {
-    statusMessage.textContent = 'Python blur processing failed';
-    showToast(error.message);
-  } finally {
-    button.disabled = false;
-  }
-});
-
-document.querySelector('[data-action="process-sharpen"]')?.addEventListener('click', async (event) => {
-  const button = event.currentTarget;
-  if (!apiClient.imageId) return showToast('Upload an image before processing it');
-  const value = Number(document.querySelector('[data-adjustment="sharpen"]')?.value || 0);
-  button.disabled = true;
-  statusMessage.textContent = 'Python is processing sharpen…';
-  showToast(`Sending sharpen ${value}/5 to Python…`);
-  try {
-    const result = await apiClient.process('sharpen', { value });
-    await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
-    document.querySelector('#save-state').textContent = 'Processed by Python';
-    statusMessage.textContent = `Sharpen ${value}/5 processed by Python`;
-    showToast('Sharpen completed by Python');
-  } catch (error) {
-    statusMessage.textContent = 'Python sharpen processing failed';
-    showToast(error.message);
-  } finally {
-    button.disabled = false;
-  }
-});
-
-document.querySelector('[data-action="process-saturation"]')?.addEventListener('click', async (event) => {
-  const button = event.currentTarget;
-  if (!apiClient.imageId) return showToast('Upload an image before processing it');
-  const value = Number(document.querySelector('[data-adjustment="saturation"]')?.value || 100);
-  button.disabled = true;
-  statusMessage.textContent = 'Python is processing color saturation…';
-  showToast(`Sending saturation ${value}% to Python…`);
-  try {
-    const result = await apiClient.process('saturation', { value });
-    await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
-    document.querySelector('#save-state').textContent = 'Processed by Python';
-    statusMessage.textContent = `Saturation ${value}% processed by Python`;
-    showToast('Color saturation completed by Python');
-  } catch (error) {
-    statusMessage.textContent = 'Python saturation processing failed';
-    showToast(error.message);
-  } finally {
-    button.disabled = false;
-  }
+canvasZone.addEventListener('drop', (event) => {
+  event.preventDefault();
+  canvasZone.classList.remove('is-drop-target');
+  const file = event.dataTransfer?.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) return showToast('Drop an image file (PNG, JPG, WEBP or BMP)');
+  uploadImageFile(file);
 });
 
 document.addEventListener('keydown', (event) => {
+  const target = event.target;
+  if (target instanceof HTMLElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'o') { event.preventDefault(); fileInput.click(); }
+  if (event.key === '+' || event.key === '=') canvasManager.zoomStep(10);
+  if (event.key === '-' || event.key === '_') canvasManager.zoomStep(-10);
+  if (event.key === '0') { canvasManager.fit(); showToast('Canvas fitted to workspace'); }
+  if (event.key === '1') canvasManager.setHundredPercent();
   if (event.key.toLowerCase() === 'b') document.querySelector('[data-tool="brush"]')?.click();
   if (event.key.toLowerCase() === 'v') document.querySelector('[data-tool="select"]')?.click();
   if (event.key.toLowerCase() === 'c') document.querySelector('[data-tool="crop"]')?.click();
@@ -202,6 +126,12 @@ function updateZoom(delta) {
   canvasManager.setZoom(delta);
 }
 
-function renderZoom() { zoomValue.textContent = `${appState.zoom}%`; }
-document.addEventListener('appstatechange', renderZoom);
+function renderZoom() {
+  document.querySelectorAll('[data-zoom-display]').forEach((element) => { element.textContent = `${appState.zoom}%`; });
+}
+document.addEventListener('appstatechange', ({ detail }) => {
+  document.body.dataset.activeTool = detail.activeTool || 'select';
+  renderZoom();
+});
+document.body.dataset.activeTool = appState.activeTool;
 renderZoom();

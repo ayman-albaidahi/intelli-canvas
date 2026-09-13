@@ -2,10 +2,25 @@ const detectedApiHost = window.location.hostname || 'localhost';
 const detectedApiBase = window.location.port === '5000' ? `${window.location.origin}/api` : `http://${detectedApiHost}:5000/api`;
 const API_BASE = window.INTELLICANVAS_API_BASE || detectedApiBase;
 
-async function parseResponse(response) {
+const OFFLINE_MESSAGE = 'Could not reach the Python server. Start Flask with: python backend/run.py';
+
+function friendlyMessage(payload, status) {
+  const code = payload.error?.code;
+  if (code === 'IMAGE_SESSION_NOT_FOUND') return 'Your editing session expired — upload the image again.';
+  if (code === 'IMAGE_NOT_AVAILABLE') return 'The processed image is no longer available — try the operation again.';
+  return payload.error?.message || `Request failed (${status}). Is the Python server running?`;
+}
+
+async function request(url, options = {}) {
+  let response;
+  try {
+    response = await fetch(url, options);
+  } catch {
+    throw new Error(OFFLINE_MESSAGE);
+  }
   const payload = await response.json().catch(() => ({}));
   if (!response.ok || payload.success === false) {
-    throw new Error(payload.error?.message || `Request failed (${response.status})`);
+    throw new Error(friendlyMessage(payload, response.status));
   }
   return payload;
 }
@@ -15,28 +30,37 @@ export class ApiClient {
 
   async upload(file) {
     const body = new FormData(); body.append('file', file);
-    const payload = await parseResponse(await fetch(`${this.baseUrl}/images`, { method: 'POST', body }));
+    const payload = await request(`${this.baseUrl}/images`, { method: 'POST', body });
     this.imageId = payload.image.image_id;
     return payload.image;
   }
 
-  contentUrl(imageId = this.imageId) { return `${this.baseUrl}/images/${encodeURIComponent(imageId)}/content`; }
+  contentUrl(imageId = this.imageId) {
+    // The content endpoint URL is stable across operations while the bytes
+    // change after every Python bake — bust the cache on every load.
+    return `${this.baseUrl}/images/${encodeURIComponent(imageId)}/content?t=${Date.now()}`;
+  }
 
   async transform(path, data = {}) {
     if (!this.imageId) throw new Error('Upload an image before transforming it.');
-    const payload = await parseResponse(await fetch(`${this.baseUrl}/transform/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, ...data }) }));
+    const payload = await request(`${this.baseUrl}/transform/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, ...data }) });
     return payload.image;
   }
 
   async process(operation, data = {}) {
     if (!this.imageId) throw new Error('Upload an image before processing it.');
-    const payload = await parseResponse(await fetch(`${this.baseUrl}/process/${operation}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, ...data }) }));
+    const payload = await request(`${this.baseUrl}/process/${operation}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, ...data }) });
     return payload.image;
   }
 
   async export(format = 'png') {
     if (!this.imageId) throw new Error('Upload an image before exporting it.');
-    const response = await fetch(`${this.baseUrl}/images/export`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, format }) });
+    let response;
+    try {
+      response = await fetch(`${this.baseUrl}/images/export`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, format }) });
+    } catch {
+      throw new Error(OFFLINE_MESSAGE);
+    }
     if (!response.ok) throw new Error('The image could not be exported.');
     return response.blob();
   }
