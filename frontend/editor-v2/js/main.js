@@ -51,9 +51,7 @@ for (const button of document.querySelectorAll('[data-action]')) {
   if (action) button.addEventListener('click', action);
 }
 
-fileInput.addEventListener('change', async ({ target }) => {
-  const file = target.files?.[0];
-  if (!file) return;
+async function uploadImageFile(file) {
   statusMessage.textContent = 'Uploading image…';
   showToast('Uploading image to IntelliCanvas API…');
   try {
@@ -68,11 +66,33 @@ fileInput.addEventListener('change', async ({ target }) => {
     statusMessage.textContent = 'Image loaded — backend session ready';
     showToast(`${image.original_filename} uploaded successfully`);
   } catch (error) {
-    statusMessage.textContent = 'Upload failed';
+    statusMessage.textContent = error.message.startsWith('Could not reach') ? 'Backend offline' : 'Upload failed';
     showToast(error.message);
-  } finally {
-    target.value = '';
   }
+}
+
+fileInput.addEventListener('change', ({ target }) => {
+  const file = target.files?.[0];
+  if (!file) return;
+  uploadImageFile(file);
+  target.value = '';
+});
+
+const canvasZone = document.querySelector('#canvas-zone');
+['dragenter', 'dragover'].forEach((type) => canvasZone.addEventListener(type, (event) => {
+  event.preventDefault();
+  canvasZone.classList.add('is-drop-target');
+}));
+canvasZone.addEventListener('dragleave', (event) => {
+  if (event.target === canvasZone) canvasZone.classList.remove('is-drop-target');
+});
+canvasZone.addEventListener('drop', (event) => {
+  event.preventDefault();
+  canvasZone.classList.remove('is-drop-target');
+  const file = event.dataTransfer?.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) return showToast('Drop an image file (PNG, JPG, WEBP or BMP)');
+  uploadImageFile(file);
 });
 
 document.addEventListener('keydown', (event) => {

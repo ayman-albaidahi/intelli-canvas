@@ -38,6 +38,12 @@ export class AdjustmentsManager {
       document.querySelector('[data-action="compare"]')?.click();
     });
     this.applyButton?.addEventListener('click', () => this.applyInPython());
+    document.addEventListener('appstatechange', () => this.syncApplyButton());
+    this.syncApplyButton();
+  }
+
+  syncApplyButton() {
+    if (this.applyButton) this.applyButton.disabled = this.busy || !this.apiClient.imageId;
   }
 
   values() {
@@ -163,9 +169,9 @@ export class AdjustmentsManager {
       this.showToast(error.message);
     } finally {
       this.busy = false;
-      this.applyButton.disabled = false;
       this.applyButton.classList.remove('is-busy');
       this.applyButton.textContent = applyLabel;
+      this.syncApplyButton();
       this.updateSummary();
       this.updateAppliedLine();
     }

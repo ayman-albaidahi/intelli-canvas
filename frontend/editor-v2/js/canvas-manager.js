@@ -179,7 +179,7 @@ export class CanvasManager {
         this.fit();
         resolve(image);
       });
-      image.addEventListener('error', () => reject(new Error('The uploaded image could not be displayed.')));
+      image.addEventListener('error', () => reject(new Error('Could not load the image from the Python server — is Flask still running?')));
       image.src = url;
     });
   }
