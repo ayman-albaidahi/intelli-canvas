@@ -69,7 +69,6 @@
             <div class="workspace-controls">
               <button class="view-button" data-action="compare">◐ <span>Compare</span></button>
               <span class="control-separator"></span>
-              <button class="zoom-button" data-action="zoom-out">−</button><span id="zoom-value">75%</span><button class="zoom-button" data-action="zoom-in">+</button>
               <button class="view-button" data-action="fit">Fit</button>
             </div>
           </div>
@@ -92,8 +91,20 @@
                 <div class="mock-sun"></div><div class="mock-mountain mountain-back"></div><div class="mock-mountain mountain-front"></div><div class="mock-ground"></div><span class="mock-label">PREVIEW CANVAS</span>
               </div>
             </div>
-            <div class="canvas-overlay overlay-top"><span class="badge badge-soft">Original canvas</span></div>
-            <div class="canvas-overlay overlay-bottom"><span>⌘ 0</span><span>Drag to pan</span></div>
+          <div class="canvas-overlay overlay-top"><span class="badge badge-soft">Original canvas</span></div>
+          <div class="canvas-overlay overlay-bottom"><span>Ctrl+Wheel = Zoom</span><span>Wheel = Pan</span></div>
+          <div class="canvas-toolbar" role="toolbar" aria-label="Canvas view controls">
+            <button class="toolbar-button" data-action="zoom-out" title="Zoom out (−)">−</button>
+            <button class="toolbar-button zoom-display" data-action="zoom-reset" data-zoom-display id="zoom-value" title="Reset to 100%">75%</button>
+            <button class="toolbar-button" data-action="zoom-in" title="Zoom in (+)">+</button>
+            <span class="toolbar-separator"></span>
+            <button class="toolbar-button" data-action="fit" title="Fit to screen (0)">Fit</button>
+            <button class="toolbar-button" data-action="fit-width" title="Fit width">Width</button>
+            <button class="toolbar-button" data-action="zoom-100" title="Zoom to 100% (1)">100%</button>
+            <button class="toolbar-button" data-action="zoom-actual" title="Actual pixels">1:1</button>
+            <span class="toolbar-separator"></span>
+            <button class="toolbar-button" data-action="fullscreen" title="Fullscreen canvas">⛶</button>
+          </div>
           </section>
           <footer class="statusbar"><div><span class="status-led"></span><span id="status-message">Ready for your next idea</span></div><div><span>RGB / 8-bit</span><span>•</span><span id="canvas-size">1920 × 1080</span><span>•</span><span>Local draft</span></div></footer>
         </main>

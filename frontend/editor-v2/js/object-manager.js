@@ -8,6 +8,7 @@ export class ObjectManager {
 
   bind() {
     this.canvas.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) return;
       const point = this.point(event);
       if (appState.activeTool === 'select') { const hit = [...this.objects].reverse().find((item) => this.hit(item, point)); if (hit) { this.selected = hit; this.drag = { point, origin: { x: hit.x, y: hit.y } }; this.render(); } return; }
       if (!['brush', 'eraser', 'shape', 'text'].includes(appState.activeTool)) return;

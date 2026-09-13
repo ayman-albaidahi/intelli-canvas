@@ -14,7 +14,6 @@ import { ApiClient } from './api-client.js';
 initThemeManager();
 initUI();
 
-const zoomValue = document.querySelector('#zoom-value');
 const fileInput = document.querySelector('#file-input');
 const emptyCanvas = document.querySelector('#empty-canvas');
 const mockArtboard = document.querySelector('#mock-artboard');
@@ -36,11 +35,20 @@ document.querySelector('#crop-overlay').addEventListener('pointerdown', (event) 
 document.querySelector('#crop-overlay').addEventListener('pointermove', (event) => cropTool.onPointerMove(event));
 document.querySelector('#crop-overlay').addEventListener('pointerup', () => cropTool.stopDrag());
 
+const canvasViewActions = {
+  'zoom-in': () => canvasManager.zoomStep(10),
+  'zoom-out': () => canvasManager.zoomStep(-10),
+  'zoom-reset': () => canvasManager.setHundredPercent(),
+  'zoom-100': () => canvasManager.setHundredPercent(),
+  'zoom-actual': () => canvasManager.setActualPixels(),
+  'fit': () => { canvasManager.fit(); showToast('Canvas fitted to workspace'); },
+  'fit-width': () => { canvasManager.fitWidth(); showToast('Canvas fitted to width'); },
+  'fullscreen': () => canvasManager.toggleFullscreen(),
+  'open': () => fileInput.click(),
+};
 for (const button of document.querySelectorAll('[data-action]')) {
-  if (button.dataset.action === 'zoom-in') button.addEventListener('click', () => canvasManager.setZoom(10));
-  if (button.dataset.action === 'zoom-out') button.addEventListener('click', () => canvasManager.setZoom(-10));
-  if (button.dataset.action === 'fit') button.addEventListener('click', () => { canvasManager.fit(); showToast('Canvas fitted to workspace'); });
-  if (button.dataset.action === 'open') button.addEventListener('click', () => fileInput.click());
+  const action = canvasViewActions[button.dataset.action];
+  if (action) button.addEventListener('click', action);
 }
 
 fileInput.addEventListener('change', async ({ target }) => {
@@ -55,6 +63,7 @@ fileInput.addEventListener('change', async ({ target }) => {
     emptyCanvas.hidden = true;
     mockArtboard.hidden = true;
     document.querySelector('#document-name').textContent = image.original_filename;
+    document.querySelector('#canvas-size').textContent = `${image.width ?? canvasManager.getSourceDimensions().width} × ${image.height ?? canvasManager.getSourceDimensions().height}`;
     document.querySelector('#save-state').textContent = 'Saved in API session';
     statusMessage.textContent = 'Image loaded — backend session ready';
     showToast(`${image.original_filename} uploaded successfully`);
@@ -66,6 +75,14 @@ fileInput.addEventListener('change', async ({ target }) => {
   }
 });
 
+function clearAdjustmentPreview(name) {
+  const input = document.querySelector(`[data-adjustment="${name}"]`);
+  if (!input) return;
+  if (input.type === 'checkbox') input.checked = false;
+  else input.value = { brightness: 100, contrast: 100, saturation: 100, blur: 0, sharpen: 0 }[name] ?? 100;
+  input.dispatchEvent(new Event('input'));
+}
+
 document.querySelector('[data-action="process-grayscale"]')?.addEventListener('click', async (event) => {
   const button = event.currentTarget;
   if (!apiClient.imageId) return showToast('Upload an image before processing it');
@@ -75,6 +92,7 @@ document.querySelector('[data-action="process-grayscale"]')?.addEventListener('c
   try {
     const result = await apiClient.process('grayscale');
     await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
+    clearAdjustmentPreview('grayscale');
     document.querySelector('#save-state').textContent = 'Processed by Python';
     statusMessage.textContent = 'Grayscale processed by Python';
     showToast('Grayscale completed by Python');
@@ -96,6 +114,7 @@ document.querySelector('[data-action="process-brightness"]')?.addEventListener('
   try {
     const result = await apiClient.process('brightness', { value });
     await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
+    clearAdjustmentPreview('brightness');
     document.querySelector('#save-state').textContent = 'Processed by Python';
     statusMessage.textContent = `Brightness ${value}% processed by Python`;
     showToast('Brightness completed by Python');
@@ -117,6 +136,7 @@ document.querySelector('[data-action="process-contrast"]')?.addEventListener('cl
   try {
     const result = await apiClient.process('contrast', { value });
     await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
+    clearAdjustmentPreview('contrast');
     document.querySelector('#save-state').textContent = 'Processed by Python';
     statusMessage.textContent = `Contrast ${value}% processed by Python`;
     showToast('Contrast completed by Python');
@@ -138,6 +158,7 @@ document.querySelector('[data-action="process-blur"]')?.addEventListener('click'
   try {
     const result = await apiClient.process('blur', { value });
     await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
+    clearAdjustmentPreview('blur');
     document.querySelector('#save-state').textContent = 'Processed by Python';
     statusMessage.textContent = `Blur ${value}px processed by Python`;
     showToast('Blur completed by Python');
@@ -159,6 +180,7 @@ document.querySelector('[data-action="process-sharpen"]')?.addEventListener('cli
   try {
     const result = await apiClient.process('sharpen', { value });
     await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
+    clearAdjustmentPreview('sharpen');
     document.querySelector('#save-state').textContent = 'Processed by Python';
     statusMessage.textContent = `Sharpen ${value}/5 processed by Python`;
     showToast('Sharpen completed by Python');
@@ -180,6 +202,7 @@ document.querySelector('[data-action="process-saturation"]')?.addEventListener('
   try {
     const result = await apiClient.process('saturation', { value });
     await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
+    clearAdjustmentPreview('saturation');
     document.querySelector('#save-state').textContent = 'Processed by Python';
     statusMessage.textContent = `Saturation ${value}% processed by Python`;
     showToast('Color saturation completed by Python');
@@ -200,8 +223,8 @@ document.querySelector('[data-action="process-negative"]')?.addEventListener('cl
   try {
     const result = await apiClient.process('negative');
     await canvasManager.loadFromUrl(apiClient.contentUrl(result.image_id), result);
-    const checkbox = document.querySelector('[data-adjustment="negative"]');
-    if (checkbox) { checkbox.checked = false; checkbox.dispatchEvent(new Event('input')); }
+    clearAdjustmentPreview('negative');
+    clearAdjustmentPreview('grayscale');
     document.querySelector('#save-state').textContent = 'Processed by Python';
     statusMessage.textContent = 'Negative processed by Python';
     showToast('Negative completed by Python');
@@ -214,7 +237,13 @@ document.querySelector('[data-action="process-negative"]')?.addEventListener('cl
 });
 
 document.addEventListener('keydown', (event) => {
+  const target = event.target;
+  if (target instanceof HTMLElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'o') { event.preventDefault(); fileInput.click(); }
+  if (event.key === '+' || event.key === '=') canvasManager.zoomStep(10);
+  if (event.key === '-' || event.key === '_') canvasManager.zoomStep(-10);
+  if (event.key === '0') { canvasManager.fit(); showToast('Canvas fitted to workspace'); }
+  if (event.key === '1') canvasManager.setHundredPercent();
   if (event.key.toLowerCase() === 'b') document.querySelector('[data-tool="brush"]')?.click();
   if (event.key.toLowerCase() === 'v') document.querySelector('[data-tool="select"]')?.click();
   if (event.key.toLowerCase() === 'c') document.querySelector('[data-tool="crop"]')?.click();
@@ -224,6 +253,12 @@ function updateZoom(delta) {
   canvasManager.setZoom(delta);
 }
 
-function renderZoom() { zoomValue.textContent = `${appState.zoom}%`; }
-document.addEventListener('appstatechange', renderZoom);
+function renderZoom() {
+  document.querySelectorAll('[data-zoom-display]').forEach((element) => { element.textContent = `${appState.zoom}%`; });
+}
+document.addEventListener('appstatechange', ({ detail }) => {
+  document.body.dataset.activeTool = detail.activeTool || 'select';
+  renderZoom();
+});
+document.body.dataset.activeTool = appState.activeTool;
 renderZoom();
