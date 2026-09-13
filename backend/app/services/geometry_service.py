@@ -40,7 +40,7 @@ class GeometryService:
         )
 
         output_name = self.storage_service.generate_safe_filename(
-            input_path.name,
+            self._output_base_name(session, input_path),
             directory=self.storage_service.processed_dir,
         )
         output_path = self.storage_service.processed_dir / output_name
@@ -164,10 +164,20 @@ class GeometryService:
         input_path = self._resolve_current_path(session)
         image = Image.open(input_path)
         output_name = self.storage_service.generate_safe_filename(
-            input_path.name, directory=self.storage_service.processed_dir
+            self._output_base_name(session, input_path),
+            directory=self.storage_service.processed_dir,
         )
         output_path = self.storage_service.processed_dir / output_name
         return image, session, output_path
+
+    def _output_base_name(self, session: dict[str, Any], input_path: Path) -> str:
+        """Derive output names from the original upload stem, not the
+        current filename, so chained operations cannot grow file paths."""
+        base_stem = session.get("base_stem")
+        if not isinstance(base_stem, str) or not base_stem:
+            base_stem = input_path.stem
+        extension = input_path.suffix.lower() or ".png"
+        return f"{base_stem}{extension}"
 
     def _transform_metadata(
         self,

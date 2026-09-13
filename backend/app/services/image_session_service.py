@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 import uuid
+from pathlib import Path
 from typing import Any
+
+from werkzeug.utils import secure_filename
+
+MAX_BASE_STEM_LENGTH = 60
 
 
 class ImageSessionService:
@@ -18,11 +23,24 @@ class ImageSessionService:
         payload = {
             "image_id": image_id,
             **metadata,
+            "base_stem": self._base_stem(metadata.get("original_filename")),
             "current_filename": metadata.get("stored_filename"),
             "current_storage": "uploads",
         }
         self.session_store[image_id] = payload
         return payload
+
+    def _base_stem(self, original_filename: Any) -> str:
+        """Stem of the original upload; processed outputs derive from it.
+
+        Keeping the stem fixed bounds every generated filename so chained
+        operations cannot grow paths past filesystem limits.
+        """
+        stem = Path(str(original_filename or "")).stem
+        sanitized = secure_filename(stem)
+        if not sanitized:
+            sanitized = "image"
+        return sanitized[:MAX_BASE_STEM_LENGTH]
 
     def list_sessions(self) -> list[dict[str, Any]]:
         return list(self.session_store.values())
