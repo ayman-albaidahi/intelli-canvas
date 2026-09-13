@@ -1,3 +1,47 @@
 @media(max-width:1240px){.editor-frame{grid-template-columns:72px minmax(480px,1fr) 260px}.tool-button{width:56px}.tool-button small{font-size:8px}.topbar{padding:0 16px}.document-name{display:none}.inspector-content{padding:18px 14px}}@media(max-width:900px){body{min-width:0}.editor-frame{grid-template-columns:68px 1fr}.inspector{display:none}.canvas-card{width:min(720px,82%)}}
 @media(max-width:1240px){.canvas-toolbar{bottom:12px;padding:4px}.toolbar-button{min-width:26px;height:26px;font-size:10px;padding:0 6px}.zoom-display{min-width:46px}}
 @media(max-width:900px){.canvas-toolbar{max-width:calc(100% - 20px);overflow-x:auto}}
+
+/* Cross-screen fit: the whole shell must stay inside the viewport on laptops,
+   small displays and short windows. Flex carries the vertical layout instead
+   of fixed calc() heights, and chrome shrinks as the screen does. */
+.app-shell{height:100vh;height:100dvh}
+.editor-frame{height:auto;flex:1;min-height:0}
+@media(max-width:1240px){
+  body{min-width:0}
+  .editor-frame{grid-template-columns:64px minmax(280px,1fr) 250px}
+  .tool-button{width:52px;height:52px}
+  .tool-button span{font-size:18px}
+}
+@media(max-width:1024px){
+  .editor-frame{grid-template-columns:60px minmax(240px,1fr) 236px}
+  .topbar{padding:0 14px}
+  .brand-block strong{font-size:13px}
+  .brand-block span:not(.brand-mark){display:none}
+}
+@media(max-height:820px){
+  .topbar{height:56px;padding:0 18px}
+  .workspace-header{height:46px}
+  .statusbar{height:30px}
+  .inspector-content{padding:14px 14px}
+  .panel-heading{margin-bottom:16px}
+  .canvas-toolbar{bottom:10px}
+  .brand-logo{width:96px;height:34px}
+}
+@media(max-height:680px){
+  .workspace-header{height:40px}
+  .statusbar{display:none}
+  .canvas-toolbar{bottom:8px;padding:3px}
+  .toolbar-button{height:24px;min-width:24px;font-size:10px;padding:0 6px}
+  .zoom-display{min-width:42px}
+  .inspector-content{padding:10px 12px}
+  .empty-panel{padding:10px 6px 14px}
+  .panel-section{padding-top:12px}
+  .full-width{margin-top:10px}
+}
+@media(max-width:900px){
+  .editor-frame{grid-template-columns:60px 1fr}
+}
+/* The grid row must equal the frame, not the inspector's content height —
+   otherwise tall panel content pushes workspace and statusbar off-screen. */
+.editor-frame{grid-template-rows:minmax(0,1fr)}
