@@ -181,7 +181,7 @@ export class CanvasManager {
         this.fit();
         resolve(image);
       });
-      image.addEventListener('error', () => reject(new Error('Could not load the image from the Python server — is Flask still running?')));
+      image.addEventListener('error', () => reject(new Error('Could not load the image. Make sure the app server is running.')));
       image.src = url;
     });
   }

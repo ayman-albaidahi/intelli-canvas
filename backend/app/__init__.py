@@ -45,9 +45,11 @@ def create_app() -> Flask:
     def add_dev_cors_headers(response):
         origin = request.headers.get("Origin", "")
         allowed_origins = {"http://localhost:5500", "http://127.0.0.1:5500"}
-        response.headers.setdefault("Access-Control-Allow-Origin", origin if origin in allowed_origins else "http://localhost:5500")
-        response.headers.setdefault("Access-Control-Allow-Headers", "Content-Type")
-        response.headers.setdefault("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        if origin in allowed_origins:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers.setdefault("Vary", "Origin")
+            response.headers.setdefault("Access-Control-Allow-Headers", "Content-Type")
+            response.headers.setdefault("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         return response
 
     @app.after_request
@@ -55,6 +57,13 @@ def create_app() -> Flask:
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        csp = ("default-src 'self'; img-src 'self' data: blob:; "
+               "style-src 'self' 'unsafe-inline'; script-src 'self'; "
+               "connect-src 'self'; object-src 'none'; base-uri 'self'")
+        response.headers.setdefault("Content-Security-Policy", csp)
+        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        if request.is_secure:
+            response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
         return response
 
     @app.get("/")

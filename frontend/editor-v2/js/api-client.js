@@ -2,13 +2,13 @@ const detectedApiHost = window.location.hostname || 'localhost';
 const detectedApiBase = window.location.port === '5000' ? `${window.location.origin}/api` : `http://${detectedApiHost}:5000/api`;
 const API_BASE = window.INTELLICANVAS_API_BASE || detectedApiBase;
 
-const OFFLINE_MESSAGE = 'Could not reach the Python server. Start Flask with: python backend/run.py';
+const OFFLINE_MESSAGE = 'Could not reach the editing server. Start it with: python backend/run.py';
 
 function friendlyMessage(payload, status) {
   const code = payload.error?.code;
   if (code === 'IMAGE_SESSION_NOT_FOUND') return 'Your editing session expired — upload the image again.';
   if (code === 'IMAGE_NOT_AVAILABLE') return 'The processed image is no longer available — try the operation again.';
-  return payload.error?.message || `Request failed (${status}). Is the Python server running?`;
+  return payload.error?.message || `Request failed (${status}). Make sure the app is running.`;
 }
 
 async function request(url, options = {}) {
