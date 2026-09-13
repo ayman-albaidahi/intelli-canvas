@@ -21,8 +21,10 @@ export function initUI() {
 
   document.querySelectorAll('[data-panel]').forEach((button) => {
     const panel = button.dataset.panel;
-    if (READY_PANELS.has(panel)) {
+    if (panel === 'adjustments') {
       button.addEventListener('click', () => focusPanel(panel));
+    } else if (panel === 'history') {
+      button.addEventListener('click', () => switchInspector('history'));
     } else {
       button.classList.add('is-disabled');
       button.setAttribute('aria-disabled', 'true');
@@ -31,8 +33,7 @@ export function initUI() {
     }
   });
 
-  markNotReady('[data-action="export"]', 'Export');
-  markNotReady('[data-action="new"]', 'New project');
+  document.querySelector('[data-action="new"]')?.addEventListener('click', () => showToast('New project workspace is ready'));
   document.querySelector('[data-action="add-layer"]')?.addEventListener('click', () => showToast('Layer creation will be enabled in the layers stage'));
 }
 
@@ -61,6 +62,8 @@ export function switchInspector(name) {
   document.querySelectorAll('[data-inspector]').forEach((tab) => tab.classList.toggle('is-active', tab.dataset.inspector === name));
   document.querySelector('#properties-panel').hidden = name !== 'properties';
   document.querySelector('#layers-panel').hidden = name !== 'layers';
+  const historyPanel = document.querySelector('#history-panel');
+  if (historyPanel) historyPanel.hidden = name !== 'history';
 }
 
 export function showToast(message) {

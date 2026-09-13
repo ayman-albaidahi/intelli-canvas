@@ -162,6 +162,7 @@ export class AdjustmentsManager {
       this.lastApplied = { ...NEUTRAL_SLIDERS, grayscale: false, negative: false, ...payload };
       this.lastSubmitted = payload;
       this.resetAll();
+      document.dispatchEvent(new CustomEvent('ic-operation'));
       this.statusMessage.textContent = 'Adjustments applied by Python';
       this.showToast('Adjustments baked by Python');
     } catch (error) {

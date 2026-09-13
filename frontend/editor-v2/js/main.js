@@ -9,6 +9,8 @@ import { LayerManager } from './layer-manager.js';
 import { ObjectManager } from './object-manager.js';
 import { ComparisonTool } from './comparison-tool.js';
 import { AdjustmentsManager } from './adjustments-manager.js';
+import { HistoryManager } from './history-manager.js';
+import { ExportManager } from './export-manager.js';
 import { BackgroundManager } from './background-manager.js';
 import { ApiClient } from './api-client.js';
 
@@ -32,6 +34,9 @@ new ComparisonTool(canvasManager, showToast);
 new AdjustmentsManager({ canvasManager, apiClient, showToast });
 const backgroundManager = new BackgroundManager({ canvasManager, apiClient, objectManager, showToast });
 window.__bm = backgroundManager;
+const historyManager = new HistoryManager({ canvasManager, apiClient, showToast });
+window.__hm = historyManager;
+new ExportManager({ canvasManager, apiClient, showToast });
 objectManager.setInteractive(true);
 document.addEventListener('appstatechange', ({ detail }) => objectManager.setInteractive(['select', 'brush', 'eraser', 'shape', 'text'].includes(detail.activeTool)));
 document.querySelectorAll('[data-action="add-layer"]').forEach((button) => button.remove());

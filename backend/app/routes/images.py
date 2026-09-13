@@ -181,10 +181,29 @@ def export_image():
             "IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404
         )
 
+    quality = payload.get("quality")
+    if quality is not None and (
+        isinstance(quality, bool) or not isinstance(quality, int) or not 1 <= quality <= 100
+    ):
+        return _error_response(
+            "INVALID_QUALITY", "Quality must be an integer from 1 to 100.", 400
+        )
+    width = payload.get("width")
+    height = payload.get("height")
+    for dimension, value in (("width", width), ("height", height)):
+        if value is not None and (
+            isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 20000
+        ):
+            return _error_response(
+                "INVALID_DIMENSIONS",
+                f"{dimension.capitalize()} must be an integer from 1 to 20000.",
+                400,
+            )
+
     try:
         result = ImageIOService(
             _get_session_service(), FileStorageService()
-        ).convert(image_id, target_format)
+        ).convert(image_id, target_format, quality=quality, width=width, height=height)
     except (FileNotFoundError, FileValidationError) as exc:
         return _error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
     except (OSError, ValueError):

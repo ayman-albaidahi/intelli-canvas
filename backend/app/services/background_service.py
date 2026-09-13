@@ -81,6 +81,8 @@ class BackgroundService:
     def _finish(self, image_id: str, output_path: Path, operation: str, extra: dict[str, Any]) -> dict[str, Any]:
         with Image.open(output_path) as image:
             width, height = image.size
+        label = "Remove background" if operation == "remove-background" else "Replace background"
+        self.session_service.update_current_image(image_id, output_path.name, "processed", operation=label)
         self.session_service.update_current_image(image_id, output_path.name, "processed")
         return {
             "image_id": image_id,

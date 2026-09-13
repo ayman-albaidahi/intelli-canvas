@@ -35,7 +35,7 @@ class ProcessService:
 
         with Image.open(output_path) as image:
             width, height = image.size
-        self.session_service.update_current_image(image_id, output_path.name, "processed")
+        self.session_service.update_current_image(image_id, output_path.name, "processed", operation="Negative")
         return {
             "image_id": image_id,
             "format": "png",
@@ -67,7 +67,7 @@ class ProcessService:
 
         with Image.open(output_path) as image:
             width, height = image.size
-        self.session_service.update_current_image(image_id, output_path.name, "processed")
+        self.session_service.update_current_image(image_id, output_path.name, "processed", operation="Adjustments")
         return {
             "image_id": image_id,
             "format": "png",
@@ -115,7 +115,7 @@ class ProcessService:
 
         with Image.open(output_path) as image:
             width, height = image.size
-        self.session_service.update_current_image(image_id, output_path.name, "processed")
+        self.session_service.update_current_image(image_id, output_path.name, "processed", operation="Grayscale")
         return {
             "image_id": image_id,
             "format": "png",
@@ -145,7 +145,7 @@ class ProcessService:
 
         with Image.open(output_path) as image:
             width, height = image.size
-        self.session_service.update_current_image(image_id, output_path.name, "processed")
+        self.session_service.update_current_image(image_id, output_path.name, "processed", operation=f"Brightness {value}%")
         return {
             "image_id": image_id,
             "format": "png",
@@ -176,7 +176,7 @@ class ProcessService:
 
         with Image.open(output_path) as image:
             width, height = image.size
-        self.session_service.update_current_image(image_id, output_path.name, "processed")
+        self.session_service.update_current_image(image_id, output_path.name, "processed", operation=f"Contrast {value}%")
         return {
             "image_id": image_id,
             "format": "png",
@@ -206,7 +206,7 @@ class ProcessService:
 
         with Image.open(output_path) as image:
             width, height = image.size
-        self.session_service.update_current_image(image_id, output_path.name, "processed")
+        self.session_service.update_current_image(image_id, output_path.name, "processed", operation=f"Blur {value}px")
         return {
             "image_id": image_id,
             "format": "png",
@@ -237,7 +237,7 @@ class ProcessService:
 
         with Image.open(output_path) as image:
             width, height = image.size
-        self.session_service.update_current_image(image_id, output_path.name, "processed")
+        self.session_service.update_current_image(image_id, output_path.name, "processed", operation=f"Sharpen {value}")
         return {
             "image_id": image_id,
             "format": "png",
@@ -268,7 +268,7 @@ class ProcessService:
 
         with Image.open(output_path) as image:
             width, height = image.size
-        self.session_service.update_current_image(image_id, output_path.name, "processed")
+        self.session_service.update_current_image(image_id, output_path.name, "processed", operation=f"Saturation {value}%")
         return {
             "image_id": image_id,
             "format": "png",
