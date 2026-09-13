@@ -24,6 +24,9 @@ def create_app() -> Flask:
     """Application factory for the IntelliCanvas backend."""
     app = Flask(__name__, static_folder=str(FRONTEND_DIR), static_url_path="")
     app.config.from_object(Config)
+    # Editor assets change between commits while a tab stays open; never let
+    # the browser reuse cached HTML/CSS/JS in this development stage.
+    app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
     app.config["JSON_SORT_KEYS"] = False
     app.config["IMAGE_SESSIONS"] = {}
     app.config["IMAGE_SESSION_SERVICE"] = ImageSessionService(app.config["IMAGE_SESSIONS"])

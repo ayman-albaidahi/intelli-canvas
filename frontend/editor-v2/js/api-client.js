@@ -35,7 +35,11 @@ export class ApiClient {
     return payload.image;
   }
 
-  contentUrl(imageId = this.imageId) { return `${this.baseUrl}/images/${encodeURIComponent(imageId)}/content`; }
+  contentUrl(imageId = this.imageId) {
+    // The content endpoint URL is stable across operations while the bytes
+    // change after every Python bake — bust the cache on every load.
+    return `${this.baseUrl}/images/${encodeURIComponent(imageId)}/content?t=${Date.now()}`;
+  }
 
   async transform(path, data = {}) {
     if (!this.imageId) throw new Error('Upload an image before transforming it.');
