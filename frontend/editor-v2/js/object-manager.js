@@ -312,6 +312,10 @@ export class ObjectManager {
   onPointerDown(event) {
     if (event.button !== 0) return;
     const point = this.point(event);
+    if (this.pickMode) {
+      if (this.onPick) this.onPick(point);
+      return;
+    }
     const tool = appState.activeTool;
 
     if (tool === 'brush' || tool === 'eraser') {

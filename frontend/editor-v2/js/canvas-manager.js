@@ -168,6 +168,8 @@ export class CanvasManager {
       image.crossOrigin = 'anonymous';
       image.addEventListener('load', () => {
         this.image = image;
+        this._imageData = null;
+        this.setMaskOverlay(null);
         this.rotation = 0;
         this.flipX = 1;
         this.flipY = 1;
@@ -260,6 +262,38 @@ export class CanvasManager {
 
   setPreview(enabled) { this.previewEnabled = Boolean(enabled); this.render(); }
 
+  setMaskOverlay(image) {
+    this.maskImage = image || null;
+    if (this.maskImage) {
+      this.maskImage.addEventListener('load', () => this.render());
+    }
+    this.render();
+  }
+
+  sampleImagePixel(clientX, clientY) {
+    if (!this.image) return null;
+    const bounds = this.stage.getBoundingClientRect();
+    const dx = clientX - bounds.left - this.offset.x;
+    const dy = clientY - bounds.top - this.offset.y;
+    const rad = -this.rotation * Math.PI / 180;
+    const ux = (dx * Math.cos(rad) - dy * Math.sin(rad)) / this.scale / (this.flipX || 1);
+    const uy = (dx * Math.sin(rad) + dy * Math.cos(rad)) / this.scale / (this.flipY || 1);
+    const nx = this.image.naturalWidth * this.crop.x + ux + this.documentSize.width / 2;
+    const ny = this.image.naturalHeight * this.crop.y + uy + this.documentSize.height / 2;
+    if (nx < 0 || ny < 0 || nx >= this.image.naturalWidth || ny >= this.image.naturalHeight) return null;
+    if (!this._imageData) {
+      const cache = document.createElement('canvas');
+      cache.width = this.image.naturalWidth;
+      cache.height = this.image.naturalHeight;
+      const cacheCtx = cache.getContext('2d');
+      cacheCtx.drawImage(this.image, 0, 0);
+      this._imageData = cacheCtx.getImageData(0, 0, cache.width, cache.height);
+    }
+    const index = (Math.floor(ny) * this.image.naturalWidth + Math.floor(nx)) * 4;
+    const d = this._imageData.data;
+    return '#' + [d[index], d[index + 1], d[index + 2]].map((v) => v.toString(16).padStart(2, '0')).join('');
+  }
+
   adjustmentFilter() {
     const a = this.adjustments;
     return `brightness(${a.brightness}%) contrast(${a.contrast}%) saturate(${a.saturation}%) blur(${a.blur}px) grayscale(${a.grayscale ? 1 : 0}) invert(${a.negative ? 1 : 0})`;
@@ -350,6 +384,12 @@ export class CanvasManager {
     this.ctx.fillStyle = this.checkerboard(this.ctx);
     this.ctx.fillRect(-width / 2, -height / 2, width, height);
     this.ctx.drawImage(this.image, sourceX, sourceY, sourceWidth, sourceHeight, -width / 2, -height / 2, width, height);
+    if (this.maskImage && this.maskImage.complete && this.maskImage.naturalWidth > 0) {
+      this.ctx.filter = 'none';
+      this.ctx.globalAlpha = 0.75;
+      this.ctx.drawImage(this.maskImage, -width / 2, -height / 2, width, height);
+      this.ctx.globalAlpha = 1;
+    }
     this.ctx.filter = 'none';
     this.ctx.strokeStyle = 'rgba(217, 86, 135, 0.65)';
     this.ctx.lineWidth = 1;

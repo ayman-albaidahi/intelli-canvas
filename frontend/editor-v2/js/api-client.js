@@ -64,4 +64,46 @@ export class ApiClient {
     if (!response.ok) throw new Error('The image could not be exported.');
     return response.blob();
   }
+
+  async maskPreview(params) {
+    if (!this.imageId) throw new Error('Upload an image first.');
+    let response;
+    try {
+      response = await fetch(`${this.baseUrl}/background/mask-preview`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, ...params }) });
+    } catch {
+      throw new Error(OFFLINE_MESSAGE);
+    }
+    if (!response.ok) throw new Error('The mask could not be generated.');
+    return response.blob();
+  }
+
+  async removeBackground(params) {
+    if (!this.imageId) throw new Error('Upload an image first.');
+    const payload = await request(`${this.baseUrl}/background/remove`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, ...params }) });
+    return payload.image;
+  }
+
+  async replaceBackground(params) {
+    if (!this.imageId) throw new Error('Upload an image first.');
+    const payload = await request(`${this.baseUrl}/background/replace`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, ...params }) });
+    return payload.image;
+  }
+
+  async listBackgrounds() {
+    let response;
+    try {
+      response = await fetch(`${this.baseUrl}/background/backgrounds`);
+    } catch {
+      throw new Error(OFFLINE_MESSAGE);
+    }
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload.success === false) throw new Error(friendlyMessage(payload, response.status));
+    return payload.backgrounds;
+  }
+
+  async uploadBackground(file) {
+    const body = new FormData(); body.append('file', file);
+    const payload = await request(`${this.baseUrl}/background/backgrounds`, { method: 'POST', body });
+    return payload.background;
+  }
 }
