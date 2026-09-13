@@ -45,3 +45,19 @@
 /* The grid row must equal the frame, not the inspector's content height —
    otherwise tall panel content pushes workspace and statusbar off-screen. */
 .editor-frame{grid-template-rows:minmax(0,1fr)}
+/* Maximize the drawing surface: the canvas card fills the workspace zone and
+   the image floats on the grid backdrop with its own border + transparency
+   checkerboard (drawn in render). The empty state stays centered. */
+.canvas-card,
+.canvas-card:has(.image-canvas:not(:empty)){
+  width:100%;
+  height:100%;
+  max-width:none;
+  max-height:none;
+  aspect-ratio:auto;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+  background:transparent;
+}
+.canvas-card .empty-canvas{background:transparent}
