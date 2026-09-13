@@ -32,7 +32,7 @@ export class AdjustmentsManager {
       this.canvasManager.setPreview(event.target.checked);
       this.showToast(event.target.checked
         ? 'Live preview on — sliders show a local estimate'
-        : 'Live preview off — showing the Python result');
+        : 'Live preview off — showing the saved result');
     });
     document.querySelector('[data-action="toggle-before-after"]')?.addEventListener('click', () => {
       document.querySelector('[data-action="compare"]')?.click();
@@ -88,7 +88,7 @@ export class AdjustmentsManager {
     if (!this.appliedLine) return;
     if (this.busy) return;
     if (!this.lastApplied) {
-      this.appliedLine.textContent = 'Nothing applied yet — press Apply to bake with Python.';
+      this.appliedLine.textContent = 'Nothing applied yet — press Apply to save your changes.';
       return;
     }
     const parts = [];
@@ -100,7 +100,7 @@ export class AdjustmentsManager {
     for (const flag of ['grayscale', 'negative']) {
       if (this.lastApplied[flag]) parts.push(flag);
     }
-    const applied = parts.length ? `Python applied: ${parts.join(' · ')}` : 'Python applied: nothing';
+    const applied = parts.length ? `Applied: ${parts.join(' · ')}` : 'Applied: nothing yet';
     this.appliedLine.textContent = this.hasUnappliedChanges()
       ? `${applied} — preview differs, press Apply to bake.`
       : `${applied} — preview is up to date.`;
@@ -153,8 +153,8 @@ export class AdjustmentsManager {
     this.applyButton.disabled = true;
     this.applyButton.classList.add('is-busy');
     const applyLabel = this.applyButton.textContent;
-    this.applyButton.textContent = 'Processing in Python…';
-    this.statusMessage.textContent = 'Python is applying the adjustments…';
+    this.applyButton.textContent = 'Applying…';
+    this.statusMessage.textContent = 'Applying your adjustments…';
     this.updateSummary();
     try {
       const result = await this.apiClient.process('adjustments', payload);
@@ -163,10 +163,10 @@ export class AdjustmentsManager {
       this.lastSubmitted = payload;
       this.resetAll();
       document.dispatchEvent(new CustomEvent('ic-operation'));
-      this.statusMessage.textContent = 'Adjustments applied by Python';
-      this.showToast('Adjustments baked by Python');
+      this.statusMessage.textContent = 'Adjustments applied';
+      this.showToast('Adjustments applied');
     } catch (error) {
-      this.statusMessage.textContent = 'Python adjustments failed';
+      this.statusMessage.textContent = 'Could not apply the adjustments';
       this.showToast(error.message);
     } finally {
       this.busy = false;

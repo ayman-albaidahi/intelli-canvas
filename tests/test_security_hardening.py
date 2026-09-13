@@ -101,3 +101,26 @@ def test_export_accepts_reasonable_dimensions():
     )
 
     assert response.status_code == 200
+
+
+def test_upload_rejects_header_dimension_bomb():
+    app = create_app()
+    client = app.test_client()
+    real = _png_bytes()
+    forged = real[:16] + (16000).to_bytes(4, "big") + (16000).to_bytes(4, "big") + real[24:]
+
+    response = _upload(client, content=forged, filename="bomb.png")
+
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "INVALID_FILE"
+
+
+def test_upload_rejects_truncated_image():
+    app = create_app()
+    client = app.test_client()
+    real = _png_bytes()
+
+    response = _upload(client, content=real[: len(real) // 2], filename="truncated.png")
+
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "INVALID_FILE"

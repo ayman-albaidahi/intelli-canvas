@@ -5,7 +5,7 @@ from typing import Any
 
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 
-from .file_service import FileStorageService, FileValidationError
+from .file_service import FileStorageService
 from .image_io_service import ImageIOService
 from .image_session_service import ImageSessionService
 

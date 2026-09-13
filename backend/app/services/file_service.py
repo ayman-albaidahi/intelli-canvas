@@ -5,6 +5,7 @@ import uuid
 from pathlib import Path
 from typing import BinaryIO
 
+from PIL import Image
 from werkzeug.utils import secure_filename
 
 from ..config import Config
@@ -103,6 +104,20 @@ class FileStorageService:
         file_obj.seek(position)
         if _sniff_image_format(head) is None:
             raise FileValidationError("File content is not a valid image.")
+
+        try:
+            with Image.open(file_obj) as probe:
+                width, height = probe.size
+                if max(width, height) > Config.MAX_IMAGE_SIDE or width * height > Config.MAX_IMAGE_PIXELS:
+                    raise FileValidationError("Image dimensions exceed the allowed limit.")
+                probe.verify()
+        except FileValidationError:
+            file_obj.seek(position)
+            raise
+        except Exception:
+            file_obj.seek(position)
+            raise FileValidationError("File content is not a valid image.")
+        file_obj.seek(position)
 
         mime_type = self._detect_mime_type(file_obj, filename)
         if mime_type not in SUPPORTED_MIME_TYPES:

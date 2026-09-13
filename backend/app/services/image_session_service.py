@@ -31,6 +31,7 @@ class ImageSessionService:
                 "operation": "Upload",
                 "filename": metadata.get("stored_filename"),
                 "time": int(time.time()),
+                "storage": "uploads",
             }],
             "history_index": 0,
         }
@@ -75,6 +76,7 @@ class ImageSessionService:
                 "operation": operation,
                 "filename": filename,
                 "time": int(time.time()),
+                "storage": storage,
             })
             session["history_index"] = len(history) - 1
         return session
@@ -107,8 +109,9 @@ class ImageSessionService:
         history: list[dict[str, Any]] = session.get("history", [])
         if not isinstance(index, int) or not 0 <= index < len(history):
             raise ValueError("History index is out of range.")
-        session["current_filename"] = history[index]["filename"]
-        session["current_storage"] = "processed" if index > 0 else "uploads"
+        entry = history[index]
+        session["current_filename"] = entry["filename"]
+        session["current_storage"] = entry.get("storage", "processed" if index > 0 else "uploads")
         session["history_index"] = index
         return session
 
@@ -139,6 +142,7 @@ class ImageSessionService:
             "operation": "Current state",
             "filename": current,
             "time": int(time.time()),
+            "storage": session.get("current_storage", "processed"),
         }]
         session["history_index"] = 0
         return session

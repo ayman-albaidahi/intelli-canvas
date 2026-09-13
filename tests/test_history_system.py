@@ -123,6 +123,22 @@ def test_clear_history_keeps_current_only():
     assert payload["entries"][0]["operation"] == "Current state"
 
 
+def test_clear_then_goto_zero_restores_processed_state():
+    app = create_app()
+    client = app.test_client()
+    image_id = _setup(client, pixels=((255, 0, 0),))
+
+    client.post("/api/process/grayscale", json={"image_id": image_id})
+    client.post("/api/history/clear", json={"image_id": image_id})
+    gone = client.post("/api/history/goto", json={"image_id": image_id, "index": 0})
+
+    assert gone.status_code == 200
+    content = client.get(f"/api/images/{image_id}/content")
+    assert content.status_code == 200
+    pixel = Image.open(io.BytesIO(content.data)).convert("RGB").getpixel((0, 0))
+    assert pixel[0] == pixel[1] == pixel[2]
+
+
 def test_history_requires_known_session():
     app = create_app()
     client = app.test_client()

@@ -103,8 +103,8 @@ export class BackgroundManager {
     }
     this.busy = true;
     this.controls.status.textContent = operation === 'remove'
-      ? 'Python is removing the background…'
-      : 'Python is replacing the background…';
+      ? 'Removing the background…'
+      : 'Replacing the background…';
     try {
       const image = operation === 'remove'
         ? await this.apiClient.removeBackground(payload)
@@ -113,8 +113,8 @@ export class BackgroundManager {
       await this.canvasManager.loadFromUrl(this.apiClient.contentUrl(image.image_id), image);
       document.dispatchEvent(new CustomEvent('ic-operation'));
       this.controls.status.textContent = operation === 'remove'
-        ? 'Background removed by Python'
-        : 'Background replaced by Python';
+        ? 'Background removed'
+        : 'Background replaced';
       this.showToast(operation === 'remove' ? 'Background removed' : 'Background replaced');
     } catch (error) {
       this.controls.status.textContent = 'Background operation failed';
