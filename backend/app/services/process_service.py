@@ -47,6 +47,57 @@ class ProcessService:
             "operation": "negative",
         }
 
+    def adjustments(self, image_id: str, values: dict[str, Any]) -> dict[str, Any]:
+        """Apply every requested adjustment in one pass, writing one file."""
+        if not values:
+            raise ValueError("No adjustments were requested.")
+        source_path, _ = self.image_io._resolve_source(image_id)
+        output_path = self._new_output_path(image_id, "adjustments", ".png")
+        try:
+            with Image.open(source_path) as source:
+                result = self._apply_chain(source, values)
+                try:
+                    result.save(output_path, format="PNG")
+                finally:
+                    result.close()
+        except Exception:
+            if output_path.exists():
+                output_path.unlink()
+            raise
+
+        with Image.open(output_path) as image:
+            width, height = image.size
+        self.session_service.update_current_image(image_id, output_path.name, "processed")
+        return {
+            "image_id": image_id,
+            "format": "png",
+            "mime_type": "image/png",
+            "filename": output_path.name,
+            "path": output_path,
+            "width": width,
+            "height": height,
+            "operation": "adjustments",
+            "values": {key: value for key, value in values.items()},
+        }
+
+    def _apply_chain(self, image: Image.Image, values: dict[str, Any]) -> Image.Image:
+        result = image
+        if values.get("brightness", 100) != 100:
+            result = ImageEnhance.Brightness(result).enhance(values["brightness"] / 100)
+        if values.get("contrast", 100) != 100:
+            result = ImageEnhance.Contrast(result).enhance(values["contrast"] / 100)
+        if values.get("saturation", 100) != 100:
+            result = ImageEnhance.Color(result).enhance(values["saturation"] / 100)
+        if values.get("grayscale", False):
+            result = ImageOps.grayscale(result).convert("RGB")
+        if values.get("blur", 0) > 0:
+            result = result.filter(ImageFilter.GaussianBlur(values["blur"]))
+        if values.get("sharpen", 0) != 0:
+            result = ImageEnhance.Sharpness(result).enhance(1 + (values["sharpen"] / 5))
+        if values.get("negative", False):
+            result = ImageOps.invert(result.convert("RGB"))
+        return result
+
     def grayscale(self, image_id: str) -> dict[str, Any]:
         source_path, _ = self.image_io._resolve_source(image_id)
         output_path = self._new_output_path(image_id, "grayscale", ".png")

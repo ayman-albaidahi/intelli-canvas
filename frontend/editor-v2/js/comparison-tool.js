@@ -45,7 +45,7 @@ export class ComparisonTool {
     const imageHeight = image.naturalHeight * scale;
     ctx.save();
     ctx.translate(width / 2, height / 2);
-    if (mode === 'edited') ctx.filter = 'saturate(1.25) contrast(1.08)';
+    if (mode === 'edited') ctx.filter = this.canvasManager.previewEnabled ? this.canvasManager.adjustmentFilter() : 'none';
     ctx.drawImage(image, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight);
     ctx.restore();
   }

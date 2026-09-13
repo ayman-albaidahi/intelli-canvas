@@ -138,3 +138,49 @@ def invert_image():
     except (OSError, ValueError):
         return _error_response("NEGATIVE_FAILED", "The image could not be inverted.", 400)
     return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})
+
+
+@process_bp.post("/adjustments")
+def apply_adjustments():
+    image_id, error = _image_id_from_payload()
+    if error:
+        return error
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return _error_response("INVALID_REQUEST", "A JSON request body is required.", 400)
+
+    values: dict = {}
+    for name, low, high, code in (
+        ("brightness", 0, 200, "INVALID_BRIGHTNESS"),
+        ("contrast", 0, 200, "INVALID_CONTRAST"),
+        ("saturation", 0, 200, "INVALID_SATURATION"),
+        ("blur", 0, 20, "INVALID_BLUR"),
+        ("sharpen", 0, 5, "INVALID_SHARPEN"),
+    ):
+        value = payload.get(name)
+        if value is None:
+            continue
+        if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
+            return _error_response(code, f"{name.title()} value must be an integer from {low} to {high}.", 400)
+        values[name] = value
+    for flag in ("grayscale", "negative"):
+        value = payload.get(flag)
+        if value is None:
+            continue
+        if not isinstance(value, bool):
+            return _error_response(f"INVALID_{flag.upper()}", f"{flag.title()} must be a boolean.", 400)
+        values[flag] = value
+
+    neutral = {"brightness": 100, "contrast": 100, "saturation": 100, "blur": 0, "sharpen": 0}
+    changed = [key for key, value in values.items() if key in neutral and value != neutral[key]]
+    changed += [flag for flag in ("grayscale", "negative") if values.get(flag)]
+    if not changed:
+        return _error_response("NO_ADJUSTMENTS", "At least one adjustment must change from its neutral value.", 400)
+
+    try:
+        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], FileStorageService()).adjustments(image_id, values)
+    except (FileNotFoundError, FileValidationError) as exc:
+        return _error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError):
+        return _error_response("ADJUSTMENTS_FAILED", "The adjustments could not be applied.", 400)
+    return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})

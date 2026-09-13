@@ -21,6 +21,7 @@ export class CanvasManager {
     this.history = [];
     this.future = [];
     this.adjustments = { brightness: 100, contrast: 100, saturation: 100, blur: 0, grayscale: false, negative: false };
+    this.previewEnabled = true;
     this.drag = null;
     this.pointers = new Map();
     this.pinch = null;
@@ -257,6 +258,13 @@ export class CanvasManager {
 
   setAdjustments(next) { this.adjustments = { ...this.adjustments, ...next }; this.render(); }
 
+  setPreview(enabled) { this.previewEnabled = Boolean(enabled); this.render(); }
+
+  adjustmentFilter() {
+    const a = this.adjustments;
+    return `brightness(${a.brightness}%) contrast(${a.contrast}%) saturate(${a.saturation}%) blur(${a.blur}px) grayscale(${a.grayscale ? 1 : 0}) invert(${a.negative ? 1 : 0})`;
+  }
+
   adjustmentSummary() { const active = Object.entries(this.adjustments).filter(([key, value]) => (typeof value === 'boolean' && value) || (typeof value === 'number' && ((key === 'blur' || key === 'sharpen') ? value > 0 : value !== 100))); return active.length ? `${active.length} active` : 'Neutral'; }
 
   getSourceDimensions() { return { ...this.documentSize }; }
@@ -338,8 +346,7 @@ export class CanvasManager {
     this.ctx.translate(this.offset.x, this.offset.y);
     this.ctx.rotate(this.rotation * Math.PI / 180);
     this.ctx.scale(this.flipX, this.flipY);
-    const a = this.adjustments;
-    this.ctx.filter = `brightness(${a.brightness}%) contrast(${a.contrast}%) saturate(${a.saturation}%) blur(${a.blur}px) grayscale(${a.grayscale ? 1 : 0}) invert(${a.negative ? 1 : 0})`;
+    this.ctx.filter = this.previewEnabled ? this.adjustmentFilter() : 'none';
     this.ctx.fillStyle = this.checkerboard(this.ctx);
     this.ctx.fillRect(-width / 2, -height / 2, width, height);
     this.ctx.drawImage(this.image, sourceX, sourceY, sourceWidth, sourceHeight, -width / 2, -height / 2, width, height);

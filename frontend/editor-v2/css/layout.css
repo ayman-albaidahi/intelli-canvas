@@ -16,3 +16,17 @@ body[data-active-tool="text"] .image-canvas{cursor:text}
 .image-canvas.is-panning{cursor:grabbing!important}
 .inspector-content{overflow-wrap:anywhere}
 .canvas-zone:fullscreen .canvas-card{width:calc(100% - 48px);max-width:none;height:calc(100% - 116px);aspect-ratio:auto}
+
+/* Adjustments panel: numeric rows, per-slider resets, preview toggle, busy state. */
+.adjustment-row{display:flex;align-items:flex-end;gap:6px}
+.adjustment-row .property-field{flex:1;min-width:0;margin-bottom:13px}
+.adjustment-value{min-width:42px;padding-bottom:13px;text-align:right;font-size:10px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.mini-button{flex:0 0 auto;width:24px;height:24px;margin-bottom:13px;border-radius:7px;color:var(--muted);font-size:13px;display:grid;place-items:center;transition:background .16s var(--ease),color .16s var(--ease)}
+.mini-button:hover{background:var(--surface-muted);color:var(--text)}
+.mini-button.wide{width:auto;height:26px;padding:0 9px;margin-bottom:0;font-size:10px;font-weight:650;border:1px solid var(--line);border-radius:8px}
+.preview-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:13px}
+.preview-row .check-row{margin-top:0}
+.button.is-busy{position:relative;color:transparent!important;pointer-events:none}
+.button.is-busy::after{content:"";position:absolute;inset:0;margin:auto;width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;animation:ic-spin .7s linear infinite}
+@keyframes ic-spin{to{transform:rotate(360deg)}}
+.applied-line{margin:11px 0 0;color:var(--muted-2);font-size:10px;line-height:1.6}

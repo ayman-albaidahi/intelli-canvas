@@ -132,3 +132,134 @@ def test_chained_operations_keep_filenames_bounded():
 
     content = client.get(f"/api/images/{image_id}/content")
     assert content.status_code == 200
+
+
+def test_adjustments_batch_applies_all_values_in_one_result():
+    app = create_app()
+    client = app.test_client()
+    image_id = _upload_png(client, pixels=[(200, 100, 50)], size=(2, 1))
+
+    processed = client.post(
+        "/api/process/adjustments",
+        json={
+            "image_id": image_id,
+            "brightness": 120,
+            "contrast": 90,
+            "saturation": 110,
+            "blur": 2,
+            "sharpen": 2,
+        },
+    )
+
+    assert processed.status_code == 200
+    payload = processed.get_json()
+    assert payload["success"] is True
+    image = payload["image"]
+    assert image["operation"] == "adjustments"
+    assert image["values"]["brightness"] == 120
+    assert image["values"]["sharpen"] == 2
+    assert "path" not in image
+
+    content = client.get(f"/api/images/{image_id}/content")
+    assert content.status_code == 200
+    assert content.mimetype == "image/png"
+
+
+def test_adjustments_batch_applies_flags_in_order():
+    app = create_app()
+    client = app.test_client()
+    image_id = _upload_png(client, pixels=[(255, 0, 0)], size=(1, 1))
+
+    processed = client.post(
+        "/api/process/adjustments",
+        json={"image_id": image_id, "grayscale": True, "negative": True},
+    )
+
+    assert processed.status_code == 200
+    content = client.get(f"/api/images/{image_id}/content")
+    result = Image.open(io.BytesIO(content.data)).convert("RGB")
+    pixel = result.getpixel((0, 0))
+    assert pixel[0] == pixel[1] == pixel[2]
+    assert pixel[0] == 255 - 76
+
+
+def test_adjustments_batch_rejects_neutral_request():
+    app = create_app()
+    client = app.test_client()
+    image_id = _upload_png(client)
+
+    response = client.post(
+        "/api/process/adjustments",
+        json={"image_id": image_id, "brightness": 100, "blur": 0},
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "NO_ADJUSTMENTS"
+
+
+def test_adjustments_batch_rejects_empty_request():
+    app = create_app()
+    client = app.test_client()
+    image_id = _upload_png(client)
+
+    response = client.post("/api/process/adjustments", json={"image_id": image_id})
+
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "NO_ADJUSTMENTS"
+
+
+def test_adjustments_batch_rejects_invalid_field():
+    app = create_app()
+    client = app.test_client()
+    image_id = _upload_png(client)
+
+    response = client.post(
+        "/api/process/adjustments",
+        json={"image_id": image_id, "brightness": 999, "contrast": 120},
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "INVALID_BRIGHTNESS"
+
+
+def test_adjustments_batch_rejects_non_boolean_flag():
+    app = create_app()
+    client = app.test_client()
+    image_id = _upload_png(client)
+
+    response = client.post(
+        "/api/process/adjustments",
+        json={"image_id": image_id, "grayscale": "yes"},
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "INVALID_GRAYSCALE"
+
+
+def test_adjustments_batch_rejects_unknown_session():
+    app = create_app()
+    client = app.test_client()
+
+    response = client.post(
+        "/api/process/adjustments",
+        json={"image_id": "missing", "brightness": 150},
+    )
+
+    assert response.status_code == 404
+
+
+def test_repeated_batch_applies_keep_filenames_bounded():
+    app = create_app()
+    client = app.test_client()
+    image_id = _upload_png(client, size=(4, 4))
+
+    for _ in range(6):
+        processed = client.post(
+            "/api/process/adjustments",
+            json={"image_id": image_id, "brightness": 110, "blur": 1},
+        )
+        assert processed.status_code == 200
+        assert len(processed.get_json()["image"]["filename"]) < 120
+
+    content = client.get(f"/api/images/{image_id}/content")
+    assert content.status_code == 200
