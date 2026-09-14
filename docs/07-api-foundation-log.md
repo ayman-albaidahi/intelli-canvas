@@ -27,7 +27,7 @@ backend/app/__init__.py
 | Transform | `/api/transform` | `POST /crop`, `/resize`, `/rotate`, `/flip` |
 | Process | `/api/process` | `POST /grayscale`, `/brightness`, `/contrast`, `/blur`, `/sharpen` |
 | Background | `/api/background` | `POST /remove`, `/replace` |
-| Layers | `/api/layers` | `GET /`, `POST /` |
+| Layers | `/api/layers` | `GET /`, `PUT /` |
 | History | `/api/history` | `GET /` |
 | Pipeline | `/api/pipeline` | `GET /`, `POST /` |
 | Analysis | `/api/analysis` | `POST /` |
@@ -45,7 +45,7 @@ GET /api/health
 ## 5. Confirmed Decisions
 
 - API areas and endpoints follow `docs/04-architecture.md`.
-- The endpoints are foundational and return `501 NOT IMPLEMENTED` until their operations are implemented.
+- Layer endpoints now persist validated layer models per image session; the remaining foundation endpoints retain their documented implementation status until their operations are implemented.
 - No image-processing logic or new Service Layer was added.
 - Verification was performed manually through the terminal.
 

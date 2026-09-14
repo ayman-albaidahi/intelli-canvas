@@ -78,6 +78,11 @@ ruff check backend tests
 python backend/run.py
 ```
 
+The runtime stores image-session metadata, editing history, and layer models in
+SQLite at `instance/intellicanvas.sqlite3` by default. Set
+`INTELLICANVAS_DATABASE_PATH` to use another database file. Image binaries
+remain in the configured file-storage directories.
+
 The preferred editor URL is `http://localhost:5000/editor-v2/`. The root URL
 serves the same editor.
 

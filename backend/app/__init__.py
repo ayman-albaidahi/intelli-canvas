@@ -4,6 +4,7 @@ from flask import Flask, request, send_from_directory
 
 from .api_utils import register_error_handlers
 from .config import Config
+from .database import SQLiteSessionRepository
 from .routes import (
     analysis_bp,
     background_bp,
@@ -23,7 +24,7 @@ from .services.operation_service import NodeService
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
 
 
-def create_app() -> Flask:
+def create_app(database_path: str | None = None) -> Flask:
     """Application factory for the IntelliCanvas backend."""
     app = Flask(__name__, static_folder=str(FRONTEND_DIR), static_url_path="")
     app.config.from_object(Config)
@@ -31,7 +32,8 @@ def create_app() -> Flask:
     # the browser reuse cached HTML/CSS/JS in this development stage.
     app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
     app.config["JSON_SORT_KEYS"] = False
-    app.config["IMAGE_SESSIONS"] = {}
+    app.config["DATABASE_PATH"] = database_path or app.config["DATABASE_PATH"]
+    app.config["IMAGE_SESSIONS"] = SQLiteSessionRepository(app.config["DATABASE_PATH"])
     app.config["IMAGE_SESSION_SERVICE"] = ImageSessionService(app.config["IMAGE_SESSIONS"])
     app.config["NODE_SERVICE"] = NodeService(
         app.config["IMAGE_SESSION_SERVICE"], FileStorageService()

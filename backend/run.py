@@ -7,11 +7,13 @@ if __package__ in (None, ""):
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
     from backend.app import create_app
+    from backend.app.config import Config
 else:
     from .app import create_app
+    from .app.config import Config
 
 
-app = create_app()
+app = create_app(Config.DATABASE_PATH)
 
 
 if __name__ == "__main__":
