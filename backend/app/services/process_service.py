@@ -3,11 +3,21 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from PIL import Image, ImageEnhance, ImageFilter, ImageOps
+from PIL import Image
 
 from .file_service import FileStorageService
 from .image_io_service import ImageIOService
 from .image_session_service import ImageSessionService
+from .process_operations import (
+    apply_blur,
+    apply_brightness,
+    apply_chain,
+    apply_contrast,
+    apply_grayscale,
+    apply_negative,
+    apply_saturation,
+    apply_sharpen,
+)
 
 
 class ProcessService:
@@ -23,7 +33,7 @@ class ProcessService:
         output_path = self._new_output_path(image_id, "negative", ".png")
         try:
             with Image.open(source_path) as source:
-                result = ImageOps.invert(source.convert("RGB"))
+                result = apply_negative(source)
                 try:
                     result.save(output_path, format="PNG")
                 finally:
@@ -55,7 +65,7 @@ class ProcessService:
         output_path = self._new_output_path(image_id, "adjustments", ".png")
         try:
             with Image.open(source_path) as source:
-                result = self._apply_chain(source, values)
+                result = apply_chain(source, values)
                 try:
                     result.save(output_path, format="PNG")
                 finally:
@@ -80,30 +90,12 @@ class ProcessService:
             "values": {key: value for key, value in values.items()},
         }
 
-    def _apply_chain(self, image: Image.Image, values: dict[str, Any]) -> Image.Image:
-        result = image
-        if values.get("brightness", 100) != 100:
-            result = ImageEnhance.Brightness(result).enhance(values["brightness"] / 100)
-        if values.get("contrast", 100) != 100:
-            result = ImageEnhance.Contrast(result).enhance(values["contrast"] / 100)
-        if values.get("saturation", 100) != 100:
-            result = ImageEnhance.Color(result).enhance(values["saturation"] / 100)
-        if values.get("grayscale", False):
-            result = ImageOps.grayscale(result).convert("RGB")
-        if values.get("blur", 0) > 0:
-            result = result.filter(ImageFilter.GaussianBlur(values["blur"]))
-        if values.get("sharpen", 0) != 0:
-            result = ImageEnhance.Sharpness(result).enhance(1 + (values["sharpen"] / 5))
-        if values.get("negative", False):
-            result = ImageOps.invert(result.convert("RGB"))
-        return result
-
     def grayscale(self, image_id: str) -> dict[str, Any]:
         source_path, _ = self.image_io._resolve_source(image_id)
         output_path = self._new_output_path(image_id, "grayscale", ".png")
         try:
             with Image.open(source_path) as source:
-                result = ImageOps.grayscale(source).convert("RGB")
+                result = apply_grayscale(source)
                 try:
                     result.save(output_path, format="PNG")
                 finally:
@@ -130,10 +122,9 @@ class ProcessService:
     def brightness(self, image_id: str, value: int) -> dict[str, Any]:
         source_path, _ = self.image_io._resolve_source(image_id)
         output_path = self._new_output_path(image_id, "brightness", ".png")
-        factor = value / 100
         try:
             with Image.open(source_path) as source:
-                result = ImageEnhance.Brightness(source).enhance(factor)
+                result = apply_brightness(source, value)
                 try:
                     result.save(output_path, format="PNG")
                 finally:
@@ -161,10 +152,9 @@ class ProcessService:
     def contrast(self, image_id: str, value: int) -> dict[str, Any]:
         source_path, _ = self.image_io._resolve_source(image_id)
         output_path = self._new_output_path(image_id, "contrast", ".png")
-        factor = value / 100
         try:
             with Image.open(source_path) as source:
-                result = ImageEnhance.Contrast(source).enhance(factor)
+                result = apply_contrast(source, value)
                 try:
                     result.save(output_path, format="PNG")
                 finally:
@@ -194,7 +184,7 @@ class ProcessService:
         output_path = self._new_output_path(image_id, "blur", ".png")
         try:
             with Image.open(source_path) as source:
-                result = source.filter(ImageFilter.GaussianBlur(radius=value))
+                result = apply_blur(source, value)
                 try:
                     result.save(output_path, format="PNG")
                 finally:
@@ -222,10 +212,9 @@ class ProcessService:
     def sharpen(self, image_id: str, value: int) -> dict[str, Any]:
         source_path, _ = self.image_io._resolve_source(image_id)
         output_path = self._new_output_path(image_id, "sharpen", ".png")
-        factor = 1 + (value / 5)
         try:
             with Image.open(source_path) as source:
-                result = ImageEnhance.Sharpness(source).enhance(factor)
+                result = apply_sharpen(source, value)
                 try:
                     result.save(output_path, format="PNG")
                 finally:
@@ -253,10 +242,9 @@ class ProcessService:
     def saturation(self, image_id: str, value: int) -> dict[str, Any]:
         source_path, _ = self.image_io._resolve_source(image_id)
         output_path = self._new_output_path(image_id, "saturation", ".png")
-        factor = value / 100
         try:
             with Image.open(source_path) as source:
-                result = ImageEnhance.Color(source).enhance(factor)
+                result = apply_saturation(source, value)
                 try:
                     result.save(output_path, format="PNG")
                 finally:
