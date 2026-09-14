@@ -67,12 +67,13 @@ class GeometryService:
             image_id, output_path.name, storage="processed",
             operation=label_Resize,
         )
+        session["mime_type"] = self._mime_type(output_path)
         return {
             "image_id": image_id,
             "width": output_width,
             "height": output_height,
             "format": output_path.suffix.lower().lstrip("."),
-            "mime_type": session.get("mime_type", "application/octet-stream"),
+            "mime_type": self._mime_type(output_path),
         }
 
     def rotate(self, image_id: str, angle: int) -> dict[str, Any]:
@@ -104,6 +105,7 @@ class GeometryService:
             image_id, output_path.name, storage="processed",
             operation=label_Rotate,
         )
+        session["mime_type"] = self._mime_type(output_path)
         return self._transform_metadata(image_id, session, output_path, dimensions)
 
     def flip(self, image_id: str, direction: str) -> dict[str, Any]:
@@ -135,6 +137,37 @@ class GeometryService:
             image_id, output_path.name, storage="processed",
             operation=label_Flip,
         )
+        session["mime_type"] = self._mime_type(output_path)
+        return self._transform_metadata(image_id, session, output_path, dimensions)
+
+    def crop(
+        self, image_id: str, x: int, y: int, width: int, height: int
+    ) -> dict[str, Any]:
+        if x < 0 or y < 0 or width <= 0 or height <= 0:
+            raise ValueError("Crop dimensions must be positive and coordinates non-negative.")
+
+        label = f"Crop {width}x{height} at {x},{y}"
+        image, session, output_path = self._prepare_transform(image_id)
+        try:
+            if x + width > image.width or y + height > image.height:
+                raise ValueError("Crop rectangle exceeds image bounds.")
+            transformed = image.crop((x, y, x + width, y + height))
+            dimensions = transformed.size
+            try:
+                transformed.save(output_path, format=image.format)
+            finally:
+                transformed.close()
+        except Exception:
+            if output_path.exists():
+                output_path.unlink()
+            raise
+        finally:
+            image.close()
+
+        self.session_service.update_current_image(
+            image_id, output_path.name, storage="processed", operation=label
+        )
+        session["mime_type"] = self._mime_type(output_path)
         return self._transform_metadata(image_id, session, output_path, dimensions)
 
     def _resolve_current_path(self, session: dict[str, Any]) -> Path:
@@ -197,8 +230,16 @@ class GeometryService:
             "width": dimensions[0],
             "height": dimensions[1],
             "format": output_path.suffix.lower().lstrip("."),
-            "mime_type": session.get("mime_type", "application/octet-stream"),
+            "mime_type": self._mime_type(output_path),
         }
+
+    def _mime_type(self, output_path: Path) -> str:
+        return {
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".webp": "image/webp",
+        }.get(output_path.suffix.lower(), "application/octet-stream")
 
     def _calculate_dimensions(
         self,
