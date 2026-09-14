@@ -23,8 +23,8 @@ export function initUI() {
     const panel = button.dataset.panel;
     if (panel === 'adjustments') {
       button.addEventListener('click', () => focusPanel(panel));
-    } else if (panel === 'history') {
-      button.addEventListener('click', () => switchInspector('history'));
+    } else if (panel === 'history' || panel === 'analysis') {
+      button.addEventListener('click', () => switchInspector(panel));
     } else {
       button.classList.add('is-disabled');
       button.setAttribute('aria-disabled', 'true');
@@ -62,6 +62,8 @@ export function switchInspector(name) {
   document.querySelectorAll('[data-inspector]').forEach((tab) => tab.classList.toggle('is-active', tab.dataset.inspector === name));
   document.querySelector('#properties-panel').hidden = name !== 'properties';
   document.querySelector('#layers-panel').hidden = name !== 'layers';
+  const analysisPanel = document.querySelector('#analysis-panel');
+  if (analysisPanel) analysisPanel.hidden = name !== 'analysis';
   const historyPanel = document.querySelector('#history-panel');
   if (historyPanel) historyPanel.hidden = name !== 'history';
 }
