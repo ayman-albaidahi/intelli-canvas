@@ -11,17 +11,33 @@ transform_bp = Blueprint(
 )
 
 
-def _not_implemented_response():
-    return error_response(
-        "NOT_IMPLEMENTED",
-        "This image transformation is not implemented yet.",
-        501,
-    )
-
-
 @transform_bp.post("/crop")
 def crop_image():
-    return _not_implemented_response()
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return error_response("INVALID_REQUEST", "A JSON request body is required.", 400)
+    image_id = payload.get("image_id")
+    values = [payload.get(name) for name in ("x", "y", "width", "height")]
+    if not isinstance(image_id, str) or not image_id.strip():
+        return error_response("INVALID_IMAGE_ID", "A valid image_id is required.", 400)
+    if any(isinstance(value, bool) or not isinstance(value, int) for value in values):
+        return error_response("INVALID_CROP", "Crop values must be integers.", 400)
+    x, y, width, height = values
+    if x < 0 or y < 0 or width <= 0 or height <= 0:
+        return error_response("INVALID_CROP", "Crop dimensions are invalid.", 400)
+
+    session_service = current_app.config["IMAGE_SESSION_SERVICE"]
+    if session_service.get_session(image_id) is None:
+        return error_response("IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404)
+    try:
+        result = GeometryService(session_service, FileStorageService()).crop(
+            image_id, x, y, width, height
+        )
+    except (FileNotFoundError, FileValidationError) as exc:
+        return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError) as exc:
+        return error_response("CROP_FAILED", str(exc), 400)
+    return jsonify(success=True, image=result)
 
 
 @transform_bp.post("/resize")

@@ -1,7 +1,8 @@
 export class CropTool {
-  constructor(canvasManager, card, showToast) {
+  constructor(canvasManager, card, apiClient, showToast) {
     this.canvasManager = canvasManager;
     this.card = card;
+    this.apiClient = apiClient;
     this.showToast = showToast;
     this.overlay = document.querySelector('#crop-overlay');
     this.selection = null;
@@ -60,11 +61,23 @@ export class CropTool {
 
   stopDrag() { this.drag = null; }
 
-  apply() {
+  async apply() {
     if (!this.selection) return;
-    this.canvasManager.applyCropSelection(this.selection);
-    this.deactivate();
-    this.showToast('Crop applied');
+    const imageRect = this.canvasManager.getImageRect();
+    const dimensions = this.canvasManager.getSourceDimensions();
+    const payload = {
+      x: Math.round(((this.selection.x - imageRect.x) / imageRect.width) * dimensions.width),
+      y: Math.round(((this.selection.y - imageRect.y) / imageRect.height) * dimensions.height),
+      width: Math.round((this.selection.width / imageRect.width) * dimensions.width),
+      height: Math.round((this.selection.height / imageRect.height) * dimensions.height),
+    };
+    try {
+      const image = await this.apiClient.transform('crop', payload);
+      await this.canvasManager.loadFromUrl(this.apiClient.contentUrl(image.image_id), image);
+      document.dispatchEvent(new CustomEvent('ic-operation'));
+      this.deactivate();
+      this.showToast('Crop applied');
+    } catch (error) { this.showToast(error.message); }
   }
 
   reset() { this.selection = null; this.syncToImage(); }

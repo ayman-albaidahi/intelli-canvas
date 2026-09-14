@@ -141,6 +141,50 @@ def test_flip_preserves_dimensions_and_creates_valid_output(
     )
 
 
+def test_crop_creates_cropped_image_and_records_history(transform_context):
+    app, storage_service, session, source_path = transform_context
+
+    response = post_transform(
+        app,
+        "/api/transform/crop",
+        session["image_id"],
+        x=1,
+        y=0,
+        width=2,
+        height=2,
+    )
+
+    assert response.status_code == 200
+    result = response.get_json()["image"]
+    assert (result["width"], result["height"]) == (2, 2)
+    assert result["mime_type"] == "image/png"
+    assert source_path.exists()
+    assert_processed_image(storage_service, (2, 2))
+    history = app.test_client().get(
+        f"/api/history?image_id={session['image_id']}"
+    ).get_json()["image"]
+    assert history["total"] == 2
+    assert history["entries"][-1]["operation"].startswith("Crop")
+
+
+def test_crop_outside_image_is_rejected_without_output(transform_context):
+    app, storage_service, session, _ = transform_context
+
+    response = post_transform(
+        app,
+        "/api/transform/crop",
+        session["image_id"],
+        x=2,
+        y=1,
+        width=2,
+        height=2,
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "CROP_FAILED"
+    assert list(storage_service.processed_dir.iterdir()) == []
+
+
 def test_invalid_rotation_angle_is_rejected(transform_context):
     app, _, session, _ = transform_context
 
