@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-09-15  
 **Reference branch:** `main`
-**Reference commit:** `d25e2e6a98636d84a23ce0cfa7c19b8f6e0994fb`
+**Reference commit:** `9a4337513635ce5e0652d200ed1951277446f4b9`
 
 ## Purpose
 
@@ -12,7 +12,7 @@ This document records the current implementation state. It is a current-state co
 
 | Check | Result |
 |---|---:|
-| Automated Python tests | 245 passed after Smart Crop implementation |
+| Automated Python tests | 247 passed after Smart Crop Pipeline integration |
 | Ruff | Passed |
 | JavaScript syntax checks | Passed for editor modules |
 | Vitest | 3 passed |
