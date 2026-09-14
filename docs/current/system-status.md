@@ -14,7 +14,7 @@ When a statement in an older document describes a planned capability rather than
 
 | Check | Result |
 |---|---:|
-| Automated Python tests | 179 passed |
+| Automated Python tests | 180 passed |
 | Ruff | Passed |
 | Python compilation | Passed |
 | JavaScript syntax checks | Passed |
@@ -43,7 +43,7 @@ The root URL `/` serves the same Editor V2 application. The directory `frontend/
 
 ## Implemented capability groups
 
-The current backend exposes working endpoints for image upload and content retrieval, format conversion and export, crop and resize, rotation and flipping, processing adjustments, background operations, history navigation, deterministic image analysis, and explainable suggestions.
+The current backend exposes working endpoints for image upload and content retrieval, format conversion and export, crop and resize, rotation and flipping, processing adjustments, background operations, history navigation, deterministic image analysis, explainable suggestions, and backend layer composition during export.
 
 The analysis feature currently measures image dimensions, grayscale brightness mean, and grayscale contrast standard deviation. It can report low brightness, high brightness, and low contrast findings. The suggestion feature can produce explainable brightness and contrast suggestions, preview a suggested operation, apply a suggestion, and dismiss a suggestion request.
 

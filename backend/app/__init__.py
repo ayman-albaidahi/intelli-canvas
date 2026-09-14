@@ -19,6 +19,7 @@ from .routes import (
 )
 from .services.file_service import FileStorageService
 from .services.image_session_service import ImageSessionService
+from .services.layer_compositor_service import LayerCompositorService
 from .services.operation_service import NodeService
 
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
@@ -35,6 +36,9 @@ def create_app(database_path: str | None = None) -> Flask:
     app.config["DATABASE_PATH"] = database_path or app.config["DATABASE_PATH"]
     app.config["IMAGE_SESSIONS"] = SQLiteSessionRepository(app.config["DATABASE_PATH"])
     app.config["IMAGE_SESSION_SERVICE"] = ImageSessionService(app.config["IMAGE_SESSIONS"])
+    app.config["LAYER_COMPOSITOR_SERVICE"] = LayerCompositorService(
+        app.config["IMAGE_SESSION_SERVICE"], FileStorageService(), app.config["IMAGE_SESSIONS"]
+    )
     app.config["NODE_SERVICE"] = NodeService(
         app.config["IMAGE_SESSION_SERVICE"], FileStorageService()
     )

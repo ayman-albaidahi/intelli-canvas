@@ -19,8 +19,9 @@ def test_export_and_object_manager_include_layer_compositor():
     client = app.test_client()
 
     export_manager = client.get("/editor-v2/js/export-manager.js")
+    api_client = client.get("/editor-v2/js/api-client.js")
     object_manager = client.get("/editor-v2/js/object-manager.js")
 
     assert export_manager.status_code == 200
-    assert b"exportComposited" in export_manager.data
+    assert b"composite_layers" in api_client.data
     assert b"renderExport" in object_manager.data

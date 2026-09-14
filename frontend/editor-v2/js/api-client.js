@@ -53,11 +53,11 @@ export class ApiClient {
     return payload.image;
   }
 
-  async export(format, quality = null, width = null, height = null) {
+  async export(format, quality = null, width = null, height = null, compositeLayers = false) {
     if (!this.imageId) throw new Error('Upload an image before exporting it.');
     let response;
     try {
-      response = await fetch(`${this.baseUrl}/images/export`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, format, quality, width, height }) });
+      response = await fetch(`${this.baseUrl}/images/export`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, format, quality, width, height, composite_layers: compositeLayers }) });
     } catch {
       throw new Error(OFFLINE_MESSAGE);
     }
@@ -102,6 +102,15 @@ export class ApiClient {
       body: JSON.stringify({ image_id: imageId, layers }),
     });
     return payload.layers || [];
+  }
+
+  async composeLayers(imageId = this.imageId) {
+    const payload = await request(`${this.baseUrl}/layers/compose`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_id: imageId }),
+    });
+    return payload.image;
   }
 
   async maskPreview(params) {
