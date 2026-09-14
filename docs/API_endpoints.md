@@ -107,6 +107,8 @@ All transformation endpoints accept JSON with `image_id`.
 | DELETE | `/api/pipeline/nodes/<node_id>` | Deletes a pipeline node. |
 | POST | `/api/pipeline/nodes/<node_id>/toggle` | Enables or disables a node. |
 | POST | `/api/pipeline/reorder` | Moves a node to a zero-based order index. |
+| POST | `/api/pipeline/preview` | Executes the saved or supplied pipeline from the fixed source state and returns a non-persistent PNG preview. |
+| POST | `/api/pipeline/apply` | Executes the saved or supplied pipeline, uses the deterministic cache when available, and records one History entry. |
 | POST | `/api/analysis` | Returns image metrics and brightness/contrast findings. |
 | POST | `/api/analysis/export-report` | Downloads the analysis result as `analysis.json`. |
 | POST | `/api/suggestions` | Returns explainable suggestions derived from analysis findings. |

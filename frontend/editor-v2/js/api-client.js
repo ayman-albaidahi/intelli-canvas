@@ -143,6 +143,23 @@ export class ApiClient {
     const payload = await request(`${this.baseUrl}/pipeline/reorder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, node_id: nodeId, order }) });
     return payload.pipeline;
   }
+  async previewPipeline(nodes = null, imageId = this.imageId) {
+    let response;
+    try {
+      response = await fetch(`${this.baseUrl}/pipeline/preview`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, ...(nodes ? { nodes } : {}) }) });
+    } catch {
+      throw new Error(OFFLINE_MESSAGE);
+    }
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(friendlyMessage(payload, response.status));
+    }
+    return response.blob();
+  }
+  async applyPipeline(nodes = null, imageId = this.imageId) {
+    const payload = await request(`${this.baseUrl}/pipeline/apply`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, ...(nodes ? { nodes } : {}) }) });
+    return payload.image;
+  }
 
   async layers(imageId = this.imageId) {
     const payload = await request(`${this.baseUrl}/layers?image_id=${encodeURIComponent(imageId)}`);

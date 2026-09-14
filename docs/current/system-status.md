@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-09-14  
 **Reference branch:** `main`  
-**Reference commit:** `7894b12b0bd5d47ac85f6d617c6a205fcc498d74`
+**Reference commit:** `TBD — v0.7.2 implementation in progress`
 
 ## Purpose
 
@@ -14,7 +14,7 @@ When a statement in an older document describes a planned capability rather than
 
 | Check | Result |
 |---|---:|
-| Automated Python tests | 217 passed in the v0.7.1 validation run |
+| Automated Python tests | 220 passed in the v0.7.2 validation run |
 | Ruff | Required to pass |
 | JavaScript syntax checks | Required to pass for changed editor modules |
 | Vitest | Existing frontend suite remains required |
@@ -47,7 +47,7 @@ The v0.5 Layers & Compositing scope includes validated image, shape, text, and b
 
 The v0.6 Background Studio scope extends the existing color-mask workflow with non-destructive replacement previews, background blur, background scale and X/Y offsets, optional foreground shadow, stronger parameter validation, and corrected single-entry History behavior. v0.6.2 adds categorized background metadata, generated thumbnails, a catalog endpoint, and Background Studio reset/cancel controls. Preview endpoints do not change the current image or History. Applied removal and replacement operations preserve the existing PNG/RGBA behavior.
 
-The v0.7.0 History scope adds structured operation parameters, read-only History content URLs, Before/After comparison metadata, and PNG difference maps in absolute, heatmap, and threshold modes. The History panel now exposes comparison selectors and displays Before/After images or a diff map. These comparison operations do not change the current image or append History entries. v0.7.1 adds persistent per-image processing pipelines with validated nodes, parameter updates, enable/disable state, ordering, deletion, and a dedicated Pipeline panel.
+The v0.7.0 History scope adds structured operation parameters, read-only History content URLs, Before/After comparison metadata, and PNG difference maps in absolute, heatmap, and threshold modes. The History panel now exposes comparison selectors and displays Before/After images or a diff map. These comparison operations do not change the current image or append History entries. v0.7.1 adds persistent per-image processing pipelines with validated nodes, parameter updates, enable/disable state, ordering, deletion, and a dedicated Pipeline panel. v0.7.2 adds fixed-source Pipeline preview and apply, deterministic cache hashes, one History entry per apply, and cache-aware execution for repeated runs.
 
 Processing and transformation use Flask, Pillow, OpenCV, and NumPy at runtime. SQLite is used for persistent image-session metadata, editing history, projects, layers, and image-layer asset metadata; image binaries remain in file storage, including the `layer-assets` category. OpenCV and NumPy are isolated to `backend/app/services/process_operations.py`; routes and orchestration services remain stack-agnostic.
 
@@ -82,12 +82,14 @@ Processing and transformation use Flask, Pillow, OpenCV, and NumPy at runtime. S
 | POST/PATCH/DELETE | `/api/pipeline/nodes` | Adds, updates, or deletes validated pipeline nodes. |
 | POST | `/api/pipeline/nodes/<node_id>/toggle` | Enables or disables a node. |
 | POST | `/api/pipeline/reorder` | Reorders a node by zero-based index. |
+| POST | `/api/pipeline/preview` | Executes the pipeline from History index 0 and returns a non-persistent PNG preview. |
+| POST | `/api/pipeline/apply` | Executes from the fixed source, reuses the cache when possible, and records one `Apply pipeline` History entry. |
 
 ## Known non-current or deferred capabilities
 
 The architecture and requirements documents describe a broader roadmap that includes the processing pipeline, multiple-selection and grouping enhancements, per-layer filters, histogram stretching/equalization, general-purpose AI segmentation, and future intelligent assistance. The current v0.6 implementation deliberately does not add these capabilities.
 
-Pipeline execution and preview remain a separate v0.7.2 scope; v0.7.1 stores and edits pipeline definitions only. Smart Crop and suggested processing pipelines remain v0.8 scope. Advanced layer features such as clipping masks, adjustment layers, and per-layer pixel operations are deferred until the layer model and pipeline model evolve together.
+Smart Crop and suggested processing pipelines remain v0.8 scope. Advanced layer features such as clipping masks, adjustment layers, and per-layer pixel operations are deferred until the layer model and pipeline model evolve together.
 
 The legacy frontend files outside `frontend/editor-v2/` were removed in the dedicated `refactor/remove-legacy-frontend` change after repository-wide reference checks found no operational dependency on them. Historical documents may still mention the former paths because they preserve the project's development history; those references are not runtime entry points.
 

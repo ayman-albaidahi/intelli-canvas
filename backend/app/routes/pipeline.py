@@ -1,6 +1,7 @@
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, current_app, jsonify, request, send_file
 
 from ..api_utils import error_response
+from ..services.pipeline_execution_service import PipelineExecutionService
 from ..services.pipeline_service import PipelineParamError, PipelineService
 
 pipeline_bp = Blueprint("pipeline", __name__, url_prefix="/api/pipeline")
@@ -22,6 +23,25 @@ def _image_id(payload=None):
 
 def _response(pipeline):
     return jsonify(success=True, pipeline=pipeline)
+
+
+def _execution(payload, persist):
+    image_id, error = _image_id(payload)
+    if error:
+        return error
+    try:
+        pipeline = payload if isinstance(payload.get("nodes"), list) else _service().get(image_id)
+        result = PipelineExecutionService(
+            current_app.config["IMAGE_SESSION_SERVICE"],
+            current_app.config["FILE_STORAGE_SERVICE"],
+        ).execute(image_id, pipeline, persist=persist)
+        if not persist:
+            return send_file(result["path"], mimetype="image/png", max_age=0)
+        return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})
+    except PipelineParamError as exc:
+        return error_response("INVALID_PIPELINE", str(exc), 400)
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        return error_response("PIPELINE_EXECUTION_FAILED", str(exc), 400)
 
 
 def _handle(action):
@@ -53,6 +73,16 @@ def get_pipeline():
 @pipeline_bp.put("")
 def put_pipeline():
     return _handle(_service().save)
+
+
+@pipeline_bp.post("/preview")
+def preview_pipeline():
+    return _execution(request.get_json(silent=True) or {}, persist=False)
+
+
+@pipeline_bp.post("/apply")
+def apply_pipeline():
+    return _execution(request.get_json(silent=True) or {}, persist=True)
 
 
 @pipeline_bp.post("/nodes")

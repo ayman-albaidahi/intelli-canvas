@@ -8,12 +8,14 @@ const DEFAULT_PARAMETERS = {
 };
 
 export class PipelineManager {
-  constructor({ apiClient, showToast }) {
+  constructor({ apiClient, canvasManager, showToast }) {
     this.apiClient = apiClient;
+    this.canvasManager = canvasManager;
     this.showToast = showToast;
     this.list = document.querySelector('#pipeline-list');
     this.operation = document.querySelector('#pipeline-operation');
     this.version = document.querySelector('#pipeline-version');
+    this.status = document.querySelector('#pipeline-preview-status');
     this.pipeline = { version: 1, nodes: [] };
     this.busy = false;
     this.bind();
@@ -23,6 +25,8 @@ export class PipelineManager {
 
   bind() {
     document.querySelector('[data-action="pipeline-add"]')?.addEventListener('click', () => this.add());
+    document.querySelector('[data-action="pipeline-preview"]')?.addEventListener('click', () => this.preview());
+    document.querySelector('[data-action="pipeline-apply"]')?.addEventListener('click', () => this.apply());
     this.list?.addEventListener('click', (event) => {
       const button = event.target.closest('[data-pipeline-action]');
       if (!button || this.busy) return;
@@ -58,6 +62,35 @@ export class PipelineManager {
   async add() {
     if (this.busy || !this.apiClient.imageId) return this.showToast('Upload an image first');
     await this.run(() => this.apiClient.addPipelineNode({ operation: this.operation.value, parameters: DEFAULT_PARAMETERS[this.operation.value] || {} }));
+  }
+
+  async preview() {
+    if (this.busy || !this.apiClient.imageId) return this.showToast('Upload an image first');
+    await this.run(async () => {
+      const blob = await this.apiClient.previewPipeline(this.pipeline.nodes);
+      const url = URL.createObjectURL(blob);
+      const image = new Image();
+      image.onload = () => {
+        this.canvasManager.setPreviewOverlay(image);
+        URL.revokeObjectURL(url);
+      };
+      image.src = url;
+      if (this.status) { this.status.hidden = false; this.status.textContent = 'Preview ready — apply to commit one History entry.'; }
+      return this.pipeline;
+    });
+  }
+
+  async apply() {
+    if (this.busy || !this.apiClient.imageId) return this.showToast('Upload an image first');
+    await this.run(async () => {
+      const image = await this.apiClient.applyPipeline(this.pipeline.nodes);
+      this.canvasManager.setPreviewOverlay(null);
+      await this.canvasManager.loadFromUrl(this.apiClient.contentUrl(image.image_id), image);
+      document.dispatchEvent(new CustomEvent('ic-operation'));
+      if (this.status) { this.status.hidden = false; this.status.textContent = `Applied pipeline · cache ${image.cache_hit ? 'hit' : 'generated'}`; }
+      this.showToast('Pipeline applied as one History entry');
+      return this.pipeline;
+    });
   }
 
   async update(nodeId, changes) {
