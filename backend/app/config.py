@@ -13,3 +13,6 @@ class Config:
     # Guards the whole request body (all files + form fields) against
     # memory-exhaustion uploads before any validation runs.
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024
+    DATABASE_PATH = os.environ.get(
+        "INTELLICANVAS_DATABASE_PATH", "instance/intellicanvas.sqlite3"
+    )

@@ -14,7 +14,7 @@ When a statement in an older document describes a planned capability rather than
 
 | Check | Result |
 |---|---:|
-| Automated Python tests | 166 passed |
+| Automated Python tests | 178 passed |
 | Ruff | Passed |
 | Python compilation | Passed |
 | JavaScript syntax checks | Passed |
@@ -47,7 +47,7 @@ The current backend exposes working endpoints for image upload and content retri
 
 The analysis feature currently measures image dimensions, grayscale brightness mean, and grayscale contrast standard deviation. It can report low brightness, high brightness, and low contrast findings. The suggestion feature can produce explainable brightness and contrast suggestions, preview a suggested operation, apply a suggestion, and dismiss a suggestion request.
 
-The processing and transformation behavior is implemented with the current Flask and Pillow runtime dependencies. OpenCV, NumPy, and SQLite remain part of the documented architectural direction where they are described, but they are not current runtime dependencies in `backend/requirements.txt`.
+The processing and transformation behavior is implemented with the current Flask and Pillow runtime dependencies. SQLite is now used at runtime for persistent image-session metadata, editing history, and layer models; image binaries remain in file storage. OpenCV and NumPy remain part of the documented architectural direction but are not current runtime dependencies in `backend/requirements.txt`.
 
 ## Current API additions
 

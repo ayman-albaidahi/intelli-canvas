@@ -7,68 +7,51 @@ from typing import Any
 
 from werkzeug.utils import secure_filename
 
+from ..database import SQLiteSessionRepository
+
 MAX_BASE_STEM_LENGTH = 60
 
 
 class ImageSessionService:
-    """In-memory session registry for uploaded images."""
+    """Persistent image-session service backed by SQLite."""
 
-    def __init__(self, session_store: dict[str, dict[str, Any]] | None = None):
-        self.session_store = session_store if session_store is not None else {}
+    def __init__(self, repository: SQLiteSessionRepository):
+        self.repository = repository
+        # Kept as a compatibility alias for callers that used session_store.
+        self.session_store = repository
 
     def create_session(self, metadata: dict[str, Any]) -> dict[str, Any]:
         image_id = uuid.uuid4().hex
-        while image_id in self.session_store:
+        while image_id in self.repository:
             image_id = uuid.uuid4().hex
-
+        now = int(time.time())
         payload = {
             "image_id": image_id,
             **metadata,
             "base_stem": self._base_stem(metadata.get("original_filename")),
             "current_filename": metadata.get("stored_filename"),
             "current_storage": "uploads",
-            "history": [{
-                "operation": "Upload",
-                "filename": metadata.get("stored_filename"),
-                "time": int(time.time()),
-                "storage": "uploads",
-            }],
-            "history_index": 0,
-            "layers": [],
+            "created_at": now,
+            "updated_at": now,
         }
-        self.session_store[image_id] = payload
-        return payload
+        return self.repository.create_session(payload)
 
     def _base_stem(self, original_filename: Any) -> str:
-        """Stem of the original upload; processed outputs derive from it.
-
-        Keeping the stem fixed bounds every generated filename so chained
-        operations cannot grow paths past filesystem limits.
-        """
         stem = Path(str(original_filename or "")).stem
         sanitized = secure_filename(stem)
-        if not sanitized:
-            sanitized = "image"
-        return sanitized[:MAX_BASE_STEM_LENGTH]
+        return (sanitized or "image")[:MAX_BASE_STEM_LENGTH]
 
     def list_sessions(self) -> list[dict[str, Any]]:
-        return list(self.session_store.values())
+        return self.repository.list_sessions()
 
     def get_session(self, image_id: str) -> dict[str, Any] | None:
-        return self.session_store.get(image_id)
+        return self.repository.get_session(image_id)
 
     def get_layers(self, image_id: str) -> list[dict[str, Any]]:
-        session = self.get_session(image_id)
-        if session is None:
-            raise FileNotFoundError("Image session was not found.")
-        return list(session.get("layers", []))
+        return self.repository.get_layers(image_id)
 
     def save_layers(self, image_id: str, layers: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        session = self.get_session(image_id)
-        if session is None:
-            raise FileNotFoundError("Image session was not found.")
-        session["layers"] = layers
-        return list(layers)
+        return self.repository.save_layers(image_id, layers, int(time.time()))
 
     def update_current_image(
         self,
@@ -77,86 +60,50 @@ class ImageSessionService:
         storage: str = "processed",
         operation: str | None = None,
     ) -> dict[str, Any]:
-        session = self.get_session(image_id)
-        if session is None:
-            raise FileNotFoundError("Image session was not found.")
-        session["current_filename"] = filename
-        session["current_storage"] = storage
-        if operation:
-            history: list[dict[str, Any]] = session.setdefault("history", [])
-            index = session.get("history_index", len(history) - 1)
-            del history[index + 1:]
-            history.append({
-                "operation": operation,
-                "filename": filename,
-                "time": int(time.time()),
-                "storage": storage,
-            })
-            session["history_index"] = len(history) - 1
-        return session
+        return self.repository.update_current_image(
+            image_id, filename, storage, operation, int(time.time())
+        )
 
     def history(self, image_id: str) -> dict[str, Any]:
-        session = self.get_session(image_id)
-        if session is None:
-            raise FileNotFoundError("Image session was not found.")
-        history: list[dict[str, Any]] = session.get("history", [])
-        index = min(session.get("history_index", 0), len(history) - 1)
+        session = self._require(image_id)
+        entries = session.get("history", [])
+        index = session.get("history_index", 0)
         return {
             "image_id": image_id,
             "index": index,
-            "total": len(history),
+            "total": len(entries),
             "entries": [
-                {
-                    "index": i,
-                    "operation": entry["operation"],
-                    "time": entry["time"],
-                    "current": i == index,
-                }
-                for i, entry in enumerate(history)
+                {"index": i, "operation": entry["operation"], "time": entry["time"], "current": i == index}
+                for i, entry in enumerate(entries)
             ],
         }
 
     def goto(self, image_id: str, index: int) -> dict[str, Any]:
-        session = self.get_session(image_id)
-        if session is None:
-            raise FileNotFoundError("Image session was not found.")
-        history: list[dict[str, Any]] = session.get("history", [])
-        if not isinstance(index, int) or not 0 <= index < len(history):
+        session = self._require(image_id)
+        if not isinstance(index, int) or not 0 <= index < len(session.get("history", [])):
             raise ValueError("History index is out of range.")
-        entry = history[index]
-        session["current_filename"] = entry["filename"]
-        session["current_storage"] = entry.get("storage", "processed" if index > 0 else "uploads")
-        session["history_index"] = index
-        return session
+        return self.repository.set_current_history(image_id, index, int(time.time()))
 
     def undo(self, image_id: str) -> dict[str, Any]:
-        session = self.get_session(image_id)
-        if session is None:
-            raise FileNotFoundError("Image session was not found.")
+        session = self._require(image_id)
         index = session.get("history_index", 0)
         if index <= 0:
             raise ValueError("Nothing to undo.")
         return self.goto(image_id, index - 1)
 
     def redo(self, image_id: str) -> dict[str, Any]:
-        session = self.get_session(image_id)
-        if session is None:
-            raise FileNotFoundError("Image session was not found.")
+        session = self._require(image_id)
         index = session.get("history_index", 0)
         if index >= len(session.get("history", [])) - 1:
             raise ValueError("Nothing to redo.")
         return self.goto(image_id, index + 1)
 
     def clear_history(self, image_id: str) -> dict[str, Any]:
+        self._require(image_id)
+        return self.repository.clear_history(image_id, int(time.time()))
+
+    def _require(self, image_id: str) -> dict[str, Any]:
         session = self.get_session(image_id)
         if session is None:
             raise FileNotFoundError("Image session was not found.")
-        current = session["current_filename"]
-        session["history"] = [{
-            "operation": "Current state",
-            "filename": current,
-            "time": int(time.time()),
-            "storage": session.get("current_storage", "processed"),
-        }]
-        session["history_index"] = 0
         return session
