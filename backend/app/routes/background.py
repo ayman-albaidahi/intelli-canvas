@@ -86,6 +86,26 @@ def replace_background():
     return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})
 
 
+@background_bp.post("/replace-preview")
+def replace_background_preview():
+    image_id, params, error = _image_id_and_params()
+    if error:
+        return error
+    payload = request.get_json(silent=True) or {}
+    try:
+        background = _service().validate_replace_target(payload)
+        png_bytes = _service().preview_replace(image_id, params, background)
+    except BackgroundParamError as exc:
+        return error_response("INVALID_BACKGROUND_TARGET", str(exc), 400)
+    except FileValidationError as exc:
+        return error_response("BACKGROUND_NOT_FOUND", str(exc), 404)
+    except FileNotFoundError as exc:
+        return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError):
+        return error_response("REPLACE_PREVIEW_FAILED", "The background preview could not be generated.", 400)
+    return send_file(io.BytesIO(png_bytes), mimetype="image/png")
+
+
 @background_bp.get("/backgrounds")
 def list_backgrounds():
     return jsonify(success=True, backgrounds=_service().list_backgrounds())

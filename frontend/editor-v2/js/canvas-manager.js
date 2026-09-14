@@ -170,6 +170,7 @@ export class CanvasManager {
         this.image = image;
         this._imageData = null;
         this.setMaskOverlay(null);
+        this.setPreviewOverlay(null);
         this.rotation = 0;
         this.flipX = 1;
         this.flipY = 1;
@@ -267,6 +268,12 @@ export class CanvasManager {
     if (this.maskImage) {
       this.maskImage.addEventListener('load', () => this.render());
     }
+    this.render();
+  }
+
+  setPreviewOverlay(image) {
+    this.previewOverlay = image || null;
+    if (this.previewOverlay) this.previewOverlay.addEventListener('load', () => this.render());
     this.render();
   }
 
@@ -397,6 +404,10 @@ export class CanvasManager {
     this.ctx.fillStyle = this.checkerboard(this.ctx);
     this.ctx.fillRect(-width / 2, -height / 2, width, height);
     this.ctx.drawImage(this.image, sourceX, sourceY, sourceWidth, sourceHeight, -width / 2, -height / 2, width, height);
+    if (this.previewOverlay && this.previewOverlay.complete && this.previewOverlay.naturalWidth > 0) {
+      this.ctx.filter = 'none';
+      this.ctx.drawImage(this.previewOverlay, -width / 2, -height / 2, width, height);
+    }
     if (this.maskImage && this.maskImage.complete && this.maskImage.naturalWidth > 0) {
       this.ctx.filter = 'none';
       this.ctx.globalAlpha = 0.75;

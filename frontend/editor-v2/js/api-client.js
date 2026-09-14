@@ -143,6 +143,21 @@ export class ApiClient {
     return payload.image;
   }
 
+  async replaceBackgroundPreview(params) {
+    if (!this.imageId) throw new Error('Upload an image first.');
+    let response;
+    try {
+      response = await fetch(`${this.baseUrl}/background/replace-preview`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, ...params }) });
+    } catch {
+      throw new Error(OFFLINE_MESSAGE);
+    }
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(friendlyMessage(payload, response.status));
+    }
+    return response.blob();
+  }
+
   async listBackgrounds() {
     let response;
     try {
