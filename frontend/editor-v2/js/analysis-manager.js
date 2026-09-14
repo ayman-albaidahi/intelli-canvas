@@ -10,6 +10,8 @@ const FINDING_LABELS = {
   HIGHLIGHT_CLIPPING: 'قص في الإضاءات',
 };
 
+const explainObject = (value) => escapeHtml(JSON.stringify(value || {}, null, 2));
+
 export class AnalysisManager {
   constructor({ canvasManager, apiClient, showToast }) {
     this.canvasManager = canvasManager;
@@ -84,7 +86,7 @@ export class AnalysisManager {
     }
     if (this.findingsBox) {
       this.findingsBox.innerHTML = report.findings.length
-        ? report.findings.map((f) => `<div class="finding-row">${escapeHtml(FINDING_LABELS[f.code] || f.code)} — ${f.severity}</div>`).join('')
+        ? report.findings.map((f) => `<div class="finding-row"><strong>${escapeHtml(f.title || FINDING_LABELS[f.code] || f.code)}</strong> — ${escapeHtml(f.severity || '')}<small>${escapeHtml(f.explanation || '')}</small><code>${explainObject(f.evidence)}</code></div>`).join('')
         : '<p class="applied-line">لا مشكلات مرصودة.</p>';
       this.findingsBox.hidden = false;
     }
@@ -107,6 +109,12 @@ export class AnalysisManager {
       if (type) type.textContent = suggestion.type;
       if (reason) reason.textContent = suggestion.reason;
       if (confidence) confidence.textContent = `الثقة: ${Math.round(suggestion.confidence * 100)}%`;
+      const source = document.querySelector('#suggestion-source');
+      const evidence = document.querySelector('#suggestion-evidence');
+      const parameters = document.querySelector('#suggestion-parameters');
+      if (source) source.innerHTML = `<strong>مصدر الاقتراح</strong><p>${escapeHtml(`Rule engine ${suggestion.rule_version || '0.8.1'} من findings: ${(suggestion.source_findings || []).join(', ')}`)}</p>`;
+      if (evidence) evidence.innerHTML = `<strong>Evidence</strong><code>${explainObject(suggestion.evidence)}</code>`;
+      if (parameters) parameters.innerHTML = `<strong>Parameters</strong><code>${explainObject((suggestion.pipeline?.nodes || []).map((node) => ({ operation: node.operation, parameters: node.parameters })))}</code>`;
       this.suggestionList?.querySelectorAll('[data-suggestion-type]').forEach((item) => item.classList.toggle('is-selected', item.dataset.suggestionType === suggestion.type));
     }
   }

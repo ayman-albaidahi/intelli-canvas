@@ -1,6 +1,7 @@
 from flask import Blueprint, current_app, jsonify, request, send_file
 
 from ..api_utils import error_response
+from ..services.explainability_service import explain_finding
 from ..services.pipeline_execution_service import PipelineExecutionService
 from ..services.pipeline_service import PipelineParamError, PipelineService
 from ..services.resource_guard import ResourceExceededError
@@ -36,6 +37,7 @@ def _analysis_findings(image_id: str):
         return None, error_response("IMAGE_NOT_AVAILABLE", "Stored image was not found.", 404)
     with Image.open(source_path) as image:
         report = analyze_cached(image, source_path, storage.resolve_storage_dir("analysis-cache"))
+    report["findings"] = [explain_finding(finding) for finding in report["findings"]]
     return report, None
 
 

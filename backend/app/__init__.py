@@ -8,6 +8,7 @@ from .errors import register_error_handlers
 from .routes import (
     analysis_bp,
     background_bp,
+    explain_bp,
     health_bp,
     history_bp,
     images_bp,
@@ -57,6 +58,7 @@ def create_app(database_path: str | None = None) -> Flask:
     app.register_blueprint(history_bp)
     app.register_blueprint(pipeline_bp)
     app.register_blueprint(analysis_bp)
+    app.register_blueprint(explain_bp)
 
     @app.after_request
     def add_dev_cors_headers(response):

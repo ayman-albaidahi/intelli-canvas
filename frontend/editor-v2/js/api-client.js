@@ -297,6 +297,11 @@ export class ApiClient {
     return payload;
   }
 
+  async explainOperation(operation, parameters = {}, finding = null, source = null) {
+    const payload = await request(`${this.baseUrl}/explain-operation`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ operation, parameters, finding, source }) });
+    return payload.explanation;
+  }
+
   async previewSuggestion(imageId = this.imageId, type) {
     let response;
     try {
