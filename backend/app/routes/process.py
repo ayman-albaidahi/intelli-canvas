@@ -26,7 +26,7 @@ def convert_to_grayscale():
     if error:
         return error
     try:
-        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], FileStorageService()).grayscale(image_id)
+        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], current_app.config["FILE_STORAGE_SERVICE"]).grayscale(image_id)
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
     except (OSError, ValueError):
@@ -44,7 +44,7 @@ def adjust_brightness():
     if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 200:
         return error_response("INVALID_BRIGHTNESS", "Brightness value must be an integer from 0 to 200.", 400)
     try:
-        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], FileStorageService()).brightness(image_id, value)
+        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], current_app.config["FILE_STORAGE_SERVICE"]).brightness(image_id, value)
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
     except (OSError, ValueError):
@@ -62,7 +62,7 @@ def adjust_contrast():
     if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 200:
         return error_response("INVALID_CONTRAST", "Contrast value must be an integer from 0 to 200.", 400)
     try:
-        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], FileStorageService()).contrast(image_id, value)
+        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], current_app.config["FILE_STORAGE_SERVICE"]).contrast(image_id, value)
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
     except (OSError, ValueError):
@@ -80,7 +80,7 @@ def blur_image():
     if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 20:
         return error_response("INVALID_BLUR", "Blur value must be an integer from 0 to 20.", 400)
     try:
-        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], FileStorageService()).blur(image_id, value)
+        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], current_app.config["FILE_STORAGE_SERVICE"]).blur(image_id, value)
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
     except (OSError, ValueError):
@@ -98,7 +98,7 @@ def sharpen_image():
     if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 5:
         return error_response("INVALID_SHARPEN", "Sharpen value must be an integer from 0 to 5.", 400)
     try:
-        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], FileStorageService()).sharpen(image_id, value)
+        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], current_app.config["FILE_STORAGE_SERVICE"]).sharpen(image_id, value)
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
     except (OSError, ValueError):
@@ -116,7 +116,7 @@ def adjust_saturation():
     if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 200:
         return error_response("INVALID_SATURATION", "Saturation value must be an integer from 0 to 200.", 400)
     try:
-        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], FileStorageService()).saturation(image_id, value)
+        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], current_app.config["FILE_STORAGE_SERVICE"]).saturation(image_id, value)
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
     except (OSError, ValueError):
@@ -130,7 +130,7 @@ def invert_image():
     if error:
         return error
     try:
-        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], FileStorageService()).negative(image_id)
+        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], current_app.config["FILE_STORAGE_SERVICE"]).negative(image_id)
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
     except (OSError, ValueError):
@@ -176,7 +176,7 @@ def apply_adjustments():
         return error_response("NO_ADJUSTMENTS", "At least one adjustment must change from its neutral value.", 400)
 
     try:
-        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], FileStorageService()).adjustments(image_id, values)
+        result = ProcessService(current_app.config["IMAGE_SESSION_SERVICE"], current_app.config["FILE_STORAGE_SERVICE"]).adjustments(image_id, values)
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
     except (OSError, ValueError):

@@ -6,6 +6,14 @@ from ..services.image_io_service import ImageIOService
 from ..services.image_session_service import ImageSessionService
 from ..services.image_upload_service import ImageUploadService
 
+_DEFAULT_FILE_STORAGE_SERVICE = FileStorageService
+
+
+def _get_storage_service():
+    if FileStorageService is not _DEFAULT_FILE_STORAGE_SERVICE:
+        return FileStorageService(**{})
+    return current_app.config["FILE_STORAGE_SERVICE"]
+
 images_bp = Blueprint(
     "images",
     __name__,
@@ -33,7 +41,7 @@ def upload_image():
 
     try:
         public_image = ImageUploadService(
-            _get_session_service(), FileStorageService()
+            _get_session_service(), _get_storage_service()
         ).upload(uploaded_file, filename)
         return jsonify(success=True, image=public_image)
     except FileValidationError as exc:
@@ -69,7 +77,7 @@ def convert_image():
 
     try:
         result = ImageIOService(
-            _get_session_service(), FileStorageService()
+            _get_session_service(), _get_storage_service()
         ).convert(image_id, target_format)
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
@@ -104,7 +112,7 @@ def image_content(image_id: str):
             "IMAGE_NOT_AVAILABLE", "Image is not available.", 404
         )
 
-    storage_service = FileStorageService()
+    storage_service = _get_storage_service()
     directory = (
         storage_service.processed_dir
         if session.get("current_storage") == "processed"
@@ -180,7 +188,7 @@ def export_image():
                 image_id, persist=False
             )["path"]
         result = ImageIOService(
-            _get_session_service(), FileStorageService()
+            _get_session_service(), _get_storage_service()
         ).convert(image_id, target_format, quality=quality, width=width, height=height, source_path=composite_path)
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)

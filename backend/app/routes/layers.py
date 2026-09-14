@@ -120,7 +120,7 @@ def save_layers():
     service = _session_service()
     try:
         service.get_layers(image_id)
-        storage = FileStorageService()
+        storage = current_app.config["FILE_STORAGE_SERVICE"]
         repository = current_app.config["IMAGE_SESSIONS"]
         layers = [_store_data_url(image_id, layer, storage, repository) for layer in layers]
         saved = service.save_layers(image_id, layers)
@@ -136,7 +136,7 @@ def get_layer_asset(asset_id):
     asset = current_app.config["IMAGE_SESSIONS"].get_asset(asset_id)
     if asset is None:
         return error_response("ASSET_NOT_FOUND", "Layer asset was not found.", 404)
-    path = FileStorageService().resolve_storage_dir(asset["storage_category"]) / asset["stored_filename"]
+    path = current_app.config["FILE_STORAGE_SERVICE"].resolve_storage_dir(asset["storage_category"]) / asset["stored_filename"]
     if not path.is_file():
         return error_response("ASSET_NOT_FOUND", "Layer asset was not found.", 404)
     return send_file(path, mimetype=asset["mime_type"], conditional=True)

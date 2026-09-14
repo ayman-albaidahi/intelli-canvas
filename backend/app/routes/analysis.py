@@ -21,7 +21,7 @@ def _session_image(image_id: str):
 
     from ..services.file_service import FileStorageService
 
-    storage = FileStorageService()
+    storage = current_app.config["FILE_STORAGE_SERVICE"]
     directory = (
         storage.processed_dir
         if session.get("current_storage") == "processed"

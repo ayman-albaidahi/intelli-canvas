@@ -17,7 +17,7 @@ background_bp = Blueprint(
 def _service() -> BackgroundService:
     return BackgroundService(
         current_app.config["IMAGE_SESSION_SERVICE"],
-        FileStorageService(),
+        current_app.config["FILE_STORAGE_SERVICE"],
     )
 
 

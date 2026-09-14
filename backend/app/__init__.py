@@ -36,11 +36,14 @@ def create_app(database_path: str | None = None) -> Flask:
     app.config["DATABASE_PATH"] = database_path or app.config["DATABASE_PATH"]
     app.config["IMAGE_SESSIONS"] = SQLiteSessionRepository(app.config["DATABASE_PATH"])
     app.config["IMAGE_SESSION_SERVICE"] = ImageSessionService(app.config["IMAGE_SESSIONS"])
+    app.config["FILE_STORAGE_SERVICE"] = FileStorageService()
     app.config["LAYER_COMPOSITOR_SERVICE"] = LayerCompositorService(
-        app.config["IMAGE_SESSION_SERVICE"], FileStorageService(), app.config["IMAGE_SESSIONS"]
+        app.config["IMAGE_SESSION_SERVICE"],
+        app.config["FILE_STORAGE_SERVICE"],
+        app.config["IMAGE_SESSIONS"],
     )
     app.config["NODE_SERVICE"] = NodeService(
-        app.config["IMAGE_SESSION_SERVICE"], FileStorageService()
+        app.config["IMAGE_SESSION_SERVICE"], app.config["FILE_STORAGE_SERVICE"]
     )
     register_error_handlers(app)
 

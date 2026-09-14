@@ -4,6 +4,15 @@ from ..api_utils import error_response
 from ..services.file_service import FileStorageService, FileValidationError
 from ..services.geometry_service import GeometryService
 
+_DEFAULT_FILE_STORAGE_SERVICE = FileStorageService
+
+
+def _get_storage_service():
+    if FileStorageService is not _DEFAULT_FILE_STORAGE_SERVICE:
+        return FileStorageService(**{})
+    return current_app.config["FILE_STORAGE_SERVICE"]
+
+
 transform_bp = Blueprint(
     "transform",
     __name__,
@@ -30,7 +39,7 @@ def crop_image():
     if session_service.get_session(image_id) is None:
         return error_response("IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404)
     try:
-        result = GeometryService(session_service, FileStorageService()).crop(
+        result = GeometryService(session_service, _get_storage_service()).crop(
             image_id, x, y, width, height
         )
     except (FileNotFoundError, FileValidationError) as exc:
@@ -91,7 +100,7 @@ def resize_image():
         )
 
     try:
-        result = GeometryService(session_service, FileStorageService()).resize(
+        result = GeometryService(session_service, _get_storage_service()).resize(
             image_id=image_id,
             width=width,
             height=height,
@@ -133,7 +142,7 @@ def rotate_image():
         )
 
     try:
-        result = GeometryService(session_service, FileStorageService()).rotate(
+        result = GeometryService(session_service, _get_storage_service()).rotate(
             image_id, angle
         )
     except (FileNotFoundError, FileValidationError) as exc:
@@ -174,7 +183,7 @@ def flip_image():
         )
 
     try:
-        result = GeometryService(session_service, FileStorageService()).flip(
+        result = GeometryService(session_service, _get_storage_service()).flip(
             image_id, direction
         )
     except (FileNotFoundError, FileValidationError) as exc:

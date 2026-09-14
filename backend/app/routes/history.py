@@ -107,6 +107,6 @@ def current_file():
     session = _session_service().get_session(image_id)
     if session is None:
         return error_response("IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404)
-    storage = FileStorageService()
+    storage = current_app.config["FILE_STORAGE_SERVICE"]
     directory = storage.processed_dir if session.get("current_storage") == "processed" else storage.uploads_dir
     return jsonify(success=True, filename=session.get("current_filename"), directory=directory.name)
