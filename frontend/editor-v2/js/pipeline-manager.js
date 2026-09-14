@@ -16,6 +16,8 @@ export class PipelineManager {
     this.operation = document.querySelector('#pipeline-operation');
     this.version = document.querySelector('#pipeline-version');
     this.status = document.querySelector('#pipeline-preview-status');
+    this.panel = document.querySelector('#pipeline-panel');
+    this.retry = document.querySelector('[data-action="pipeline-retry"]');
     this.pipeline = { version: 1, nodes: [] };
     this.busy = false;
     this.bind();
@@ -27,6 +29,7 @@ export class PipelineManager {
     document.querySelector('[data-action="pipeline-add"]')?.addEventListener('click', () => this.add());
     document.querySelector('[data-action="pipeline-preview"]')?.addEventListener('click', () => this.preview());
     document.querySelector('[data-action="pipeline-apply"]')?.addEventListener('click', () => this.apply());
+    this.retry?.addEventListener('click', () => this.refresh());
     this.list?.addEventListener('click', (event) => {
       const button = event.target.closest('[data-pipeline-action]');
       if (!button || this.busy) return;
@@ -47,6 +50,13 @@ export class PipelineManager {
       const value = input.type === 'number' ? Number(input.value) : input.value;
       this.update(node.id, { parameters: { ...node.parameters, [input.dataset.nodeParameter]: value } });
     });
+    this.list?.addEventListener('keydown', (event) => {
+      const row = event.target.closest('[data-node-id]');
+      if (!row || (!event.altKey && event.key !== 'Enter')) return;
+      if (event.key === 'ArrowUp') { event.preventDefault(); this.move(row.dataset.nodeId, -1); }
+      if (event.key === 'ArrowDown') { event.preventDefault(); this.move(row.dataset.nodeId, 1); }
+      if (event.key === 'Enter' && event.target === row) { event.preventDefault(); this.toggle(row.dataset.nodeId); }
+    });
   }
 
   async refresh() {
@@ -54,8 +64,9 @@ export class PipelineManager {
     try {
       this.pipeline = await this.apiClient.pipeline();
       this.render();
-    } catch {
-      /* The panel stays empty until an image is available. */
+      this.setStatus('Pipeline loaded.', false);
+    } catch (error) {
+      this.setStatus(error.message, true);
     }
   }
 
@@ -74,8 +85,12 @@ export class PipelineManager {
         this.canvasManager.setPreviewOverlay(image);
         URL.revokeObjectURL(url);
       };
+      image.onerror = () => {
+        URL.revokeObjectURL(url);
+        this.setStatus('Preview image could not be displayed. Try again.', true);
+      };
       image.src = url;
-      if (this.status) { this.status.hidden = false; this.status.textContent = 'Preview ready — apply to commit one History entry.'; }
+      this.setStatus('Preview ready — apply to commit one History entry.', false);
       return this.pipeline;
     });
   }
@@ -87,7 +102,7 @@ export class PipelineManager {
       this.canvasManager.setPreviewOverlay(null);
       await this.canvasManager.loadFromUrl(this.apiClient.contentUrl(image.image_id), image);
       document.dispatchEvent(new CustomEvent('ic-operation'));
-      if (this.status) { this.status.hidden = false; this.status.textContent = `Applied pipeline · cache ${image.cache_hit ? 'hit' : 'generated'}`; }
+      this.setStatus(`Applied pipeline · cache ${image.cache_hit ? 'hit' : 'generated'}`, false);
       this.showToast('Pipeline applied as one History entry');
       return this.pipeline;
     });
@@ -114,14 +129,26 @@ export class PipelineManager {
 
   async run(operation) {
     this.busy = true;
+    if (this.panel) this.panel.setAttribute('aria-busy', 'true');
+    this.setStatus('Working…', false);
     try {
       this.pipeline = await operation();
       this.render();
     } catch (error) {
-      this.showToast(error.message);
+      this.setStatus(error.message, true);
+      this.showToast(`Pipeline error: ${error.message}`);
     } finally {
       this.busy = false;
+      if (this.panel) this.panel.setAttribute('aria-busy', 'false');
     }
+  }
+
+  setStatus(message, isError) {
+    if (!this.status) return;
+    this.status.hidden = !message;
+    this.status.textContent = message || '';
+    this.status.classList.toggle('is-error', Boolean(isError));
+    if (this.retry) this.retry.hidden = !isError;
   }
 
   render() {
@@ -136,7 +163,7 @@ export class PipelineManager {
         if (typeof value === 'boolean' || typeof value === 'object') return '';
         return `<label>${escapeHtml(key)}<input type="number" data-node-parameter="${escapeHtml(key)}" value="${escapeHtml(value)}" step="any" /></label>`;
       }).join('');
-      return `<div class="pipeline-row${node.enabled ? '' : ' is-disabled'}" data-node-id="${escapeHtml(node.id)}"><div class="pipeline-row-head"><span class="pipeline-drag">☰</span><strong>${escapeHtml(node.operation)}</strong><span class="pipeline-order">${index + 1}</span><button class="mini-button" data-pipeline-action="toggle" title="Enable or disable">${node.enabled ? 'On' : 'Off'}</button><button class="mini-button" data-pipeline-action="up" title="Move up">↑</button><button class="mini-button" data-pipeline-action="down" title="Move down">↓</button><button class="mini-button" data-pipeline-action="delete" title="Delete">×</button></div><div class="pipeline-params">${parameters || '<span class="muted">No parameters</span>'}</div></div>`;
+      return `<div class="pipeline-row${node.enabled ? '' : ' is-disabled'}" data-node-id="${escapeHtml(node.id)}" tabindex="0" role="listitem" aria-label="${escapeHtml(node.operation)} operation, ${node.enabled ? 'enabled' : 'disabled'}"><div class="pipeline-row-head"><span class="pipeline-drag" aria-hidden="true">☰</span><strong>${escapeHtml(node.operation)}</strong><span class="pipeline-order" aria-label="Order ${index + 1}">${index + 1}</span><button class="mini-button" data-pipeline-action="toggle" aria-label="${node.enabled ? 'Disable' : 'Enable'} ${escapeHtml(node.operation)}" title="Enable or disable">${node.enabled ? 'On' : 'Off'}</button><button class="mini-button" data-pipeline-action="up" aria-label="Move ${escapeHtml(node.operation)} up" title="Move up">↑</button><button class="mini-button" data-pipeline-action="down" aria-label="Move ${escapeHtml(node.operation)} down" title="Move down">↓</button><button class="mini-button" data-pipeline-action="delete" aria-label="Delete ${escapeHtml(node.operation)}" title="Delete">×</button></div><div class="pipeline-params">${parameters || '<span class="muted">No parameters</span>'}</div></div>`;
     }).join('');
   }
 }

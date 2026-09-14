@@ -112,4 +112,26 @@ class PipelineService:
             raise PipelineParamError("Node parameters must be an object with at most 20 fields.")
         if not isinstance(enabled, bool):
             raise PipelineParamError("Node enabled must be boolean.")
+        cls.validate_parameters(operation, parameters)
         return {"id": node_id, "operation": operation, "parameters": parameters, "enabled": enabled}
+
+    @staticmethod
+    def validate_parameters(operation: str, parameters: dict[str, Any]) -> None:
+        if operation in {"sobel", "median-filter", "morphology"}:
+            ksize = parameters.get("ksize", 3)
+            if isinstance(ksize, bool) or not isinstance(ksize, int) or not 1 <= ksize <= 15 or not ksize % 2:
+                raise PipelineParamError("ksize must be an odd integer from 1 to 15.")
+        if operation == "morphology" and parameters.get("operation", "open") not in {"erode", "dilate", "open", "close"}:
+            raise PipelineParamError("morphology operation is invalid.")
+        if operation in {"brightness", "contrast", "saturation"}:
+            value = parameters.get("value", 100)
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not -1000 <= value <= 1000:
+                raise PipelineParamError("value must be a number from -1000 to 1000.")
+        if operation == "gamma":
+            value = parameters.get("value", 1)
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0.1 <= value <= 5:
+                raise PipelineParamError("gamma value must be from 0.1 to 5.")
+        if operation == "threshold":
+            value = parameters.get("value", 128)
+            if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 255:
+                raise PipelineParamError("threshold value must be an integer from 0 to 255.")

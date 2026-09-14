@@ -8,15 +8,22 @@ function friendlyMessage(payload, status) {
   const code = payload.error?.code;
   if (code === 'IMAGE_SESSION_NOT_FOUND') return 'Your editing session expired — upload the image again.';
   if (code === 'IMAGE_NOT_AVAILABLE') return 'The processed image is no longer available — try the operation again.';
+  if (code === 'PIPELINE_EXECUTION_FAILED') return 'The pipeline could not be executed. Check its parameters and try again.';
+  if (code === 'INVALID_PIPELINE') return 'The pipeline contains an unsupported operation or invalid parameter.';
   return payload.error?.message || `Request failed (${status}). Make sure the app is running.`;
 }
 
 async function request(url, options = {}) {
   let response;
+  const controller = options.signal ? null : new AbortController();
+  const timeout = controller ? setTimeout(() => controller.abort(), 15000) : null;
   try {
-    response = await fetch(url, options);
-  } catch {
+    response = await fetch(url, controller ? { ...options, signal: controller.signal } : options);
+  } catch (error) {
+    if (error.name === 'AbortError') throw new Error('The editing server took too long to respond. Try again.');
     throw new Error(OFFLINE_MESSAGE);
+  } finally {
+    if (timeout) clearTimeout(timeout);
   }
   const payload = await response.json().catch(() => ({}));
   if (!response.ok || payload.success === false) {
@@ -145,10 +152,15 @@ export class ApiClient {
   }
   async previewPipeline(nodes = null, imageId = this.imageId) {
     let response;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
     try {
-      response = await fetch(`${this.baseUrl}/pipeline/preview`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, ...(nodes ? { nodes } : {}) }) });
-    } catch {
+      response = await fetch(`${this.baseUrl}/pipeline/preview`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, ...(nodes ? { nodes } : {}) }), signal: controller.signal });
+    } catch (error) {
+      if (error.name === 'AbortError') throw new Error('Pipeline preview timed out. Try a smaller image or fewer operations.');
       throw new Error(OFFLINE_MESSAGE);
+    } finally {
+      clearTimeout(timeout);
     }
     if (!response.ok) {
       const payload = await response.json().catch(() => ({}));

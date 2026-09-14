@@ -71,3 +71,13 @@ def test_pipeline_apply_can_use_explicit_nodes_without_persisting_definition():
     saved = client.get(f"/api/pipeline?image_id={image_id}").get_json()["pipeline"]
     assert saved["nodes"] == []
     assert client.get(f"/api/history?image_id={image_id}").get_json()["image"]["total"] == 2
+
+
+def test_pipeline_apply_returns_safe_failure_for_invalid_parameters():
+    app = create_app()
+    client = app.test_client()
+    image_id = _image(client)
+    response = client.post("/api/pipeline/apply", json={"image_id": image_id, "nodes": [{"id": "bad", "operation": "sobel", "parameters": {"ksize": 4}, "enabled": True}]})
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "INVALID_PIPELINE"
+    assert client.get(f"/api/history?image_id={image_id}").get_json()["image"]["total"] == 1

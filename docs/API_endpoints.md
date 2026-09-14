@@ -118,7 +118,9 @@ All transformation endpoints accept JSON with `image_id`.
 
 ## Operational limits
 
-The backend enforces request, file, image-side, pixel-count, and export-dimension limits. Clients should display the returned error `code` and `message` rather than exposing internal paths or exception details.
+The backend enforces request, file, image-side, pixel-count, and export-dimension limits. Clients should display the returned error `code` and `message` rather than exposing internal paths or exception details. Pipeline validation returns `INVALID_PIPELINE` for unsupported operations or invalid parameters; execution failures return `PIPELINE_EXECUTION_FAILED`; and missing sessions return `IMAGE_SESSION_NOT_FOUND`. Preview is read-only, while apply records one History operation.
+
+The v0.7.3 client applies a 15-second request timeout and a 30-second Pipeline preview timeout. A failed Pipeline refresh or mutation exposes a retry action in the Pipeline panel. See [`docs/v0.7.3-quality.md`](v0.7.3-quality.md) for keyboard controls, accessibility states, and performance test limits.
 
 ## Local development
 
