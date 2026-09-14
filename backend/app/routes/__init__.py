@@ -6,6 +6,7 @@ from .images import images_bp
 from .layers import layers_bp
 from .pipeline import pipeline_bp
 from .process import process_bp
+from .suggestions import suggestions_bp
 from .transform import transform_bp
 
 __all__ = [
@@ -17,5 +18,6 @@ __all__ = [
     "layers_bp",
     "pipeline_bp",
     "process_bp",
+    "suggestions_bp",
     "transform_bp",
 ]

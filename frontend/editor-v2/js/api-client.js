@@ -131,4 +131,36 @@ export class ApiClient {
     const payload = await request(`${this.baseUrl}/background/backgrounds`, { method: 'POST', body });
     return payload.background;
   }
+
+  async analyze(imageId = this.imageId) {
+    const payload = await request(`${this.baseUrl}/analysis`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId }) });
+    return { metrics: payload.metrics, findings: payload.findings };
+  }
+
+  async suggestions(imageId = this.imageId) {
+    const payload = await request(`${this.baseUrl}/suggestions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId }) });
+    return { metrics: payload.metrics, findings: payload.findings, suggestions: payload.suggestions };
+  }
+
+  async previewSuggestion(imageId = this.imageId, type) {
+    let response;
+    try {
+      response = await fetch(`${this.baseUrl}/suggestions/preview`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, type }) });
+    } catch {
+      throw new Error(OFFLINE_MESSAGE);
+    }
+    if (!response.ok) throw new Error('The suggestion preview could not be generated.');
+    return response.blob();
+  }
+
+  async applySuggestion(imageId = this.imageId, type) {
+    if (!this.imageId) throw new Error('Upload an image first.');
+    const payload = await request(`${this.baseUrl}/suggestions/apply`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, type }) });
+    return payload.node;
+  }
+
+  async dismissSuggestion(type, imageId = this.imageId) {
+    await request(`${this.baseUrl}/suggestions/dismiss`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, type }) });
+    return true;
+  }
 }

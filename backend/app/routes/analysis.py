@@ -1,4 +1,9 @@
-from flask import Blueprint, jsonify
+import io
+
+from flask import Blueprint, current_app, jsonify, request, send_file
+
+from ..api_utils import error_response
+from ..services.analysis_service import analyze
 
 analysis_bp = Blueprint(
     "analysis",
@@ -7,19 +12,55 @@ analysis_bp = Blueprint(
 )
 
 
-def _not_implemented_response():
-    return (
-        jsonify(
-            success=False,
-            error={
-                "code": "NOT_IMPLEMENTED",
-                "message": "Image analysis is not implemented yet.",
-            },
-        ),
-        501,
+def _session_image(image_id: str):
+    session_service = current_app.config["IMAGE_SESSION_SERVICE"]
+    session = session_service.get_session(image_id)
+    if session is None:
+        return None
+    from pathlib import Path
+
+    from ..services.file_service import FileStorageService
+
+    storage = FileStorageService()
+    directory = (
+        storage.processed_dir
+        if session.get("current_storage") == "processed"
+        else storage.uploads_dir
     )
+    source_path = Path(directory) / (session.get("current_filename") or "")
+    if not source_path.is_file():
+        return None
+    from PIL import Image
+
+    return Image.open(source_path)
 
 
 @analysis_bp.post("")
 def analyze_image():
-    return _not_implemented_response()
+    payload = request.get_json(silent=True) or {}
+    image_id = payload.get("image_id")
+    if not isinstance(image_id, str) or not image_id.strip():
+        return error_response("INVALID_IMAGE_ID", "A valid image_id is required.", 400)
+    image = _session_image(image_id)
+    if image is None:
+        return error_response("IMAGE_NOT_AVAILABLE", "Stored image was not found.", 404)
+    with image:
+        report = analyze(image)
+    return jsonify(success=True, image_id=image_id, **report)
+
+
+@analysis_bp.post("/export-report")
+def export_report():
+    payload = request.get_json(silent=True) or {}
+    image_id = payload.get("image_id")
+    if not isinstance(image_id, str) or not image_id.strip():
+        return error_response("INVALID_IMAGE_ID", "A valid image_id is required.", 400)
+    image = _session_image(image_id)
+    if image is None:
+        return error_response("IMAGE_NOT_AVAILABLE", "Stored image was not found.", 404)
+    with image:
+        report = analyze(image)
+    buffer = io.BytesIO()
+    buffer.write(jsonify(success=True, image_id=image_id, **report).get_data())
+    buffer.seek(0)
+    return send_file(buffer, mimetype="application/json", as_attachment=True, download_name="analysis.json")
