@@ -41,8 +41,9 @@ export class AnalysisManager {
     if (this.findingsBox) this.findingsBox.innerHTML = '<p class="applied-line">جارٍ تحليل الصورة…</p>';
     if (this.findingsBox) this.findingsBox.hidden = false;
     try {
-      const report = await this.apiClient.analyze();
+      const report = await this.apiClient.suggestions();
       this.render(report);
+      if (report.suggestions?.length) this.showSuggestion(report.suggestions[0]);
     } catch (error) {
       this.showToast(error.message);
     } finally {
