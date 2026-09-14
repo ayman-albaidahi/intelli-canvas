@@ -66,7 +66,7 @@ The following endpoints belong to the current analysis and suggestion implementa
 
 The architecture and requirements documents describe a broader roadmap that includes histogram processing, edge detection, morphological operations, multiple-image compositing, and future intelligent assistance. Those documents remain valid as planning references, but each capability must be verified against the current API and tests before being described as implemented.
 
-The legacy frontend files outside `frontend/editor-v2/` are retained in the repository but are not the supported product entry point. Any decision to isolate or remove them must be made in a separate refactoring change after checking historical references and user workflows.
+The legacy frontend files outside `frontend/editor-v2/` were removed in the dedicated `refactor/remove-legacy-frontend` change after repository-wide reference checks found no operational dependency on them. Historical documents may still mention the former paths because they preserve the project's development history; those references are not runtime entry points.
 
 ## Change-control rule
 
