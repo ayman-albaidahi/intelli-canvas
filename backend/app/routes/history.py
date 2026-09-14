@@ -1,5 +1,6 @@
 from flask import Blueprint, current_app, jsonify, request
 
+from ..api_utils import error_response
 from ..services.file_service import FileStorageService
 
 history_bp = Blueprint(
@@ -8,9 +9,6 @@ history_bp = Blueprint(
     url_prefix="/api/history",
 )
 
-
-def _error_response(code: str, message: str, status_code: int):
-    return jsonify(success=False, error={"code": code, "message": message}), status_code
 
 
 def _session_service():
@@ -23,9 +21,9 @@ def _image_id():
         payload = {}
     image_id = payload.get("image_id")
     if not isinstance(image_id, str) or not image_id.strip():
-        return None, _error_response("INVALID_IMAGE_ID", "A valid image_id is required.", 400)
+        return None, error_response("INVALID_IMAGE_ID", "A valid image_id is required.", 400)
     if _session_service().get_session(image_id) is None:
-        return None, _error_response("IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404)
+        return None, error_response("IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404)
     return image_id, None
 
 
@@ -49,9 +47,9 @@ def _state(image_id: str):
 def get_history():
     image_id = request.args.get("image_id")
     if not image_id:
-        return _error_response("INVALID_IMAGE_ID", "A valid image_id is required.", 400)
+        return error_response("INVALID_IMAGE_ID", "A valid image_id is required.", 400)
     if _session_service().get_session(image_id) is None:
-        return _error_response("IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404)
+        return error_response("IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404)
     return _state(image_id)
 
 
@@ -64,7 +62,7 @@ def goto_history():
     try:
         _session_service().goto(image_id, index)
     except ValueError as exc:
-        return _error_response("HISTORY_INDEX_INVALID", str(exc), 400)
+        return error_response("HISTORY_INDEX_INVALID", str(exc), 400)
     return _state(image_id)
 
 
@@ -76,7 +74,7 @@ def undo_history():
     try:
         _session_service().undo(image_id)
     except ValueError as exc:
-        return _error_response("NOTHING_TO_UNDO", str(exc), 400)
+        return error_response("NOTHING_TO_UNDO", str(exc), 400)
     return _state(image_id)
 
 
@@ -88,7 +86,7 @@ def redo_history():
     try:
         _session_service().redo(image_id)
     except ValueError as exc:
-        return _error_response("NOTHING_TO_REDO", str(exc), 400)
+        return error_response("NOTHING_TO_REDO", str(exc), 400)
     return _state(image_id)
 
 
@@ -105,10 +103,10 @@ def clear_history():
 def current_file():
     image_id = request.args.get("image_id")
     if not image_id:
-        return _error_response("INVALID_IMAGE_ID", "A valid image_id is required.", 400)
+        return error_response("INVALID_IMAGE_ID", "A valid image_id is required.", 400)
     session = _session_service().get_session(image_id)
     if session is None:
-        return _error_response("IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404)
+        return error_response("IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404)
     storage = FileStorageService()
     directory = storage.processed_dir if session.get("current_storage") == "processed" else storage.uploads_dir
     return jsonify(success=True, filename=session.get("current_filename"), directory=directory.name)
