@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-09-14  
 **Reference branch:** `main`  
-**Reference commit:** `2efb062acc6585d869aad9adf324380743229c96`
+**Reference commit:** `ac7c11ce79b31c4d0773313e2ab1a27508ed6614`
 
 ## Purpose
 
@@ -14,14 +14,11 @@ When a statement in an older document describes a planned capability rather than
 
 | Check | Result |
 |---|---:|
-| Automated Python tests | 203 passed |
-| Ruff | Passed |
+| Automated Python tests | 206 passed in the v0.5 validation run |
+| Ruff | Passed in the v0.5 validation run |
 | JavaScript syntax checks | Passed for changed editor modules |
 | Vitest | 3 passed |
 | OpenCV/NumPy import | Passed (`cv2` 5.0.0, NumPy 2.5.3) |
-| Dependency audit | No known vulnerabilities reported at the prior review |
-| Health endpoint | HTTP 200 at the prior review |
-| Analysis and suggestion API smoke test | Passed at the prior review |
 
 ## Official local entry points
 
@@ -44,28 +41,15 @@ The root URL `/` serves the same Editor V2 application. The directory `frontend/
 
 ## Implemented capability groups
 
-The current backend exposes working endpoints for image upload and content retrieval, format conversion and export, crop and resize, rotation and flipping, processing adjustments and filters, background operations, history navigation, deterministic image analysis, explainable suggestions, and backend layer composition during export.
+The current backend exposes working endpoints for image upload and content retrieval, format conversion and export, crop and resize, rotation and flipping, processing adjustments and filters, background operations, history navigation, deterministic image analysis, explainable suggestions, persistent layers, and backend layer composition during export.
 
-The analysis feature currently measures image dimensions, grayscale brightness mean, and grayscale contrast standard deviation. It can report low brightness, high brightness, and low contrast findings. The suggestion feature can produce explainable brightness and contrast suggestions, preview a suggested operation, apply a suggestion, and dismiss a suggestion request.
+The v0.5 Layers & Compositing scope now includes validated image, shape, text, and brush layer payloads; persisted z-order; visibility; opacity; transforms; supported blend modes; session-scoped image assets; multi-image composition; and export with `composite_layers=true`. The active Editor V2 Layers panel provides selection, visibility toggling, locking, renaming, duplication, drag-and-drop ordering, edge ordering, deletion, and transform/opacity/blend controls.
+
+Layer composition is intentionally separate from the v0.4 pixel-processing history: export composition renders the persisted layers without changing the current base image or adding a history entry. Layer image assets are checked against the image session when persisted and retrieved.
 
 Processing and transformation use Flask, Pillow, OpenCV, and NumPy at runtime. SQLite is used for persistent image-session metadata, editing history, projects, layers, and image-layer asset metadata; image binaries remain in file storage, including the `layer-assets` category. OpenCV and NumPy are isolated to `backend/app/services/process_operations.py`; routes and orchestration services remain stack-agnostic.
 
-The Filters & analysis panel in Editor V2 provides controls for every v0.4 operation. Histogram computation is read-only and leaves the session image and history unchanged. Sobel, Laplacian, median filtering, morphology, gamma correction, and thresholding bake an image result through the existing processing/history flow. The pre-existing Pillow `apply_blur` remains the application's Gaussian blur implementation; no duplicate OpenCV Gaussian blur was introduced.
-
 ## Current API additions
-
-The following endpoints belong to the current analysis and suggestion implementation:
-
-| Method | Path | Current behavior |
-|---|---|---|
-| POST | `/api/analysis` | Returns image metrics and findings. |
-| POST | `/api/analysis/export-report` | Downloads the analysis result as `analysis.json`. |
-| POST | `/api/suggestions` | Returns findings and explainable suggestions. |
-| POST | `/api/suggestions/preview` | Returns a PNG preview without changing image history. |
-| POST | `/api/suggestions/apply` | Applies a suggestion and records the operation. |
-| POST | `/api/suggestions/dismiss` | Accepts dismissal of a suggestion. |
-
-The current processing API additionally includes:
 
 | Method | Path | Current behavior |
 |---|---|---|
@@ -76,10 +60,17 @@ The current processing API additionally includes:
 | POST | `/api/process/morphology` | Applies `erode`, `dilate`, `open`, or `close` with an optional odd `ksize` from 1 through 15. |
 | POST | `/api/process/gamma` | Applies gamma correction for a value from 0.1 through 5.0. |
 | POST | `/api/process/threshold` | Applies binary thresholding for an integer value from 0 through 255. |
+| GET | `/api/layers?image_id=<id>` | Returns persisted layers in z-order. |
+| PUT | `/api/layers` | Validates and persists layer payloads and stores image data URLs as session-scoped assets. |
+| POST | `/api/layers/compose` | Renders visible persisted layers over the current base image. |
+| GET | `/api/layers/assets/<asset_id>?image_id=<id>` | Returns an image layer asset only for its owning image session. |
+| POST | `/api/images/export` | Supports `composite_layers=true` to export the composed image without mutating history. |
 
 ## Known non-current or deferred capabilities
 
-The architecture and requirements documents describe a broader roadmap that includes multiple-image compositing and future intelligent assistance. Those documents remain valid as planning references, but each capability must be verified against the current API and tests before being described as implemented.
+The architecture and requirements documents describe a broader roadmap that includes the processing pipeline, multiple-selection and grouping enhancements, per-layer filters, histogram stretching/equalization, and future intelligent assistance. The current v0.5 implementation deliberately does not add these capabilities.
+
+The pipeline endpoint remains a separate v0.7 scope. Smart Crop and suggested processing pipelines remain v0.8 scope. Advanced layer features such as clipping masks, adjustment layers, and per-layer pixel operations are deferred until the layer model and pipeline model evolve together.
 
 The legacy frontend files outside `frontend/editor-v2/` were removed in the dedicated `refactor/remove-legacy-frontend` change after repository-wide reference checks found no operational dependency on them. Historical documents may still mention the former paths because they preserve the project's development history; those references are not runtime entry points.
 
