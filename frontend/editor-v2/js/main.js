@@ -38,7 +38,9 @@ objectManager.onChange = () => {
   clearTimeout(layerSaveTimer);
   layerSaveTimer = setTimeout(() => {
     if (!apiClient.imageId) return;
-    apiClient.saveLayers(objectManager.serializeLayers()).catch((error) => showToast(error.message));
+    apiClient.saveLayers(objectManager.serializeLayers())
+      .then((saved) => objectManager.applyPersistedLayers(saved))
+      .catch((error) => showToast(error.message));
   }, 250);
 };
 async function restoreLayers() {

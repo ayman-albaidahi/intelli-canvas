@@ -78,6 +78,17 @@ export class ObjectManager {
     });
   }
 
+  applyPersistedLayers(layers = []) {
+    const persisted = new Map(layers.map((layer) => [layer.id, layer]));
+    this.objects.forEach((object) => {
+      const saved = persisted.get(object.id);
+      if (saved?.src && object.type === 'image') {
+        object.src = saved.src;
+        object.asset_id = saved.asset_id;
+      }
+    });
+  }
+
   async loadLayers(layers = []) {
     const hydrated = await Promise.all(layers.map(async (layer) => {
       const copy = { ...layer };
