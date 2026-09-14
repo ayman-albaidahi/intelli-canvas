@@ -25,7 +25,7 @@ class LayerCompositorService:
             canvas = base.convert("RGBA")
             for layer in session.get("layers", []):
                 if layer.get("visible", True):
-                    self._render_layer(canvas, layer)
+                    self._render_layer(canvas, layer, image_id)
             output_path = self.storage_service.resolve_storage_destination("processed", f"{session.get('base_stem', 'image')}_composite.png")
             canvas.save(output_path, format="PNG")
             width, height = canvas.size
@@ -54,10 +54,10 @@ class LayerCompositorService:
             raise FileNotFoundError("Stored image was not found.")
         return path
 
-    def _render_layer(self, canvas: Image.Image, layer: dict[str, Any]) -> None:
+    def _render_layer(self, canvas: Image.Image, layer: dict[str, Any], image_id: str) -> None:
         layer_type = layer.get("type")
         if layer_type == "image":
-            rendered = self._image_layer(layer)
+            rendered = self._image_layer(layer, image_id)
         elif layer_type == "text":
             rendered = self._text_layer(layer)
         elif layer_type in {"shape", "brush"}:
@@ -71,8 +71,8 @@ class LayerCompositorService:
         self._composite(canvas, rendered, layer)
         rendered.close()
 
-    def _image_layer(self, layer: dict[str, Any]) -> Image.Image:
-        asset = self.repository.get_asset(layer.get("asset_id", ""))
+    def _image_layer(self, layer: dict[str, Any], image_id: str) -> Image.Image:
+        asset = self.repository.get_asset_for_image(layer.get("asset_id", ""), image_id)
         if asset is None:
             raise FileNotFoundError("Layer image asset was not found.")
         path = self.storage_service.resolve_storage_dir(asset["storage_category"]) / asset["stored_filename"]
@@ -124,9 +124,23 @@ class LayerCompositorService:
         center_y = float(layer.get("y", 0)) + float(layer.get("h", rendered.height)) / 2
         left = round(center_x - rendered.width / 2)
         top = round(center_y - rendered.height / 2)
-        if layer.get("blend", "source-over") == "multiply":
-            region = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
-            region.alpha_composite(rendered, (left, top))
-            canvas.alpha_composite(ImageChops.multiply(canvas, region))
+        blend = layer.get("blend", "source-over")
+        if blend == "source-over":
+            canvas.alpha_composite(rendered, (left, top))
+            return
+        region = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+        region.alpha_composite(rendered, (left, top))
+        if blend == "multiply":
+            blended = ImageChops.multiply(canvas, region)
+        elif blend == "screen":
+            blended = ImageChops.screen(canvas, region)
+        elif blend == "overlay":
+            blended = ImageChops.overlay(canvas, region)
+        elif blend == "darken":
+            blended = ImageChops.darker(canvas, region)
+        elif blend == "lighten":
+            blended = ImageChops.lighter(canvas, region)
         else:
             canvas.alpha_composite(rendered, (left, top))
+            return
+        canvas.alpha_composite(blended)

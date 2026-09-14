@@ -90,3 +90,95 @@ def test_image_layer_data_url_is_moved_to_file_storage(tmp_path):
     assert asset.status_code == 200
     assert asset.mimetype == "image/png"
     assert asset.data.startswith(b"\x89PNG")
+
+
+def test_layers_reject_invalid_transforms_and_blend_modes(tmp_path):
+    app = create_app()
+    session = create_session(app, tmp_path, None)
+    client = app.test_client()
+
+    invalid = client.put(
+        "/api/layers",
+        json={
+            "image_id": session["image_id"],
+            "layers": [{"id": "bad", "type": "shape", "w": -1}],
+        },
+    )
+    assert invalid.status_code == 400
+    assert invalid.get_json()["error"]["code"] == "INVALID_LAYERS"
+
+    invalid_blend = client.put(
+        "/api/layers",
+        json={
+            "image_id": session["image_id"],
+            "layers": [{"id": "bad", "type": "shape", "blend": "wipe"}],
+        },
+    )
+    assert invalid_blend.status_code == 400
+    assert invalid_blend.get_json()["error"]["code"] == "INVALID_LAYERS"
+
+
+def test_layer_asset_cannot_be_reused_across_image_sessions(tmp_path):
+    app = create_app()
+    first = create_session(app, tmp_path / "first", None)
+    second = create_session(app, tmp_path / "second", None)
+    storage = app.config["FILE_STORAGE_SERVICE"]
+    asset_buffer = io.BytesIO()
+    Image.new("RGBA", (2, 2), (255, 0, 0, 255)).save(asset_buffer, format="PNG")
+    asset_buffer.seek(0)
+    asset_path = storage.save_file(asset_buffer, "owned.png", destination="layer-assets")
+    asset = app.config["IMAGE_SESSIONS"].create_asset({
+        "asset_id": "owned-by-first",
+        "image_id": first["image_id"],
+        "storage_category": "layer-assets",
+        "stored_filename": asset_path.name,
+        "mime_type": "image/png",
+        "size": asset_path.stat().st_size,
+        "created_at": 1,
+    })
+
+    response = app.test_client().put(
+        "/api/layers",
+        json={
+            "image_id": second["image_id"],
+            "layers": [{"id": "foreign", "type": "image", "asset_id": asset["asset_id"]}],
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "INVALID_LAYER_ASSET"
+
+
+def test_hidden_layers_are_excluded_from_composition(tmp_path):
+    app = create_app()
+    session = create_session(app, tmp_path, None)
+    storage = FileStorageService(storage_root=tmp_path / "storage")
+    app.config["FILE_STORAGE_SERVICE"] = storage
+    app.config["LAYER_COMPOSITOR_SERVICE"].storage_service = storage
+    asset_buffer = io.BytesIO()
+    Image.new("RGBA", (4, 4), (0, 0, 255, 255)).save(asset_buffer, format="PNG")
+    asset_buffer.seek(0)
+    asset_path = storage.save_file(asset_buffer, "hidden.png", destination="layer-assets")
+    asset = app.config["IMAGE_SESSIONS"].create_asset({
+        "asset_id": "hidden-blue",
+        "image_id": session["image_id"],
+        "storage_category": "layer-assets",
+        "stored_filename": asset_path.name,
+        "mime_type": "image/png",
+        "size": asset_path.stat().st_size,
+        "created_at": 1,
+    })
+    app.config["IMAGE_SESSION_SERVICE"].save_layers(session["image_id"], [{
+        "id": "hidden", "type": "image", "asset_id": asset["asset_id"],
+        "x": 0, "y": 0, "w": 4, "h": 4, "visible": False,
+    }])
+
+    response = app.test_client().post(
+        "/api/layers/compose", json={"image_id": session["image_id"]}
+    )
+
+    assert response.status_code == 200
+    composed_path = response.get_json()["image"]["filename"]
+    content = app.test_client().get(f"/api/images/{session['image_id']}/content")
+    assert content.status_code == 200
+    assert composed_path

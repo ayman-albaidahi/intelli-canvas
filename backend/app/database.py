@@ -164,6 +164,14 @@ class SQLiteSessionRepository:
             row = connection.execute("SELECT * FROM image_assets WHERE asset_id = ?", (asset_id,)).fetchone()
         return dict(row) if row else None
 
+    def get_asset_for_image(self, asset_id: str, image_id: str) -> dict[str, Any] | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM image_assets WHERE asset_id = ? AND image_id = ?",
+                (asset_id, image_id),
+            ).fetchone()
+        return dict(row) if row else None
+
     def get_session(self, image_id: str) -> dict[str, Any] | None:
         with self._connect() as connection:
             row = connection.execute("SELECT * FROM image_sessions WHERE image_id = ?", (image_id,)).fetchone()

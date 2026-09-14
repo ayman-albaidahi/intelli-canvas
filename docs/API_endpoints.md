@@ -37,7 +37,7 @@ Errors use:
 | POST | `/api/images` | Multipart field `file` | Validates and uploads a supported image. |
 | GET | `/api/images/<image_id>/content` | Path parameter | Returns the current image bytes. |
 | POST | `/api/images/convert` | JSON: `image_id`, `format` | Converts the current image to a supported format. |
-| POST | `/api/images/export` | JSON: `image_id`, `format`, optional `quality`, `width`, `height` | Returns an exported image download. |
+| POST | `/api/images/export` | JSON: `image_id`, `format`, optional `quality`, `width`, `height`, `composite_layers` | Returns an exported image download; when `composite_layers` is true, persisted visible layers are rendered first. |
 
 Supported source formats are PNG, JPEG/JPG, WEBP, and BMP. Uploads are validated by content, extension, file size, and image dimensions.
 
@@ -90,7 +90,10 @@ All transformation endpoints accept JSON with `image_id`.
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET/POST | `/api/layers` | Reads or updates the current layer API payload. |
+| GET | `/api/layers?image_id=<id>` | Returns the persisted layers for the image session in z-order. |
+| PUT | `/api/layers` | Persists validated image, shape, text, and brush layers. Image data URLs are moved to session-scoped file assets. |
+| GET | `/api/layers/assets/<asset_id>` | Returns a persisted layer image asset after session ownership validation through the layer payload. |
+| POST | `/api/layers/compose` | Renders visible layers over the current base image and returns the composed PNG metadata. |
 | GET/POST | `/api/pipeline` | Reads or updates the processing pipeline payload. |
 | POST | `/api/analysis` | Returns image metrics and brightness/contrast findings. |
 | POST | `/api/analysis/export-report` | Downloads the analysis result as `analysis.json`. |

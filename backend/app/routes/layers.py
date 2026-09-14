@@ -18,6 +18,7 @@ layers_bp = Blueprint(
 MAX_LAYERS = 100
 MAX_LAYER_PAYLOAD_BYTES = 2_000_000
 ALLOWED_TYPES = {"brush", "shape", "text", "image"}
+ALLOWED_BLEND_MODES = {"source-over", "multiply", "screen", "overlay", "darken", "lighten"}
 DATA_URL_PREFIX = "data:"
 
 
@@ -25,7 +26,7 @@ def _session_service():
     return current_app.config["IMAGE_SESSION_SERVICE"]
 
 
-def _validate_layers(payload):
+def _validate_layers(payload, image_id):
     if not isinstance(payload, list):
         return None, error_response("INVALID_LAYERS", "layers must be an array.", 400)
     if len(payload) > MAX_LAYERS:
@@ -46,6 +47,30 @@ def _validate_layers(payload):
             return None, error_response("INVALID_LAYERS", "Layer type is not supported.", 400)
         if not isinstance(layer.get("id"), str) or not layer["id"].strip():
             return None, error_response("INVALID_LAYERS", "Each layer needs an id.", 400)
+        if "opacity" in layer and (
+            isinstance(layer["opacity"], bool)
+            or not isinstance(layer["opacity"], (int, float))
+            or not 0 <= layer["opacity"] <= 1
+        ):
+            return None, error_response("INVALID_LAYERS", "Layer opacity must be a number from 0 to 1.", 400)
+        if "visible" in layer and not isinstance(layer["visible"], bool):
+            return None, error_response("INVALID_LAYERS", "Layer visibility must be boolean.", 400)
+        if layer.get("blend", "source-over") not in ALLOWED_BLEND_MODES:
+            return None, error_response("INVALID_LAYERS", "Layer blend mode is not supported.", 400)
+        for coordinate in ("x", "y", "w", "h", "rotation"):
+            if coordinate in layer and (
+                isinstance(layer[coordinate], bool)
+                or not isinstance(layer[coordinate], (int, float))
+            ):
+                return None, error_response("INVALID_LAYERS", f"Layer {coordinate} must be numeric.", 400)
+        if "w" in layer and layer["w"] <= 0 or "h" in layer and layer["h"] <= 0:
+            return None, error_response("INVALID_LAYERS", "Layer dimensions must be positive.", 400)
+        if layer["type"] == "image" and layer.get("asset_id"):
+            asset = current_app.config["IMAGE_SESSIONS"].get_asset_for_image(
+                layer["asset_id"], image_id
+            )
+            if asset is None:
+                return None, error_response("INVALID_LAYER_ASSET", "Layer image asset was not found for this image.", 400)
         clean.append(dict(layer))
     return clean, None
 
@@ -75,7 +100,7 @@ def _store_data_url(image_id, layer, storage, repository):
     })
     layer.pop("src", None)
     layer["asset_id"] = asset["asset_id"]
-    layer["src"] = f"/api/layers/assets/{asset['asset_id']}"
+    layer["src"] = f"/api/layers/assets/{asset['asset_id']}?image_id={image_id}"
     return layer
 
 
@@ -114,7 +139,7 @@ def save_layers():
     image_id = payload.get("image_id")
     if not isinstance(image_id, str) or not image_id.strip():
         return error_response("INVALID_IMAGE_ID", "A valid image_id is required.", 400)
-    layers, error = _validate_layers(payload.get("layers"))
+    layers, error = _validate_layers(payload.get("layers"), image_id)
     if error is not None:
         return error
     service = _session_service()
@@ -133,7 +158,8 @@ def save_layers():
 
 @layers_bp.get("/assets/<asset_id>")
 def get_layer_asset(asset_id):
-    asset = current_app.config["IMAGE_SESSIONS"].get_asset(asset_id)
+    image_id = request.args.get("image_id", "")
+    asset = current_app.config["IMAGE_SESSIONS"].get_asset_for_image(asset_id, image_id)
     if asset is None:
         return error_response("ASSET_NOT_FOUND", "Layer asset was not found.", 404)
     path = current_app.config["FILE_STORAGE_SERVICE"].resolve_storage_dir(asset["storage_category"]) / asset["stored_filename"]
