@@ -111,10 +111,10 @@ All transformation endpoints accept JSON with `image_id`.
 | POST | `/api/pipeline/apply` | Executes the saved or supplied pipeline, uses the deterministic cache when available, and records one History entry. |
 | POST | `/api/analysis` | Returns the unified v0.8.0 quality report with brightness, contrast, sharpness, noise, clipping, findings, and quality score. Supports optional `options`. |
 | POST | `/api/analysis/export-report` | Downloads the analysis result as `analysis.json`. |
-| POST | `/api/suggestions` | Returns explainable suggestions derived from analysis findings. |
-| POST | `/api/suggestions/preview` | Returns a PNG preview without changing image history. |
-| POST | `/api/suggestions/apply` | Applies a suggestion and records the operation in history. |
-| POST | `/api/suggestions/dismiss` | Accepts dismissal of a suggestion. |
+| POST | `/api/suggestions` | Returns multiple explainable suggestions with confidence, evidence, source findings, rule version, and validated Pipeline definitions. |
+| POST | `/api/suggestions/preview` | Executes the selected suggestion Pipeline from the fixed source and returns a PNG without changing image history. |
+| POST | `/api/suggestions/apply` | Applies the selected suggestion Pipeline, records one `Apply pipeline` History entry, and returns provenance metadata. |
+| POST | `/api/suggestions/dismiss` | Accepts dismissal of a suggestion without changing the image. |
 
 ## Operational limits
 

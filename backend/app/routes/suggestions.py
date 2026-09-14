@@ -1,16 +1,10 @@
 from flask import Blueprint, current_app, jsonify, request, send_file
 
 from ..api_utils import error_response
-from ..services.operation_service import (
-    NodeService,
-    OperationParamError,
-    UnknownOperationError,
-)
+from ..services.pipeline_execution_service import PipelineExecutionService
+from ..services.pipeline_service import PipelineParamError, PipelineService
 from ..services.resource_guard import ResourceExceededError
-from ..services.suggestion_service import (
-    build_suggestions,
-    validate_suggested_operation,
-)
+from ..services.suggestion_service import build_suggestions
 
 suggestions_bp = Blueprint(
     "suggestions",
@@ -18,10 +12,6 @@ suggestions_bp = Blueprint(
     url_prefix="/api/suggestions",
 )
 
-
-
-def _node_service() -> NodeService:
-    return current_app.config["NODE_SERVICE"]
 
 
 def _analysis_findings(image_id: str):
@@ -83,14 +73,12 @@ def preview_suggestion():
     if error:
         return error
     try:
-        validate_suggested_operation(suggestion)
-        png_bytes = _node_service().preview_bytes(
-            image_id,
-            suggestion["suggested_operation"]["type"],
-            suggestion["suggested_operation"]["params"],
-        )
-    except (OperationParamError, UnknownOperationError) as exc:
-        return error_response("INVALID_OPERATION", str(exc), 400)
+        PipelineService.validate_nodes(suggestion["pipeline"]["nodes"])
+        result = PipelineExecutionService(current_app.config["IMAGE_SESSION_SERVICE"], current_app.config["FILE_STORAGE_SERVICE"]).execute(image_id, suggestion["pipeline"], persist=False)
+        with result["path"].open("rb") as rendered:
+            png_bytes = rendered.read()
+    except PipelineParamError as exc:
+        return error_response("INVALID_PIPELINE", str(exc), 400)
     except FileNotFoundError:
         return error_response("IMAGE_NOT_AVAILABLE", "Stored image was not found.", 404)
     except (OSError, ValueError):
@@ -111,20 +99,18 @@ def apply_suggestion():
     if error:
         return error
     try:
-        node = _node_service().apply_operation(
-            image_id,
-            suggestion["suggested_operation"]["type"],
-            suggestion["suggested_operation"]["params"],
-        )
-    except (OperationParamError, UnknownOperationError) as exc:
-        return error_response("INVALID_OPERATION", str(exc), 400)
+        PipelineService.validate_nodes(suggestion["pipeline"]["nodes"])
+        result = PipelineExecutionService(current_app.config["IMAGE_SESSION_SERVICE"], current_app.config["FILE_STORAGE_SERVICE"]).execute(image_id, suggestion["pipeline"], persist=True, metadata={"source": "smart-suggestion", "suggestion_id": sug_type, "suggestion_rule_version": suggestion.get("rule_version", "0.8.1")})
+        node = {"operation": {"label": suggestion["suggested_operation"]["label"]}, "pipeline_hash": result["pipeline_hash"], "cache_hit": result["cache_hit"]}
+    except PipelineParamError as exc:
+        return error_response("INVALID_PIPELINE", str(exc), 400)
     except FileNotFoundError:
         return error_response("IMAGE_NOT_AVAILABLE", "Stored image was not found.", 404)
     except ResourceExceededError as exc:
         return error_response("RESOURCE_LIMIT", str(exc), 400)
     except (OSError, ValueError):
         return error_response("APPLY_FAILED", "The suggestion could not be applied.", 400)
-    return jsonify(success=True, node=node, suggestion_type=sug_type)
+    return jsonify(success=True, node=node, suggestion_type=sug_type, pipeline=suggestion["pipeline"], image={key: value for key, value in result.items() if key != "path"})
 
 
 @suggestions_bp.post("/dismiss")

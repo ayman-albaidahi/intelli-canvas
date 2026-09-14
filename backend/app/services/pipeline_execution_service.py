@@ -32,7 +32,7 @@ class PipelineExecutionService:
         self.session_service = session_service
         self.storage_service = storage_service
 
-    def execute(self, image_id: str, pipeline: dict[str, Any], *, persist: bool) -> dict[str, Any]:
+    def execute(self, image_id: str, pipeline: dict[str, Any], *, persist: bool, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
         source_path = self._source_path(image_id)
         nodes = PipelineService.validate_nodes(pipeline.get("nodes", []))
         active_nodes = [node for node in nodes if node.get("enabled", True)]
@@ -45,12 +45,15 @@ class PipelineExecutionService:
             session = self.session_service.get_session(image_id)
             if session is None:
                 raise FileNotFoundError("Image session was not found.")
+            history_parameters = {"pipeline_hash": cache_hash, "enabled_nodes": len(active_nodes), "source_history_index": 0}
+            if metadata:
+                history_parameters.update(metadata)
             self.session_service.update_current_image(
                 image_id,
                 cache_path.name,
                 "processed",
                 operation="Apply pipeline",
-                parameters={"pipeline_hash": cache_hash, "enabled_nodes": len(active_nodes), "source_history_index": 0},
+                parameters=history_parameters,
             )
         with Image.open(cache_path) as result:
             width, height = result.size

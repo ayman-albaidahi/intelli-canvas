@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-09-14  
 **Reference branch:** `main`  
-**Reference commit:** `f25d4dacdabee692bb5b7a9416fe8f1ef492a626`
+**Reference commit:** `TBD — v0.8.1 implementation in progress`
 
 ## Purpose
 
@@ -14,7 +14,7 @@ When a statement in an older document describes a planned capability rather than
 
 | Check | Result |
 |---|---:|
-| Automated Python tests | 225 passed in the v0.8.0 validation run |
+| Automated Python tests | 227 passed in the v0.8.1 validation run |
 | Ruff | Required to pass |
 | JavaScript syntax checks | Required to pass for changed editor modules |
 | Vitest | Existing frontend suite remains required |
@@ -47,7 +47,7 @@ The v0.5 Layers & Compositing scope includes validated image, shape, text, and b
 
 The v0.6 Background Studio scope extends the existing color-mask workflow with non-destructive replacement previews, background blur, background scale and X/Y offsets, optional foreground shadow, stronger parameter validation, and corrected single-entry History behavior. v0.6.2 adds categorized background metadata, generated thumbnails, a catalog endpoint, and Background Studio reset/cancel controls. Preview endpoints do not change the current image or History. Applied removal and replacement operations preserve the existing PNG/RGBA behavior.
 
-The v0.7.0 History scope adds structured operation parameters, read-only History content URLs, Before/After comparison metadata, and PNG difference maps in absolute, heatmap, and threshold modes. The History panel now exposes comparison selectors and displays Before/After images or a diff map. These comparison operations do not change the current image or append History entries. v0.7.1 adds persistent per-image processing pipelines with validated nodes, parameter updates, enable/disable state, ordering, deletion, and a dedicated Pipeline panel. v0.7.2 adds fixed-source Pipeline preview and apply, deterministic cache hashes, one History entry per apply, and cache-aware execution for repeated runs. v0.7.3 adds timeout-aware network handling, retryable Pipeline failure states, operation-specific validation, keyboard accessibility, live status announcements, and repeatable cache-performance coverage. v0.8.0 adds a unified deterministic Image Quality Analyzer for brightness, contrast, sharpness, noise, clipping, findings, quality score, and versioned analysis cache.
+The v0.7.0 History scope adds structured operation parameters, read-only History content URLs, Before/After comparison metadata, and PNG difference maps in absolute, heatmap, and threshold modes. The History panel now exposes comparison selectors and displays Before/After images or a diff map. These comparison operations do not change the current image or append History entries. v0.7.1 adds persistent per-image processing pipelines with validated nodes, parameter updates, enable/disable state, ordering, deletion, and a dedicated Pipeline panel. v0.7.2 adds fixed-source Pipeline preview and apply, deterministic cache hashes, one History entry per apply, and cache-aware execution for repeated runs. v0.7.3 adds timeout-aware network handling, retryable Pipeline failure states, operation-specific validation, keyboard accessibility, live status announcements, and repeatable cache-performance coverage. v0.8.0 adds a unified deterministic Image Quality Analyzer for brightness, contrast, sharpness, noise, clipping, findings, quality score, and versioned analysis cache. v0.8.1 adds a multi-rule Smart Suggestions engine with confidence, evidence, combined Pipelines, multi-suggestion UI, read-only Preview, one-entry Apply, Dismiss, and suggestion provenance metadata.
 
 Processing and transformation use Flask, Pillow, OpenCV, and NumPy at runtime. SQLite is used for persistent image-session metadata, editing history, projects, layers, and image-layer asset metadata; image binaries remain in file storage, including the `layer-assets` category. OpenCV and NumPy are isolated to `backend/app/services/process_operations.py`; routes and orchestration services remain stack-agnostic.
 
@@ -93,7 +93,7 @@ The v0.7.3 client uses a 15-second general API timeout and a 30-second Pipeline 
 
 The architecture and requirements documents describe a broader roadmap that includes the processing pipeline, multiple-selection and grouping enhancements, per-layer filters, histogram stretching/equalization, general-purpose AI segmentation, and future intelligent assistance. The current v0.6 implementation deliberately does not add these capabilities.
 
-Smart Suggestions and suggested processing pipelines remain v0.8.1 scope; Explain Operation is v0.8.2 and Smart Crop is v0.8.3. Advanced layer features such as clipping masks, adjustment layers, and per-layer pixel operations are deferred until the layer model and pipeline model evolve together.
+Explain Operation is v0.8.2 and Smart Crop is v0.8.3. Advanced layer features such as clipping masks, adjustment layers, and per-layer pixel operations are deferred until the layer model and pipeline model evolve together.
 
 The legacy frontend files outside `frontend/editor-v2/` were removed in the dedicated `refactor/remove-legacy-frontend` change after repository-wide reference checks found no operational dependency on them. Historical documents may still mention the former paths because they preserve the project's development history; those references are not runtime entry points.
 

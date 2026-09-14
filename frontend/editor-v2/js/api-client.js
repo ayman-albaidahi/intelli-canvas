@@ -282,7 +282,7 @@ export class ApiClient {
   async applySuggestion(imageId = this.imageId, type) {
     if (!this.imageId) throw new Error('Upload an image first.');
     const payload = await request(`${this.baseUrl}/suggestions/apply`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, type }) });
-    return payload.node;
+    return payload;
   }
 
   async dismissSuggestion(type, imageId = this.imageId) {
