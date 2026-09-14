@@ -1,8 +1,8 @@
 # IntelliCanvas — Current Implementation Status
 
 **Last reviewed:** 2026-09-15  
-**Reference branch:** `feat/v0.8.3-smart-crop`  
-**Reference commit:** `pending merge commit`  
+**Reference branch:** `main`
+**Reference commit:** `d25e2e6a98636d84a23ce0cfa7c19b8f6e0994fb`
 
 ## Purpose
 
@@ -12,7 +12,7 @@ This document records the current implementation state. It is a current-state co
 
 | Check | Result |
 |---|---:|
-| Automated Python tests | 241 passed after Smart Crop implementation |
+| Automated Python tests | 245 passed after Smart Crop implementation |
 | Ruff | Passed |
 | JavaScript syntax checks | Passed for editor modules |
 | Vitest | 3 passed |
@@ -33,7 +33,7 @@ The supported editor URL is `http://localhost:5000/editor-v2/`. The root URL `/`
 
 ## Implemented capability groups
 
-The current backend exposes working endpoints for image upload and content retrieval, format conversion and export, crop and resize, rotation and flipping, processing adjustments and filters, Background Studio operations, history navigation, deterministic image analysis, explainable suggestions, persistent layers, backend layer composition during export, persistent processing pipelines, Image Quality Analyzer, Smart Suggestions, and Smart Crop.
+The current backend exposes working endpoints for image upload and content retrieval, format conversion and export, crop and resize, rotation and flipping, processing adjustments and filters, Background Studio operations, history navigation, deterministic image analysis, explainable suggestions, persistent layers, backend layer composition during export, persistent processing pipelines, Image Quality Analyzer, Smart Suggestions, and Smart Crop. Smart Crop is currently exposed as dedicated Transform endpoints and is not yet accepted as a persistent Pipeline node.
 
 The v0.5 Layers & Compositing scope includes validated image, shape, text, and brush layer payloads; persisted z-order; visibility; opacity; transforms; supported blend modes; session-scoped image assets; multi-image composition; and export with `composite_layers=true`.
 
@@ -79,7 +79,7 @@ Processing and transformation use Flask, Pillow, OpenCV, and NumPy at runtime. S
 
 The architecture and requirements documents describe a broader roadmap that includes multiple-selection and grouping enhancements, per-layer filters, histogram stretching/equalization, general-purpose AI segmentation, and future intelligent assistance. Advanced layer features such as clipping masks, adjustment layers, and per-layer pixel operations are deferred until the layer model and pipeline model evolve together.
 
-Smart Crop is implemented in v0.8.3. The next remaining v0.8 roadmap item is Smart Crop only if the feature branch has not yet merged; Explain Operation is implemented in v0.8.2. Browser-level E2E coverage, capability discovery, ownership/authentication, and final production hardening remain v0.9 or later work.
+Smart Crop is implemented in v0.8.3. Explain Operation is implemented in v0.8.2. Smart Crop Pipeline-node integration, Browser-level E2E coverage, capability discovery, ownership/authentication, and final production hardening remain v0.9 or later work.
 
 The legacy frontend files outside `frontend/editor-v2/` were removed after repository-wide reference checks found no operational dependency on them. Historical documents may still mention former paths because they preserve development history; those references are not runtime entry points.
 
