@@ -12,8 +12,10 @@ from .routes import (
     layers_bp,
     pipeline_bp,
     process_bp,
+    suggestions_bp,
     transform_bp,
 )
+
 from .services.image_session_service import ImageSessionService
 
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
@@ -33,6 +35,7 @@ def create_app() -> Flask:
     app.register_blueprint(health_bp)
     app.register_blueprint(images_bp)
     app.register_blueprint(transform_bp)
+    app.register_blueprint(suggestions_bp)
     app.register_blueprint(process_bp)
     app.register_blueprint(background_bp)
     app.register_blueprint(layers_bp)

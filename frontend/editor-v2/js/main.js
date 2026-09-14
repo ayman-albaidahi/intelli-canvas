@@ -12,6 +12,7 @@ import { AdjustmentsManager } from './adjustments-manager.js';
 import { HistoryManager } from './history-manager.js';
 import { ExportManager } from './export-manager.js';
 import { BackgroundManager } from './background-manager.js';
+import { AnalysisManager } from './analysis-manager.js';
 import { ApiClient } from './api-client.js';
 
 initThemeManager();
