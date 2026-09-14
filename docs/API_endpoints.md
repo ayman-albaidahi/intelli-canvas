@@ -86,13 +86,18 @@ All transformation endpoints accept JSON with `image_id`.
 | POST | `/api/history/clear` | JSON: `image_id` | Clears history while keeping the current state. |
 | GET | `/api/history/current-file?image_id=<id>` | Query `image_id` | Returns metadata for the current file. |
 
-## Layers, pipeline, and analysis
+## Layers, pipeline, analysis, and suggestions
 
 | Method | Path | Purpose |
 |---|---|---|
 | GET/POST | `/api/layers` | Reads or updates the current layer API payload. |
 | GET/POST | `/api/pipeline` | Reads or updates the processing pipeline payload. |
-| POST | `/api/analysis` | Runs the currently implemented image analysis operation. |
+| POST | `/api/analysis` | Returns image metrics and brightness/contrast findings. |
+| POST | `/api/analysis/export-report` | Downloads the analysis result as `analysis.json`. |
+| POST | `/api/suggestions` | Returns explainable suggestions derived from analysis findings. |
+| POST | `/api/suggestions/preview` | Returns a PNG preview without changing image history. |
+| POST | `/api/suggestions/apply` | Applies a suggestion and records the operation in history. |
+| POST | `/api/suggestions/dismiss` | Accepts dismissal of a suggestion. |
 
 ## Operational limits
 
@@ -118,4 +123,4 @@ The root URL `/` serves the same editor and resolves its assets through the Edit
 
 ## Scope note
 
-This document describes the endpoints currently present in the codebase. Advanced requirements such as histogram processing, edge detection, morphological operations, and intelligent assistance are not represented as implemented endpoints yet.
+This document describes endpoints currently present in the codebase. The broader architectural and requirements documents remain the source of planned capabilities and historical design intent. Current implementation status, verification totals, and dependency notes are maintained in [`docs/current/system-status.md`](current/system-status.md).
