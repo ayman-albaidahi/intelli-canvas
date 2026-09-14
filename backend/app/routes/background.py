@@ -2,7 +2,7 @@ import io
 
 from flask import Blueprint, current_app, jsonify, request, send_file
 
-from ..services.background_service import BackgroundService, BackgroundParamError
+from ..services.background_service import BackgroundParamError, BackgroundService
 from ..services.file_service import FileStorageService, FileValidationError
 
 background_bp = Blueprint(

@@ -68,6 +68,19 @@ This project is developed collaboratively using GitHub with:
 - Code Reviews
 - Releases
 
+To install the development dependencies and run the backend checks from the
+repository root:
+
+```bash
+python -m pip install -r backend/requirements-dev.txt
+pytest -q
+ruff check backend tests
+python backend/run.py
+```
+
+The preferred editor URL is `http://localhost:5000/editor-v2/`. The root URL
+serves the same editor.
+
 ## Project Status
 
 🚧 Under Development
