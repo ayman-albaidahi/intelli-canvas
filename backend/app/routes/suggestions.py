@@ -19,9 +19,6 @@ suggestions_bp = Blueprint(
 )
 
 
-def _error_response(code: str, message: str, status_code: int):
-    return jsonify(success=False, error={"code": code, "message": message}), status_code
-
 
 def _node_service() -> NodeService:
     return current_app.config["NODE_SERVICE"]

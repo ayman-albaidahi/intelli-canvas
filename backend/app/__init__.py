@@ -2,6 +2,7 @@ from pathlib import Path
 
 from flask import Flask, request, send_from_directory
 
+from .api_utils import register_error_handlers
 from .config import Config
 from .routes import (
     analysis_bp,
@@ -35,6 +36,7 @@ def create_app() -> Flask:
     app.config["NODE_SERVICE"] = NodeService(
         app.config["IMAGE_SESSION_SERVICE"], FileStorageService()
     )
+    register_error_handlers(app)
 
     app.register_blueprint(health_bp)
     app.register_blueprint(images_bp)

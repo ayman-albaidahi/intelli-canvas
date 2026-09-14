@@ -1,4 +1,6 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint
+
+from ..api_utils import error_response
 
 pipeline_bp = Blueprint(
     "pipeline",
@@ -8,17 +10,7 @@ pipeline_bp = Blueprint(
 
 
 def _not_implemented_response():
-    return (
-        jsonify(
-            success=False,
-            error={
-                "code": "NOT_IMPLEMENTED",
-                "message": "Pipeline management is not implemented yet.",
-            },
-        ),
-        501,
-    )
-
+    return error_response("NOT_IMPLEMENTED", "Pipeline management is not implemented yet.", 501)
 
 @pipeline_bp.route("", methods=["GET", "POST"])
 def pipeline():

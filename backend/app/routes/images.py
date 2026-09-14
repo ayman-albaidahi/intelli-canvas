@@ -1,5 +1,6 @@
 from flask import Blueprint, current_app, jsonify, request, send_file
 
+from ..api_utils import error_response
 from ..services.file_service import FileStorageService, FileValidationError
 from ..services.image_io_service import ImageIOService
 from ..services.image_session_service import ImageSessionService
@@ -11,12 +12,6 @@ images_bp = Blueprint(
 )
 
 
-def _error_response(code: str, message: str, status_code: int):
-    return (
-        jsonify(success=False, error={"code": code, "message": message}),
-        status_code,
-    )
-
 
 def _get_session_service() -> ImageSessionService:
     return current_app.config["IMAGE_SESSION_SERVICE"]
@@ -26,14 +21,14 @@ def _get_session_service() -> ImageSessionService:
 def upload_image():
     uploaded_file = request.files.get("file")
     if uploaded_file is None:
-        return _error_response("INVALID_REQUEST", "No file was uploaded.", 400)
+        return error_response("INVALID_REQUEST", "No file was uploaded.", 400)
 
     filename = uploaded_file.filename or ""
     if not filename or not filename.strip():
-        return _error_response("INVALID_REQUEST", "Filename is required.", 400)
+        return error_response("INVALID_REQUEST", "Filename is required.", 400)
 
     if filename in {".", ".."} or "/" in filename or "\\" in filename:
-        return _error_response(
+        return error_response(
             "INVALID_FILE", "Unsafe file path is not allowed.", 400
         )
 
@@ -70,9 +65,9 @@ def upload_image():
         }
         return jsonify(success=True, image=public_image)
     except FileValidationError as exc:
-        return _error_response("INVALID_FILE", str(exc), 400)
+        return error_response("INVALID_FILE", str(exc), 400)
     except (OSError, TypeError, ValueError, KeyError):
-        return _error_response(
+        return error_response(
             "UPLOAD_FAILED", "The image could not be uploaded.", 500
         )
 
@@ -81,22 +76,22 @@ def upload_image():
 def convert_image():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
-        return _error_response(
+        return error_response(
             "INVALID_REQUEST", "A JSON request body is required.", 400
         )
 
     image_id = payload.get("image_id")
     target_format = payload.get("format")
     if not isinstance(image_id, str) or not image_id.strip():
-        return _error_response(
+        return error_response(
             "INVALID_IMAGE_ID", "A valid image_id is required.", 400
         )
     if not isinstance(target_format, str) or not target_format.strip():
-        return _error_response(
+        return error_response(
             "INVALID_FORMAT", "A target format is required.", 400
         )
     if image_id not in current_app.config["IMAGE_SESSIONS"]:
-        return _error_response(
+        return error_response(
             "IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404
         )
 
@@ -105,9 +100,9 @@ def convert_image():
             _get_session_service(), FileStorageService()
         ).convert(image_id, target_format)
     except (FileNotFoundError, FileValidationError) as exc:
-        return _error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+        return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
     except (OSError, ValueError):
-        return _error_response(
+        return error_response(
             "CONVERSION_FAILED", "The image could not be converted.", 400
         )
 
@@ -127,13 +122,13 @@ def convert_image():
 def image_content(image_id: str):
     session = _get_session_service().get_session(image_id)
     if session is None:
-        return _error_response(
+        return error_response(
             "IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404
         )
 
     filename = session.get("current_filename") or session.get("stored_filename")
     if not isinstance(filename, str) or not filename:
-        return _error_response(
+        return error_response(
             "IMAGE_NOT_AVAILABLE", "Image is not available.", 404
         )
 
@@ -147,11 +142,11 @@ def image_content(image_id: str):
     try:
         image_path.relative_to(directory)
     except ValueError:
-        return _error_response(
+        return error_response(
             "IMAGE_NOT_AVAILABLE", "Image is not available.", 404
         )
     if not image_path.is_file():
-        return _error_response(
+        return error_response(
             "IMAGE_NOT_AVAILABLE", "Image is not available.", 404
         )
 
@@ -162,22 +157,22 @@ def image_content(image_id: str):
 def export_image():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
-        return _error_response(
+        return error_response(
             "INVALID_REQUEST", "A JSON request body is required.", 400
         )
 
     image_id = payload.get("image_id")
     target_format = payload.get("format")
     if not isinstance(image_id, str) or not image_id.strip():
-        return _error_response(
+        return error_response(
             "INVALID_IMAGE_ID", "A valid image_id is required.", 400
         )
     if not isinstance(target_format, str) or not target_format.strip():
-        return _error_response(
+        return error_response(
             "INVALID_FORMAT", "A target format is required.", 400
         )
     if image_id not in current_app.config["IMAGE_SESSIONS"]:
-        return _error_response(
+        return error_response(
             "IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404
         )
 
@@ -185,7 +180,7 @@ def export_image():
     if quality is not None and (
         isinstance(quality, bool) or not isinstance(quality, int) or not 1 <= quality <= 100
     ):
-        return _error_response(
+        return error_response(
             "INVALID_QUALITY", "Quality must be an integer from 1 to 100.", 400
         )
     width = payload.get("width")
@@ -194,13 +189,13 @@ def export_image():
         if value is not None and (
             isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 8000
         ):
-            return _error_response(
+            return error_response(
                 "INVALID_DIMENSIONS",
                 f"{dimension.capitalize()} must be an integer from 1 to 8000.",
                 400,
             )
     if width and height and width * height > 24_000_000:
-        return _error_response(
+        return error_response(
             "INVALID_DIMENSIONS",
             "The export area is too large (max 24 megapixels).",
             400,
@@ -211,9 +206,9 @@ def export_image():
             _get_session_service(), FileStorageService()
         ).convert(image_id, target_format, quality=quality, width=width, height=height)
     except (FileNotFoundError, FileValidationError) as exc:
-        return _error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+        return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
     except (OSError, ValueError):
-        return _error_response(
+        return error_response(
             "EXPORT_FAILED", "The image could not be exported.", 400
         )
 
