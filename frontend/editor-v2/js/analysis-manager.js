@@ -4,6 +4,10 @@ const FINDING_LABELS = {
   LOW_BRIGHTNESS: 'سطوع منخفض',
   HIGH_BRIGHTNESS: 'سطوع مرتفع',
   LOW_CONTRAST: 'تباين منخفض',
+  LOW_SHARPNESS: 'حدة منخفضة',
+  HIGH_NOISE: 'ضوضاء مرتفعة',
+  SHADOW_CLIPPING: 'قص في الظلال',
+  HIGHLIGHT_CLIPPING: 'قص في الإضاءات',
 };
 
 export class AnalysisManager {
@@ -14,6 +18,8 @@ export class AnalysisManager {
     this.status = document.querySelector('#analysis-status');
     this.metricsBox = document.querySelector('#analysis-metrics');
     this.findingsBox = document.querySelector('#analysis-findings');
+    this.qualityBox = document.querySelector('#analysis-quality');
+    this.qualityScore = document.querySelector('#analysis-quality-score');
     this.suggestionCard = document.querySelector('#suggestion-card');
     this.previewImg = document.querySelector('#suggestion-preview');
     this.activeSuggestion = null;
@@ -43,6 +49,7 @@ export class AnalysisManager {
     try {
       const report = await this.apiClient.suggestions();
       this.render(report);
+      if (this.status) this.status.textContent = report.cache_hit ? 'جاهز — من الذاكرة المؤقتة' : 'اكتمل التحليل';
       if (report.suggestions?.length) this.showSuggestion(report.suggestions[0]);
     } catch (error) {
       this.showToast(error.message);
@@ -54,10 +61,17 @@ export class AnalysisManager {
   render(report) {
     if (this.metricsBox) {
       const m = report.metrics;
+      if (this.qualityBox) this.qualityBox.hidden = false;
+      if (this.qualityScore) this.qualityScore.textContent = `${report.quality_score ?? m.quality_score ?? '—'} / 100`;
       this.metricsBox.innerHTML =
         `<div>الأبعاد: ${m.width}×${m.height}</div>` +
         `<div>متوسط السطوع: ${m.brightness_mean}</div>` +
-        `<div>التباين: ${m.contrast_stddev}</div>`;
+        `<div>الوسيط: ${m.brightness_median}</div>` +
+        `<div>التباين: ${m.contrast_stddev}</div>` +
+        `<div>الحدة: ${m.sharpness_score}</div>` +
+        `<div>الضوضاء: ${m.noise_score}</div>` +
+        `<div>قص الظلال: ${Math.round(m.clipped_shadow_ratio * 10000) / 100}%</div>` +
+        `<div>قص الإضاءات: ${Math.round(m.clipped_highlight_ratio * 10000) / 100}%</div>`;
       this.metricsBox.hidden = false;
     }
     if (this.findingsBox) {

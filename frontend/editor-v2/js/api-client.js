@@ -260,12 +260,12 @@ export class ApiClient {
 
   async analyze(imageId = this.imageId) {
     const payload = await request(`${this.baseUrl}/analysis`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId }) });
-    return { metrics: payload.metrics, findings: payload.findings };
+    return payload;
   }
 
   async suggestions(imageId = this.imageId) {
     const payload = await request(`${this.baseUrl}/suggestions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId }) });
-    return { metrics: payload.metrics, findings: payload.findings, suggestions: payload.suggestions };
+    return payload;
   }
 
   async previewSuggestion(imageId = this.imageId, type) {

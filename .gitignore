@@ -69,6 +69,7 @@ instance/
 backend/storage/uploads/*
 backend/storage/processed/*
 backend/storage/backgrounds/*
+backend/storage/analysis-cache/*
 backend/storage/backgrounds.json
 backend/storage/background-thumbnails/*
 backend/storage/layer-assets/*

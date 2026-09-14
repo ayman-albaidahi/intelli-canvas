@@ -109,7 +109,7 @@ All transformation endpoints accept JSON with `image_id`.
 | POST | `/api/pipeline/reorder` | Moves a node to a zero-based order index. |
 | POST | `/api/pipeline/preview` | Executes the saved or supplied pipeline from the fixed source state and returns a non-persistent PNG preview. |
 | POST | `/api/pipeline/apply` | Executes the saved or supplied pipeline, uses the deterministic cache when available, and records one History entry. |
-| POST | `/api/analysis` | Returns image metrics and brightness/contrast findings. |
+| POST | `/api/analysis` | Returns the unified v0.8.0 quality report with brightness, contrast, sharpness, noise, clipping, findings, and quality score. Supports optional `options`. |
 | POST | `/api/analysis/export-report` | Downloads the analysis result as `analysis.json`. |
 | POST | `/api/suggestions` | Returns explainable suggestions derived from analysis findings. |
 | POST | `/api/suggestions/preview` | Returns a PNG preview without changing image history. |
@@ -119,6 +119,8 @@ All transformation endpoints accept JSON with `image_id`.
 ## Operational limits
 
 The backend enforces request, file, image-side, pixel-count, and export-dimension limits. Clients should display the returned error `code` and `message` rather than exposing internal paths or exception details. Pipeline validation returns `INVALID_PIPELINE` for unsupported operations or invalid parameters; execution failures return `PIPELINE_EXECUTION_FAILED`; and missing sessions return `IMAGE_SESSION_NOT_FOUND`. Preview is read-only, while apply records one History operation.
+
+Analysis is read-only and uses a versioned source-content cache. Cache keys include the analyzer version and canonical options; cache hits return `cache_hit: true` and never create History entries. See [`docs/v0.8.0-analyzer.md`](v0.8.0-analyzer.md) for metric definitions and quality-score behavior.
 
 The v0.7.3 client applies a 15-second request timeout and a 30-second Pipeline preview timeout. A failed Pipeline refresh or mutation exposes a retry action in the Pipeline panel. See [`docs/v0.7.3-quality.md`](v0.7.3-quality.md) for keyboard controls, accessibility states, and performance test limits.
 

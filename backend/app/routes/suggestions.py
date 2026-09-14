@@ -33,7 +33,7 @@ def _analysis_findings(image_id: str):
 
     from PIL import Image
 
-    from ..services.analysis_service import analyze
+    from ..services.analysis_service import analyze_cached
 
     storage = current_app.config["FILE_STORAGE_SERVICE"]
     directory = (
@@ -45,7 +45,7 @@ def _analysis_findings(image_id: str):
     if not source_path.is_file():
         return None, error_response("IMAGE_NOT_AVAILABLE", "Stored image was not found.", 404)
     with Image.open(source_path) as image:
-        report = analyze(image)
+        report = analyze_cached(image, source_path, storage.resolve_storage_dir("analysis-cache"))
     return report, None
 
 
@@ -69,7 +69,7 @@ def list_suggestions():
     if error:
         return error
     suggestions = build_suggestions(report["findings"], report["metrics"])
-    return jsonify(success=True, image_id=image_id, metrics=report["metrics"], findings=report["findings"], suggestions=suggestions)
+    return jsonify(success=True, image_id=image_id, analyzer_version=report.get("analyzer_version"), analysis_hash=report.get("analysis_hash"), cache_hit=report.get("cache_hit", False), quality_score=report.get("quality_score"), metrics=report["metrics"], findings=report["findings"], suggestions=suggestions)
 
 
 @suggestions_bp.post("/preview")
