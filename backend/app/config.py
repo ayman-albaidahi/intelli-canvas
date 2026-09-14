@@ -2,9 +2,8 @@ import os
 
 
 class Config:
-    # The fallback keeps local development working; production must set
-    # SECRET_KEY in the environment.
-    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-change-me")
+    # The fallback is for local development only; production must set SECRET_KEY.
+    SECRET_KEY = os.environ.get("SECRET_KEY", "intelli-canvas-dev-secret")
     DEBUG = False
     TESTING = False
     MAX_FILE_SIZE = 10 * 1024 * 1024
