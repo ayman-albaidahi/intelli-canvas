@@ -514,6 +514,43 @@ export class ObjectManager {
     ctx.restore();
   }
 
+  renderExport(ctx, imageRect, outputWidth, outputHeight) {
+    const scaleX = outputWidth / imageRect.width;
+    const scaleY = outputHeight / imageRect.height;
+    for (const object of this.objects) {
+      if (!object.visible) continue;
+      const center = this.centerOf(object);
+      ctx.save();
+      ctx.globalAlpha = object.opacity;
+      ctx.globalCompositeOperation = object.blend || 'source-over';
+      ctx.translate((center.x - imageRect.x) * scaleX, (center.y - imageRect.y) * scaleY);
+      ctx.rotate((object.rotation * Math.PI) / 180);
+      ctx.scale(scaleX, scaleY);
+      if (object.type === 'image') {
+        ctx.drawImage(object.img, -object.w / 2, -object.h / 2, object.w, object.h);
+      } else if (object.type === 'text') {
+        ctx.font = `600 ${object.fontSize}px Inter, "Segoe UI", Tahoma, sans-serif`;
+        ctx.fillStyle = object.color;
+        ctx.textBaseline = 'middle';
+        if (object.rtl) { ctx.direction = 'rtl'; ctx.fillText(object.text, object.w / 2 - 6, 0); }
+        else ctx.fillText(object.text, -object.w / 2 + 6, 0);
+      } else if (object.type === 'shape') {
+        this.drawShape(ctx, object);
+      } else if (object.type === 'brush') {
+        ctx.strokeStyle = object.color;
+        ctx.lineWidth = object.strokeWidth;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        (object.pointsRel || []).forEach(([x, y], index) => {
+          if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
   drawBrushStroke(stroke) {
     const ctx = this.ctx;
     const c = stroke.x !== undefined ? this.centerOf(stroke) : { x: 0, y: 0 };

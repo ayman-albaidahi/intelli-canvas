@@ -1,7 +1,8 @@
 export class ExportManager {
-  constructor({ canvasManager, apiClient, showToast }) {
+  constructor({ canvasManager, apiClient, objectManager, showToast }) {
     this.canvasManager = canvasManager;
     this.apiClient = apiClient;
+    this.objectManager = objectManager;
     this.showToast = showToast;
     this.dialog = document.querySelector('#export-dialog');
     this.format = document.querySelector('#export-format');
@@ -69,7 +70,9 @@ export class ExportManager {
     this.submit.disabled = true;
     this.submit.textContent = 'Exporting…';
     try {
-      const blob = await this.apiClient.export(params.format, params.quality, width, height);
+      const blob = this.objectManager.objects.length
+        ? await this.exportComposited(params)
+        : await this.apiClient.export(params.format, params.quality, width, height);
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -85,5 +88,31 @@ export class ExportManager {
       this.submit.disabled = false;
       this.submit.textContent = 'Export';
     }
+  }
+
+  exportComposited({ format, quality, width, height }) {
+    return new Promise((resolve, reject) => {
+      const image = this.canvasManager.getImage();
+      const imageRect = this.canvasManager.getImageRect();
+      const source = this.canvasManager.getSourceDimensions();
+      if (!image || !imageRect || !source.width || !source.height) {
+        reject(new Error('The image could not be composited.'));
+        return;
+      }
+      const targetWidth = width || source.width;
+      const targetHeight = height || source.height;
+      if (targetWidth < 1 || targetHeight < 1 || targetWidth > 8000 || targetHeight > 8000 || targetWidth * targetHeight > 24000000) {
+        reject(new Error('The export area is too large.'));
+        return;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+      this.objectManager.renderExport(ctx, imageRect, targetWidth, targetHeight);
+      const mime = format === 'jpeg' ? 'image/jpeg' : `image/${format}`;
+      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('The image could not be exported.')), mime, quality ? quality / 100 : undefined);
+    });
   }
 }
