@@ -70,6 +70,37 @@ export class ObjectManager {
 
   changed() { this.render(); if (this.onChange) this.onChange(); }
 
+  serializeLayers() {
+    return this.objects.map((object) => {
+      const copy = { ...object };
+      delete copy.img;
+      return copy;
+    });
+  }
+
+  async loadLayers(layers = []) {
+    const hydrated = await Promise.all(layers.map(async (layer) => {
+      const copy = { ...layer };
+      if (copy.type === 'image' && copy.src) {
+        copy.img = await new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = () => reject(new Error(`Could not load layer ${copy.name || copy.id}`));
+          image.src = copy.src;
+        });
+      }
+      return copy;
+    }));
+    this.objects = hydrated;
+    this.selectedId = null;
+    this.counters = { brush: 0, shape: 0, text: 0, image: 0 };
+    hydrated.forEach((layer) => {
+      if (this.counters[layer.type] !== undefined) this.counters[layer.type] += 1;
+    });
+    this.render();
+    if (this.onSelectionChange) this.onSelectionChange(null);
+  }
+
   getObject(id) { return this.objects.find((o) => o.id === id) || null; }
 
   reorder(id, targetId, below) {

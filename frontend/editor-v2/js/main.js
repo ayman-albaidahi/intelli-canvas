@@ -31,6 +31,22 @@ initResizeTool(canvasManager, apiClient, showToast);
 const objectManager = new ObjectManager(document.querySelector('#object-canvas'), showToast);
 window.__om = objectManager;
 const layerManager = new LayerManager(objectManager, { list: document.querySelector('#layers-list'), empty: document.querySelector('#layers-empty'), count: document.querySelector('#layer-count'), showToast });
+const refreshLayerPanel = objectManager.onChange;
+let layerSaveTimer = null;
+objectManager.onChange = () => {
+  refreshLayerPanel?.();
+  clearTimeout(layerSaveTimer);
+  layerSaveTimer = setTimeout(() => {
+    if (!apiClient.imageId) return;
+    apiClient.saveLayers(objectManager.serializeLayers()).catch((error) => showToast(error.message));
+  }, 250);
+};
+async function restoreLayers() {
+  if (!apiClient.imageId) return;
+  try {
+    await objectManager.loadLayers(await apiClient.layers());
+  } catch (error) { showToast(error.message); }
+}
 new ComparisonTool(canvasManager, showToast);
 new AdjustmentsManager({ canvasManager, apiClient, showToast });
 const backgroundManager = new BackgroundManager({ canvasManager, apiClient, objectManager, showToast });
@@ -83,6 +99,7 @@ async function uploadImageFile(file) {
   try {
     const image = await apiClient.upload(file);
     await canvasManager.loadFromUrl(apiClient.contentUrl(image.image_id), image);
+    await restoreLayers();
     emptyCanvas.hidden = true;
     mockArtboard.hidden = true;
     document.querySelector('#document-name').textContent = image.original_filename;
@@ -102,6 +119,7 @@ fileInput.addEventListener('change', ({ target }) => {
   uploadImageFile(file);
   target.value = '';
 });
+document.addEventListener('ic-operation', restoreLayers);
 
 const canvasZone = document.querySelector('#canvas-zone');
 ['dragenter', 'dragover'].forEach((type) => canvasZone.addEventListener(type, (event) => {
