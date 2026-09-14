@@ -6,10 +6,12 @@ import uuid
 from typing import Any
 
 from .image_session_service import ImageSessionService
+from .smart_crop_service import SmartCropError, SmartCropService
 
 SUPPORTED_OPERATIONS = {
     "grayscale", "negative", "brightness", "contrast", "saturation", "gamma",
     "blur", "sharpen", "threshold", "sobel", "laplacian", "median-filter", "morphology",
+    "smart-crop",
 }
 NODE_ID = re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 MAX_NODES = 50
@@ -117,6 +119,11 @@ class PipelineService:
 
     @staticmethod
     def validate_parameters(operation: str, parameters: dict[str, Any]) -> None:
+        if operation == "smart-crop":
+            try:
+                SmartCropService.parse_aspect_ratio(parameters.get("aspect_ratio", "original"))
+            except SmartCropError as exc:
+                raise PipelineParamError(str(exc)) from exc
         if operation in {"sobel", "median-filter", "morphology"}:
             ksize = parameters.get("ksize", 3)
             if isinstance(ksize, bool) or not isinstance(ksize, int) or not 1 <= ksize <= 15 or not ksize % 2:

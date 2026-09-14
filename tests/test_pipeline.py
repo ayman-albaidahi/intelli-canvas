@@ -48,14 +48,17 @@ def test_pipeline_get_put_and_node_crud():
     assert [node["id"] for node in deleted.get_json()["pipeline"]["nodes"]] == ["b"]
 
 
-def test_pipeline_rejects_unknown_operations_duplicate_ids_and_bad_enabled():
+def test_pipeline_accepts_smart_crop_and_rejects_duplicate_ids_and_bad_enabled():
     app = create_app()
     client = app.test_client()
     image_id = _image(client)
 
-    unknown = client.put("/api/pipeline", json={"image_id": image_id, "nodes": [{"id": "x", "operation": "smart-crop", "parameters": {}}]})
-    assert unknown.status_code == 400
-    assert unknown.get_json()["error"]["code"] == "INVALID_PIPELINE"
+    smart_crop = client.put("/api/pipeline", json={"image_id": image_id, "nodes": [{"id": "x", "operation": "smart-crop", "parameters": {"aspect_ratio": "1:1"}}]})
+    assert smart_crop.status_code == 200
+
+    invalid_crop = client.put("/api/pipeline", json={"image_id": image_id, "nodes": [{"id": "crop", "operation": "smart-crop", "parameters": {"aspect_ratio": "bad"}}]})
+    assert invalid_crop.status_code == 400
+    assert invalid_crop.get_json()["error"]["code"] == "INVALID_PIPELINE"
 
     duplicate = client.put("/api/pipeline", json={"image_id": image_id, "nodes": [{"id": "x", "operation": "grayscale"}, {"id": "x", "operation": "negative"}]})
     assert duplicate.status_code == 400

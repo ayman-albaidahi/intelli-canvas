@@ -25,6 +25,7 @@ from .process_operations import (
     apply_sobel,
     apply_threshold,
 )
+from .smart_crop_service import SmartCropService
 
 
 class PipelineExecutionService:
@@ -127,4 +128,8 @@ class PipelineExecutionService:
         if operation == "laplacian": return apply_laplacian(image)
         if operation == "median-filter": return apply_median_filter(image, int(params.get("ksize", 3)))
         if operation == "morphology": return apply_morphology(image, str(params.get("operation", "open")), int(params.get("ksize", 3)))
+        if operation == "smart-crop":
+            ratio = SmartCropService.parse_aspect_ratio(params.get("aspect_ratio", "original"))
+            box, _score = SmartCropService._find_box(image, ratio)
+            return image.crop((box[0], box[1], box[0] + box[2], box[1] + box[3]))
         raise ValueError("Pipeline operation is not supported.")

@@ -33,7 +33,7 @@ The supported editor URL is `http://localhost:5000/editor-v2/`. The root URL `/`
 
 ## Implemented capability groups
 
-The current backend exposes working endpoints for image upload and content retrieval, format conversion and export, crop and resize, rotation and flipping, processing adjustments and filters, Background Studio operations, history navigation, deterministic image analysis, explainable suggestions, persistent layers, backend layer composition during export, persistent processing pipelines, Image Quality Analyzer, Smart Suggestions, and Smart Crop. Smart Crop is currently exposed as dedicated Transform endpoints and is not yet accepted as a persistent Pipeline node.
+The current backend exposes working endpoints for image upload and content retrieval, format conversion and export, crop and resize, rotation and flipping, processing adjustments and filters, Background Studio operations, history navigation, deterministic image analysis, explainable suggestions, persistent layers, backend layer composition during export, persistent processing pipelines, Image Quality Analyzer, Smart Suggestions, and Smart Crop. Smart Crop is available through dedicated Transform endpoints and as a validated `smart-crop` Pipeline node.
 
 The v0.5 Layers & Compositing scope includes validated image, shape, text, and brush layer payloads; persisted z-order; visibility; opacity; transforms; supported blend modes; session-scoped image assets; multi-image composition; and export with `composite_layers=true`.
 
@@ -67,7 +67,7 @@ Processing and transformation use Flask, Pillow, OpenCV, and NumPy at runtime. S
 | GET/POST | `/api/history/*` | Supports navigation, content retrieval, comparison, and difference maps. |
 | GET/PUT | `/api/pipeline` | Reads or replaces a persistent per-image pipeline. |
 | POST/PATCH/DELETE | `/api/pipeline/nodes*` | Adds, updates, deletes, toggles, and reorders validated pipeline nodes. |
-| POST | `/api/pipeline/preview` | Executes the pipeline from History index 0 and returns a non-persistent PNG preview. |
+| POST | `/api/pipeline/preview` | Executes the pipeline from History index 0, including `smart-crop`, and returns a non-persistent PNG preview. |
 | POST | `/api/pipeline/apply` | Executes from the fixed source, reuses cache when possible, and records one History entry. |
 | POST | `/api/analysis` | Returns the unified image-quality report with cache metadata. |
 | POST | `/api/analysis/export-report` | Exports the quality report as JSON. |
@@ -79,7 +79,7 @@ Processing and transformation use Flask, Pillow, OpenCV, and NumPy at runtime. S
 
 The architecture and requirements documents describe a broader roadmap that includes multiple-selection and grouping enhancements, per-layer filters, histogram stretching/equalization, general-purpose AI segmentation, and future intelligent assistance. Advanced layer features such as clipping masks, adjustment layers, and per-layer pixel operations are deferred until the layer model and pipeline model evolve together.
 
-Smart Crop is implemented in v0.8.3. Explain Operation is implemented in v0.8.2. Smart Crop Pipeline-node integration, Browser-level E2E coverage, capability discovery, ownership/authentication, and final production hardening remain v0.9 or later work.
+Smart Crop is implemented in v0.8.3, including Pipeline-node integration. Explain Operation is implemented in v0.8.2. Browser-level E2E coverage, capability discovery, ownership/authentication, and final production hardening remain v0.9 or later work.
 
 The legacy frontend files outside `frontend/editor-v2/` were removed after repository-wide reference checks found no operational dependency on them. Historical documents may still mention former paths because they preserve development history; those references are not runtime entry points.
 

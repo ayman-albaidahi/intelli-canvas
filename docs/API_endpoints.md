@@ -102,12 +102,12 @@ All transformation endpoints accept JSON with `image_id`.
 | POST | `/api/layers/compose` | Renders visible layers over the current base image and returns the composed PNG metadata. |
 | GET | `/api/pipeline?image_id=<id>` | Returns the persisted pipeline and ordered nodes for an image session. |
 | PUT | `/api/pipeline` | Replaces the complete validated pipeline node list. |
-| POST | `/api/pipeline/nodes` | Adds a supported processing node. |
+| POST | `/api/pipeline/nodes` | Adds a supported processing node, including `smart-crop` with an optional `aspect_ratio`. |
 | PATCH | `/api/pipeline/nodes/<node_id>` | Updates node operation, parameters, or enabled state. |
 | DELETE | `/api/pipeline/nodes/<node_id>` | Deletes a pipeline node. |
 | POST | `/api/pipeline/nodes/<node_id>/toggle` | Enables or disables a node. |
 | POST | `/api/pipeline/reorder` | Moves a node to a zero-based order index. |
-| POST | `/api/pipeline/preview` | Executes the saved or supplied pipeline from the fixed source state and returns a non-persistent PNG preview. |
+| POST | `/api/pipeline/preview` | Executes the saved or supplied pipeline, including Smart Crop, from the fixed source state and returns a non-persistent PNG preview. |
 | POST | `/api/pipeline/apply` | Executes the saved or supplied pipeline, uses the deterministic cache when available, and records one History entry. |
 | POST | `/api/analysis` | Returns the unified v0.8.0 quality report with brightness, contrast, sharpness, noise, clipping, findings, and quality score. Supports optional `options`. |
 | POST | `/api/analysis/export-report` | Downloads the analysis result as `analysis.json`. |

@@ -81,3 +81,60 @@ def test_pipeline_apply_returns_safe_failure_for_invalid_parameters():
     assert response.status_code == 400
     assert response.get_json()["error"]["code"] == "INVALID_PIPELINE"
     assert client.get(f"/api/history?image_id={image_id}").get_json()["image"]["total"] == 1
+
+
+def test_smart_crop_pipeline_preview_is_read_only_and_changes_dimensions():
+    app = create_app()
+    client = app.test_client()
+    image_id = _image(client)
+    client.put(
+        "/api/pipeline",
+        json={
+            "image_id": image_id,
+            "nodes": [
+                {
+                    "id": "crop",
+                    "operation": "smart-crop",
+                    "parameters": {"aspect_ratio": "1:1"},
+                }
+            ],
+        },
+    )
+    history_before = client.get(f"/api/history?image_id={image_id}").get_json()["image"]
+    current_before = client.get(f"/api/images/{image_id}/content").data
+
+    preview = client.post("/api/pipeline/preview", json={"image_id": image_id})
+
+    assert preview.status_code == 200
+    with Image.open(io.BytesIO(preview.data)) as result:
+        assert result.size == (8, 8)
+    assert client.get(f"/api/history?image_id={image_id}").get_json()["image"] == history_before
+    assert client.get(f"/api/images/{image_id}/content").data == current_before
+
+
+def test_smart_crop_pipeline_apply_records_one_history_entry():
+    app = create_app()
+    client = app.test_client()
+    image_id = _image(client)
+    client.put(
+        "/api/pipeline",
+        json={
+            "image_id": image_id,
+            "nodes": [
+                {
+                    "id": "crop",
+                    "operation": "smart-crop",
+                    "parameters": {"aspect_ratio": "1:1"},
+                }
+            ],
+        },
+    )
+    before = client.get(f"/api/history?image_id={image_id}").get_json()["image"]["total"]
+
+    applied = client.post("/api/pipeline/apply", json={"image_id": image_id})
+
+    assert applied.status_code == 200
+    result = applied.get_json()["image"]
+    assert result["width"] == result["height"]
+    assert client.get(f"/api/history?image_id={image_id}").get_json()["image"]["total"] == before + 1
+    assert client.get(f"/api/history?image_id={image_id}").get_json()["image"]["entries"][-1]["operation"] == "Apply pipeline"

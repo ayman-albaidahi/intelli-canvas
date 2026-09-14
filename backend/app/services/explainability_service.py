@@ -23,6 +23,7 @@ OPERATION_LABELS = {
     "gamma": "Gamma correction", "blur": "Blur", "sharpen": "Sharpen", "grayscale": "Grayscale",
     "negative": "Negative", "threshold": "Threshold", "sobel": "Sobel edges", "laplacian": "Laplacian edges",
     "median-filter": "Median noise reduction", "morphology": "Morphology filter",
+    "smart-crop": "Smart saliency crop",
 }
 
 
