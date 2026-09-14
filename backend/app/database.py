@@ -91,6 +91,31 @@ class SQLiteSessionRepository:
     def __contains__(self, image_id: str) -> bool:
         return self.get_session(image_id) is not None
 
+    def get(self, image_id: str) -> dict[str, Any] | None:
+        return self.get_session(image_id)
+
+    def list_ids(self) -> list[str]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT image_id FROM image_sessions ORDER BY created_at"
+            ).fetchall()
+        return [row[0] for row in rows]
+
+    def delete(self, image_id: str) -> None:
+        with self._connect() as connection:
+            connection.execute("DELETE FROM image_sessions WHERE image_id = ?", (image_id,))
+
+    def set(self, image_id: str, data: dict[str, Any]) -> None:
+        if self.get_session(image_id) is None:
+            raise KeyError(image_id)
+        self.update_current_image(
+            image_id,
+            data.get("current_filename") or data.get("stored_filename", ""),
+            data.get("current_storage", "uploads"),
+            None,
+            int(data.get("updated_at", 0)),
+        )
+
     def __len__(self) -> int:
         return self.count()
 

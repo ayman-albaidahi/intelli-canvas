@@ -7,7 +7,7 @@ from typing import Any
 
 from werkzeug.utils import secure_filename
 
-from ..database import SQLiteSessionRepository
+from .session_store import SessionStore
 
 MAX_BASE_STEM_LENGTH = 60
 
@@ -15,14 +15,14 @@ MAX_BASE_STEM_LENGTH = 60
 class ImageSessionService:
     """Persistent image-session service backed by SQLite."""
 
-    def __init__(self, repository: SQLiteSessionRepository):
+    def __init__(self, repository: SessionStore):
         self.repository = repository
         # Kept as a compatibility alias for callers that used session_store.
         self.session_store = repository
 
     def create_session(self, metadata: dict[str, Any]) -> dict[str, Any]:
         image_id = uuid.uuid4().hex
-        while image_id in self.repository:
+        while image_id in self.repository.list_ids():
             image_id = uuid.uuid4().hex
         now = int(time.time())
         payload = {
