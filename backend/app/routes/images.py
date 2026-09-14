@@ -4,14 +4,13 @@ from ..api_utils import error_response
 from ..services.file_service import FileStorageService, FileValidationError
 from ..services.image_io_service import ImageIOService
 from ..services.image_session_service import ImageSessionService
+from ..services.image_upload_service import ImageUploadService
 
 images_bp = Blueprint(
     "images",
     __name__,
     url_prefix="/api/images",
 )
-
-
 
 def _get_session_service() -> ImageSessionService:
     return current_app.config["IMAGE_SESSION_SERVICE"]
@@ -33,36 +32,9 @@ def upload_image():
         )
 
     try:
-        storage_service = FileStorageService()
-        storage_service.validate_file(uploaded_file, filename)
-        saved_path = storage_service.save_file(uploaded_file, filename)
-
-        image_metadata = {
-            "original_filename": filename,
-            "stored_filename": saved_path.name,
-            "format": saved_path.suffix.lower().lstrip("."),
-            "mime_type": storage_service.detect_mime_type(
-                uploaded_file, filename
-            ),
-            "size": saved_path.stat().st_size,
-        }
-
-        try:
-            session_data = _get_session_service().create_session(
-                image_metadata
-            )
-        except (OSError, TypeError, ValueError, KeyError):
-            if saved_path.exists():
-                saved_path.unlink()
-            raise
-
-        public_image = {
-            "image_id": session_data["image_id"],
-            "original_filename": session_data["original_filename"],
-            "format": session_data["format"],
-            "mime_type": session_data["mime_type"],
-            "size": session_data["size"],
-        }
+        public_image = ImageUploadService(
+            _get_session_service(), FileStorageService()
+        ).upload(uploaded_file, filename)
         return jsonify(success=True, image=public_image)
     except FileValidationError as exc:
         return error_response("INVALID_FILE", str(exc), 400)
