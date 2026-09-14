@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="css/components.css" />
     <link rel="stylesheet" href="css/comparison.css" />
     <link rel="stylesheet" href="css/brand-fix.css" />
+    <link rel="stylesheet" href="css/smart-crop.css" />
     <link rel="icon" type="image/png" href="assets/intellicanvas-logo.png" />
     <link rel="stylesheet" href="css/responsive.css" />
   </head>
@@ -88,6 +89,7 @@
               <canvas id="object-canvas" class="object-canvas" aria-label="Drawing and object canvas"></canvas>
               <div id="crop-overlay" class="crop-overlay" hidden aria-label="Crop selection"></div>
               <div id="crop-controls" class="crop-controls" hidden><span><strong>Crop</strong><small id="crop-size">0 × 0 px</small></span><button id="crop-reset" class="button button-ghost">Reset</button><button id="crop-cancel" class="button button-secondary">Cancel</button><button id="crop-apply" class="button button-primary">Apply crop</button></div>
+              <section class="smart-crop-card" aria-labelledby="smart-crop-title"><div class="section-heading"><span id="smart-crop-title">Smart Crop</span><span id="smart-crop-status" class="muted">Ready</span></div><label class="property-field">Aspect ratio<select id="smart-crop-ratio"><option value="original">Original</option><option value="1:1">1:1 Square</option><option value="4:5">4:5 Portrait</option><option value="5:4">5:4 Landscape</option><option value="16:9">16:9 Wide</option><option value="9:16">9:16 Story</option><option value="3:2">3:2 Photo</option><option value="2:3">2:3 Portrait</option></select></label><div class="bg-row"><button class="button button-secondary" data-action="smart-crop-preview" data-smart-crop-action>Preview crop</button><button class="button button-primary" data-action="smart-crop-apply" data-smart-crop-action>Apply crop</button></div><button class="button button-ghost full-width" data-action="smart-crop-cancel" data-smart-crop-action>Clear preview</button><img id="smart-crop-preview" class="smart-crop-preview" alt="Smart Crop preview" hidden /></section>
               <div class="mock-artboard" id="mock-artboard" hidden>
                 <div class="mock-sun"></div><div class="mock-mountain mountain-back"></div><div class="mock-mountain mountain-front"></div><div class="mock-ground"></div><span class="mock-label">PREVIEW CANVAS</span>
               </div>

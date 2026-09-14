@@ -54,6 +54,35 @@ export class ApiClient {
     return payload.image;
   }
 
+  async smartCropPreview(aspectRatio = 'original') {
+    if (!this.imageId) throw new Error('Upload an image before using Smart Crop.');
+    let response;
+    try {
+      response = await fetch(`${this.baseUrl}/transform/smart-crop/preview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_id: this.imageId, aspect_ratio: aspectRatio }),
+      });
+    } catch {
+      throw new Error(OFFLINE_MESSAGE);
+    }
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(friendlyMessage(payload, response.status));
+    }
+    return { blob: await response.blob(), metadata: response.headers.get('X-Smart-Crop') || '' };
+  }
+
+  async smartCropApply(aspectRatio = 'original') {
+    if (!this.imageId) throw new Error('Upload an image before using Smart Crop.');
+    const payload = await request(`${this.baseUrl}/transform/smart-crop/apply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_id: this.imageId, aspect_ratio: aspectRatio }),
+    });
+    return payload.image;
+  }
+
   async process(operation, data = {}) {
     if (!this.imageId) throw new Error('Upload an image before processing it.');
     const payload = await request(`${this.baseUrl}/process/${operation}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, ...data }) });

@@ -1,8 +1,9 @@
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, current_app, jsonify, request, send_file
 
 from ..api_utils import error_response
 from ..services.file_service import FileStorageService, FileValidationError
 from ..services.geometry_service import GeometryService
+from ..services.smart_crop_service import SmartCropError, SmartCropService
 
 _DEFAULT_FILE_STORAGE_SERVICE = FileStorageService
 
@@ -18,6 +19,65 @@ transform_bp = Blueprint(
     __name__,
     url_prefix="/api/transform",
 )
+
+
+def _smart_crop_payload():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return None, error_response("INVALID_REQUEST", "A JSON request body is required.", 400)
+    image_id = payload.get("image_id")
+    if not isinstance(image_id, str) or not image_id.strip():
+        return None, error_response("INVALID_IMAGE_ID", "A valid image_id is required.", 400)
+    if current_app.config["IMAGE_SESSION_SERVICE"].get_session(image_id) is None:
+        return None, error_response("IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404)
+    return {"image_id": image_id, "aspect_ratio": payload.get("aspect_ratio", "original")}, None
+
+
+def _smart_crop_service():
+    return SmartCropService(
+        current_app.config["IMAGE_SESSION_SERVICE"],
+        _get_storage_service(),
+    )
+
+
+@transform_bp.post("/smart-crop/preview")
+def smart_crop_preview():
+    payload, error = _smart_crop_payload()
+    if error:
+        return error
+    try:
+        output_path, proposal = _smart_crop_service().preview(
+            payload["image_id"], payload["aspect_ratio"]
+        )
+    except SmartCropError as exc:
+        return error_response("INVALID_SMART_CROP", str(exc), 400)
+    except (FileNotFoundError, FileValidationError) as exc:
+        return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError) as exc:
+        return error_response("SMART_CROP_PREVIEW_FAILED", str(exc), 400)
+    response = send_file(output_path, mimetype="image/png", max_age=0)
+    response.headers["X-Smart-Crop"] = ",".join(
+        f"{key}={proposal[key]}" for key in ("x", "y", "width", "height", "score")
+    )
+    return response
+
+
+@transform_bp.post("/smart-crop/apply")
+def smart_crop_apply():
+    payload, error = _smart_crop_payload()
+    if error:
+        return error
+    try:
+        result = _smart_crop_service().apply(
+            payload["image_id"], payload["aspect_ratio"]
+        )
+    except SmartCropError as exc:
+        return error_response("INVALID_SMART_CROP", str(exc), 400)
+    except (FileNotFoundError, FileValidationError) as exc:
+        return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError) as exc:
+        return error_response("SMART_CROP_FAILED", str(exc), 400)
+    return jsonify(success=True, image=result)
 
 
 @transform_bp.post("/crop")
