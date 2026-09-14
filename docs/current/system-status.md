@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-09-14  
 **Reference branch:** `main`  
-**Reference commit:** `ac7c11ce79b31c4d0773313e2ab1a27508ed6614`
+**Reference commit:** `91dd9cf54706c892275c427a287d5eeb8f9baa1d`
 
 ## Purpose
 
@@ -14,10 +14,10 @@ When a statement in an older document describes a planned capability rather than
 
 | Check | Result |
 |---|---:|
-| Automated Python tests | 206 passed in the v0.5 validation run |
-| Ruff | Passed in the v0.5 validation run |
-| JavaScript syntax checks | Passed for changed editor modules |
-| Vitest | 3 passed |
+| Automated Python tests | 209 expected after the v0.6 full-suite run |
+| Ruff | Required to pass |
+| JavaScript syntax checks | Required to pass for changed editor modules |
+| Vitest | Existing frontend suite remains required |
 | OpenCV/NumPy import | Passed (`cv2` 5.0.0, NumPy 2.5.3) |
 
 ## Official local entry points
@@ -41,11 +41,11 @@ The root URL `/` serves the same Editor V2 application. The directory `frontend/
 
 ## Implemented capability groups
 
-The current backend exposes working endpoints for image upload and content retrieval, format conversion and export, crop and resize, rotation and flipping, processing adjustments and filters, background operations, history navigation, deterministic image analysis, explainable suggestions, persistent layers, and backend layer composition during export.
+The current backend exposes working endpoints for image upload and content retrieval, format conversion and export, crop and resize, rotation and flipping, processing adjustments and filters, Background Studio operations, history navigation, deterministic image analysis, explainable suggestions, persistent layers, and backend layer composition during export.
 
-The v0.5 Layers & Compositing scope now includes validated image, shape, text, and brush layer payloads; persisted z-order; visibility; opacity; transforms; supported blend modes; session-scoped image assets; multi-image composition; and export with `composite_layers=true`. The active Editor V2 Layers panel provides selection, visibility toggling, locking, renaming, duplication, drag-and-drop ordering, edge ordering, deletion, and transform/opacity/blend controls.
+The v0.5 Layers & Compositing scope includes validated image, shape, text, and brush layer payloads; persisted z-order; visibility; opacity; transforms; supported blend modes; session-scoped image assets; multi-image composition; and export with `composite_layers=true`.
 
-Layer composition is intentionally separate from the v0.4 pixel-processing history: export composition renders the persisted layers without changing the current base image or adding a history entry. Layer image assets are checked against the image session when persisted and retrieved.
+The v0.6 Background Studio scope extends the existing color-mask workflow with non-destructive replacement previews, background blur, background scale and X/Y offsets, optional foreground shadow, stronger parameter validation, and corrected single-entry History behavior. Preview endpoints do not change the current image or History. Applied removal and replacement operations preserve the existing PNG/RGBA behavior.
 
 Processing and transformation use Flask, Pillow, OpenCV, and NumPy at runtime. SQLite is used for persistent image-session metadata, editing history, projects, layers, and image-layer asset metadata; image binaries remain in file storage, including the `layer-assets` category. OpenCV and NumPy are isolated to `backend/app/services/process_operations.py`; routes and orchestration services remain stack-agnostic.
 
@@ -65,10 +65,16 @@ Processing and transformation use Flask, Pillow, OpenCV, and NumPy at runtime. S
 | POST | `/api/layers/compose` | Renders visible persisted layers over the current base image. |
 | GET | `/api/layers/assets/<asset_id>?image_id=<id>` | Returns an image layer asset only for its owning image session. |
 | POST | `/api/images/export` | Supports `composite_layers=true` to export the composed image without mutating history. |
+| POST | `/api/background/mask-preview` | Returns a non-persistent grayscale foreground mask. |
+| POST | `/api/background/replace-preview` | Returns a non-persistent replacement preview with optional blur, scale, offsets, and shadow. |
+| POST | `/api/background/remove` | Applies color-mask removal and records one History operation. |
+| POST | `/api/background/replace` | Applies color-mask replacement with optional background effects and records one History operation. |
+| GET | `/api/background/backgrounds` | Lists available background library assets. |
+| POST | `/api/background/backgrounds` | Validates and uploads a background library asset. |
 
 ## Known non-current or deferred capabilities
 
-The architecture and requirements documents describe a broader roadmap that includes the processing pipeline, multiple-selection and grouping enhancements, per-layer filters, histogram stretching/equalization, and future intelligent assistance. The current v0.5 implementation deliberately does not add these capabilities.
+The architecture and requirements documents describe a broader roadmap that includes the processing pipeline, multiple-selection and grouping enhancements, per-layer filters, histogram stretching/equalization, general-purpose AI segmentation, and future intelligent assistance. The current v0.6 implementation deliberately does not add these capabilities.
 
 The pipeline endpoint remains a separate v0.7 scope. Smart Crop and suggested processing pipelines remain v0.8 scope. Advanced layer features such as clipping masks, adjustment layers, and per-layer pixel operations are deferred until the layer model and pipeline model evolve together.
 
