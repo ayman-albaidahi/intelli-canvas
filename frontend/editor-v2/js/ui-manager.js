@@ -23,7 +23,7 @@ export function initUI() {
     const panel = button.dataset.panel;
     if (READY_PANELS.has(panel)) {
       button.addEventListener('click', () => focusPanel(panel));
-    } else if (panel === 'history' || panel === 'analysis') {
+    } else if (panel === 'history' || panel === 'analysis' || panel === 'pipeline') {
       button.addEventListener('click', () => switchInspector(panel));
     } else {
       button.classList.add('is-disabled');
@@ -66,6 +66,8 @@ export function switchInspector(name) {
   if (analysisPanel) analysisPanel.hidden = name !== 'analysis';
   const historyPanel = document.querySelector('#history-panel');
   if (historyPanel) historyPanel.hidden = name !== 'history';
+  const pipelinePanel = document.querySelector('#pipeline-panel');
+  if (pipelinePanel) pipelinePanel.hidden = name !== 'pipeline';
 }
 
 export function showToast(message) {

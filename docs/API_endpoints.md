@@ -100,7 +100,13 @@ All transformation endpoints accept JSON with `image_id`.
 | PUT | `/api/layers` | Persists validated image, shape, text, and brush layers. Image data URLs are moved to session-scoped file assets. |
 | GET | `/api/layers/assets/<asset_id>` | Returns a persisted layer image asset after session ownership validation through the layer payload. |
 | POST | `/api/layers/compose` | Renders visible layers over the current base image and returns the composed PNG metadata. |
-| GET/POST | `/api/pipeline` | Reads or updates the processing pipeline payload. |
+| GET | `/api/pipeline?image_id=<id>` | Returns the persisted pipeline and ordered nodes for an image session. |
+| PUT | `/api/pipeline` | Replaces the complete validated pipeline node list. |
+| POST | `/api/pipeline/nodes` | Adds a supported processing node. |
+| PATCH | `/api/pipeline/nodes/<node_id>` | Updates node operation, parameters, or enabled state. |
+| DELETE | `/api/pipeline/nodes/<node_id>` | Deletes a pipeline node. |
+| POST | `/api/pipeline/nodes/<node_id>/toggle` | Enables or disables a node. |
+| POST | `/api/pipeline/reorder` | Moves a node to a zero-based order index. |
 | POST | `/api/analysis` | Returns image metrics and brightness/contrast findings. |
 | POST | `/api/analysis/export-report` | Downloads the analysis result as `analysis.json`. |
 | POST | `/api/suggestions` | Returns explainable suggestions derived from analysis findings. |

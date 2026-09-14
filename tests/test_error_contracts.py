@@ -18,18 +18,18 @@ def test_invalid_analysis_request_uses_common_error_shape():
     }
 
 
-def test_not_implemented_route_uses_common_error_shape():
+def test_pipeline_requires_an_image_session():
     app = create_app()
     client = app.test_client()
 
     response = client.get("/api/pipeline")
 
-    assert response.status_code == 501
+    assert response.status_code == 400
     assert response.get_json() == {
         "success": False,
         "error": {
-            "code": "NOT_IMPLEMENTED",
-            "message": "Pipeline management is not implemented yet.",
+            "code": "INVALID_IMAGE_ID",
+            "message": "A valid image_id is required.",
         },
     }
 

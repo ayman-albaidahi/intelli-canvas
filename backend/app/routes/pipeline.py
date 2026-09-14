@@ -1,14 +1,80 @@
-from flask import Blueprint
+from flask import Blueprint, current_app, jsonify, request
 
-from ..errors import not_implemented_response
+from ..api_utils import error_response
+from ..services.pipeline_service import PipelineParamError, PipelineService
 
-pipeline_bp = Blueprint(
-    "pipeline",
-    __name__,
-    url_prefix="/api/pipeline",
-)
+pipeline_bp = Blueprint("pipeline", __name__, url_prefix="/api/pipeline")
 
 
-@pipeline_bp.route("", methods=["GET", "POST"])
-def pipeline():
-    return not_implemented_response("Pipeline")
+def _service() -> PipelineService:
+    return PipelineService(current_app.config["IMAGE_SESSION_SERVICE"])
+
+
+def _image_id(payload=None):
+    payload = payload if isinstance(payload, dict) else request.get_json(silent=True) or {}
+    image_id = payload.get("image_id")
+    if not isinstance(image_id, str) or not image_id.strip():
+        return None, error_response("INVALID_IMAGE_ID", "A valid image_id is required.", 400)
+    if current_app.config["IMAGE_SESSION_SERVICE"].get_session(image_id) is None:
+        return None, error_response("IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404)
+    return image_id, None
+
+
+def _response(pipeline):
+    return jsonify(success=True, pipeline=pipeline)
+
+
+def _handle(action):
+    payload = request.get_json(silent=True) or {}
+    image_id, error = _image_id(payload)
+    if error:
+        return error
+    try:
+        return _response(action(image_id, payload))
+    except PipelineParamError as exc:
+        return error_response("INVALID_PIPELINE", str(exc), 400)
+    except KeyError as exc:
+        return error_response("PIPELINE_NODE_NOT_FOUND", str(exc), 404)
+    except FileNotFoundError as exc:
+        return error_response("IMAGE_SESSION_NOT_FOUND", str(exc), 404)
+
+
+@pipeline_bp.get("")
+def get_pipeline():
+    image_id, error = _image_id(request.args.to_dict())
+    if error:
+        return error
+    try:
+        return _response(_service().get(image_id))
+    except FileNotFoundError as exc:
+        return error_response("IMAGE_SESSION_NOT_FOUND", str(exc), 404)
+
+
+@pipeline_bp.put("")
+def put_pipeline():
+    return _handle(_service().save)
+
+
+@pipeline_bp.post("/nodes")
+def add_node():
+    return _handle(_service().add)
+
+
+@pipeline_bp.patch("/nodes/<node_id>")
+def patch_node(node_id):
+    return _handle(lambda image_id, payload: _service().patch(image_id, node_id, payload))
+
+
+@pipeline_bp.delete("/nodes/<node_id>")
+def delete_node(node_id):
+    return _handle(lambda image_id, payload: _service().delete(image_id, node_id))
+
+
+@pipeline_bp.post("/nodes/<node_id>/toggle")
+def toggle_node(node_id):
+    return _handle(lambda image_id, payload: _service().toggle(image_id, node_id))
+
+
+@pipeline_bp.post("/reorder")
+def reorder_node():
+    return _handle(lambda image_id, payload: _service().reorder(image_id, payload.get("node_id"), payload.get("order")))

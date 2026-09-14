@@ -115,6 +115,34 @@ export class ApiClient {
     }
     return response.blob();
   }
+  async pipeline(imageId = this.imageId) {
+    const payload = await request(`${this.baseUrl}/pipeline?image_id=${encodeURIComponent(imageId)}`);
+    return payload.pipeline;
+  }
+  async savePipeline(nodes, version = 1, imageId = this.imageId) {
+    const payload = await request(`${this.baseUrl}/pipeline`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, version, nodes }) });
+    return payload.pipeline;
+  }
+  async addPipelineNode(node, imageId = this.imageId) {
+    const payload = await request(`${this.baseUrl}/pipeline/nodes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, ...node }) });
+    return payload.pipeline;
+  }
+  async updatePipelineNode(nodeId, changes, imageId = this.imageId) {
+    const payload = await request(`${this.baseUrl}/pipeline/nodes/${encodeURIComponent(nodeId)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, ...changes }) });
+    return payload.pipeline;
+  }
+  async deletePipelineNode(nodeId, imageId = this.imageId) {
+    const payload = await request(`${this.baseUrl}/pipeline/nodes/${encodeURIComponent(nodeId)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId }) });
+    return payload.pipeline;
+  }
+  async togglePipelineNode(nodeId, imageId = this.imageId) {
+    const payload = await request(`${this.baseUrl}/pipeline/nodes/${encodeURIComponent(nodeId)}/toggle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId }) });
+    return payload.pipeline;
+  }
+  async reorderPipelineNode(nodeId, order, imageId = this.imageId) {
+    const payload = await request(`${this.baseUrl}/pipeline/reorder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, node_id: nodeId, order }) });
+    return payload.pipeline;
+  }
 
   async layers(imageId = this.imageId) {
     const payload = await request(`${this.baseUrl}/layers?image_id=${encodeURIComponent(imageId)}`);

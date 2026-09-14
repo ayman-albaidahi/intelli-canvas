@@ -60,9 +60,28 @@ CREATE TABLE IF NOT EXISTS image_assets (
     size INTEGER NOT NULL,
     created_at INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS image_pipelines (
+    pipeline_id TEXT PRIMARY KEY,
+    image_id TEXT NOT NULL UNIQUE REFERENCES image_sessions(image_id) ON DELETE CASCADE,
+    version INTEGER NOT NULL DEFAULT 1,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS pipeline_nodes (
+    node_id TEXT PRIMARY KEY,
+    pipeline_id TEXT NOT NULL REFERENCES image_pipelines(pipeline_id) ON DELETE CASCADE,
+    operation TEXT NOT NULL,
+    parameters_json TEXT NOT NULL DEFAULT '{}',
+    enabled INTEGER NOT NULL DEFAULT 1,
+    order_index INTEGER NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    UNIQUE(pipeline_id, order_index)
+);
 CREATE INDEX IF NOT EXISTS idx_image_history_image_id ON image_history(image_id, history_index);
 CREATE INDEX IF NOT EXISTS idx_image_layers_image_id ON image_layers(image_id, z_index);
 CREATE INDEX IF NOT EXISTS idx_image_assets_image_id ON image_assets(image_id);
+CREATE INDEX IF NOT EXISTS idx_pipeline_nodes_pipeline_id ON pipeline_nodes(pipeline_id, order_index);
 """
 
 
@@ -244,6 +263,31 @@ class SQLiteSessionRepository:
                 raise FileNotFoundError("Image session was not found.")
             rows = connection.execute("SELECT payload_json FROM image_layers WHERE image_id = ? ORDER BY z_index", (image_id,)).fetchall()
         return [json.loads(row[0]) for row in rows]
+
+    def get_pipeline(self, image_id: str) -> dict[str, Any] | None:
+        with self._connect() as connection:
+            pipeline = connection.execute("SELECT * FROM image_pipelines WHERE image_id = ?", (image_id,)).fetchone()
+            if pipeline is None:
+                return None
+            nodes = connection.execute("SELECT node_id, operation, parameters_json, enabled, order_index, created_at, updated_at FROM pipeline_nodes WHERE pipeline_id = ? ORDER BY order_index", (pipeline["pipeline_id"],)).fetchall()
+        return {
+            "pipeline_id": pipeline["pipeline_id"], "image_id": pipeline["image_id"],
+            "version": pipeline["version"], "created_at": pipeline["created_at"], "updated_at": pipeline["updated_at"],
+            "nodes": [{"id": row["node_id"], "operation": row["operation"], "parameters": json.loads(row["parameters_json"] or "{}"), "enabled": bool(row["enabled"]), "order": row["order_index"], "created_at": row["created_at"], "updated_at": row["updated_at"]} for row in nodes],
+        }
+
+    def save_pipeline(self, image_id: str, nodes: list[dict[str, Any]], version: int, now: int) -> dict[str, Any]:
+        with self._connect() as connection:
+            if connection.execute("SELECT 1 FROM image_sessions WHERE image_id = ?", (image_id,)).fetchone() is None:
+                raise FileNotFoundError("Image session was not found.")
+            pipeline = connection.execute("SELECT pipeline_id, created_at FROM image_pipelines WHERE image_id = ?", (image_id,)).fetchone()
+            pipeline_id = pipeline["pipeline_id"] if pipeline else uuid.uuid4().hex
+            created_at = pipeline["created_at"] if pipeline else now
+            connection.execute("INSERT INTO image_pipelines (pipeline_id, image_id, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(image_id) DO UPDATE SET version = excluded.version, updated_at = excluded.updated_at", (pipeline_id, image_id, version, created_at, now))
+            connection.execute("DELETE FROM pipeline_nodes WHERE pipeline_id = ?", (pipeline_id,))
+            for order, node in enumerate(nodes):
+                connection.execute("INSERT INTO pipeline_nodes (node_id, pipeline_id, operation, parameters_json, enabled, order_index, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (node["id"], pipeline_id, node["operation"], json.dumps(node.get("parameters", {}), separators=(",", ":")), int(node.get("enabled", True)), order, node.get("created_at", now), now))
+        return self.get_pipeline(image_id)  # type: ignore[return-value]
 
     def _history(self, connection: sqlite3.Connection, image_id: str) -> list[dict[str, Any]]:
         rows = connection.execute("SELECT history_index, operation, filename, storage, created_at, parameters_json FROM image_history WHERE image_id = ? ORDER BY history_index", (image_id,)).fetchall()
