@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-09-14  
 **Reference branch:** `main`  
-**Reference commit:** `91dd9cf54706c892275c427a287d5eeb8f9baa1d`
+**Reference commit:** `TBD — v0.6.2 completion in progress`
 
 ## Purpose
 
@@ -45,7 +45,7 @@ The current backend exposes working endpoints for image upload and content retri
 
 The v0.5 Layers & Compositing scope includes validated image, shape, text, and brush layer payloads; persisted z-order; visibility; opacity; transforms; supported blend modes; session-scoped image assets; multi-image composition; and export with `composite_layers=true`.
 
-The v0.6 Background Studio scope extends the existing color-mask workflow with non-destructive replacement previews, background blur, background scale and X/Y offsets, optional foreground shadow, stronger parameter validation, and corrected single-entry History behavior. Preview endpoints do not change the current image or History. Applied removal and replacement operations preserve the existing PNG/RGBA behavior.
+The v0.6 Background Studio scope extends the existing color-mask workflow with non-destructive replacement previews, background blur, background scale and X/Y offsets, optional foreground shadow, stronger parameter validation, and corrected single-entry History behavior. v0.6.2 adds categorized background metadata, generated thumbnails, a catalog endpoint, and Background Studio reset/cancel controls. Preview endpoints do not change the current image or History. Applied removal and replacement operations preserve the existing PNG/RGBA behavior.
 
 Processing and transformation use Flask, Pillow, OpenCV, and NumPy at runtime. SQLite is used for persistent image-session metadata, editing history, projects, layers, and image-layer asset metadata; image binaries remain in file storage, including the `layer-assets` category. OpenCV and NumPy are isolated to `backend/app/services/process_operations.py`; routes and orchestration services remain stack-agnostic.
 
@@ -70,7 +70,9 @@ Processing and transformation use Flask, Pillow, OpenCV, and NumPy at runtime. S
 | POST | `/api/background/remove` | Applies color-mask removal and records one History operation. |
 | POST | `/api/background/replace` | Applies color-mask replacement with optional background effects and records one History operation. |
 | GET | `/api/background/backgrounds` | Lists available background library assets. |
-| POST | `/api/background/backgrounds` | Validates and uploads a background library asset. |
+| GET | `/api/background/backgrounds/catalog` | Lists category, dimensions, and generated thumbnail metadata for background assets. |
+| GET | `/api/background/backgrounds/<name>/thumbnail` | Returns a generated 320×200 JPEG thumbnail. |
+| POST | `/api/background/backgrounds` | Validates and uploads a categorized background library asset. |
 
 ## Known non-current or deferred capabilities
 
