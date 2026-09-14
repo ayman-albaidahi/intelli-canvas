@@ -1,6 +1,6 @@
 from flask import Blueprint
 
-from ..api_utils import error_response
+from ..errors import not_implemented_response
 
 pipeline_bp = Blueprint(
     "pipeline",
@@ -9,9 +9,6 @@ pipeline_bp = Blueprint(
 )
 
 
-def _not_implemented_response():
-    return error_response("NOT_IMPLEMENTED", "Pipeline management is not implemented yet.", 501)
-
 @pipeline_bp.route("", methods=["GET", "POST"])
 def pipeline():
-    return _not_implemented_response()
+    return not_implemented_response("Pipeline")
