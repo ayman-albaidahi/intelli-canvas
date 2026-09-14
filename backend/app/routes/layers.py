@@ -91,6 +91,21 @@ def get_layers():
     return jsonify(success=True, image_id=image_id, layers=layers)
 
 
+@layers_bp.post("/compose")
+def compose_layers():
+    payload = request.get_json(silent=True) or {}
+    image_id = payload.get("image_id")
+    if not isinstance(image_id, str) or not image_id.strip():
+        return error_response("INVALID_IMAGE_ID", "A valid image_id is required.", 400)
+    try:
+        result = current_app.config["LAYER_COMPOSITOR_SERVICE"].compose(image_id)
+    except FileNotFoundError:
+        return error_response("IMAGE_NOT_AVAILABLE", "The image or layer asset was not found.", 404)
+    except (OSError, ValueError) as exc:
+        return error_response("COMPOSITE_FAILED", str(exc), 400)
+    return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})
+
+
 @layers_bp.put("")
 def save_layers():
     payload = request.get_json(silent=True)

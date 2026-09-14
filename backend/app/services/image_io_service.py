@@ -35,12 +35,14 @@ class ImageIOService:
         quality: int | None = None,
         width: int | None = None,
         height: int | None = None,
+        source_path: Path | None = None,
     ) -> dict[str, Any]:
         export_format = SUPPORTED_EXPORT_FORMATS.get(target_format.lower())
         if export_format is None:
             raise ValueError("Unsupported export format.")
 
-        source_path, session = self._resolve_source(image_id)
+        resolved_source, session = self._resolve_source(image_id)
+        source_path = source_path or resolved_source
         pillow_format, extension, mime_type = export_format
         base_stem = session.get("base_stem")
         if not isinstance(base_stem, str) or not base_stem:

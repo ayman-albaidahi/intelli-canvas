@@ -174,9 +174,14 @@ def export_image():
         )
 
     try:
+        composite_path = None
+        if payload.get("composite_layers"):
+            composite_path = current_app.config["LAYER_COMPOSITOR_SERVICE"].compose(
+                image_id, persist=False
+            )["path"]
         result = ImageIOService(
             _get_session_service(), FileStorageService()
-        ).convert(image_id, target_format, quality=quality, width=width, height=height)
+        ).convert(image_id, target_format, quality=quality, width=width, height=height, source_path=composite_path)
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
     except (OSError, ValueError):
