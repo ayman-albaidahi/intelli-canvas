@@ -1,7 +1,7 @@
 from flask import Blueprint, current_app, jsonify, request
 
 from ..api_utils import error_response
-from ..services.file_service import FileStorageService, FileValidationError
+from ..services.file_service import FileValidationError
 from ..services.process_service import ProcessService
 
 process_bp = Blueprint("process", __name__, url_prefix="/api/process")
@@ -181,4 +181,146 @@ def apply_adjustments():
         return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
     except (OSError, ValueError):
         return error_response("ADJUSTMENTS_FAILED", "The adjustments could not be applied.", 400)
+    return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})
+
+
+@process_bp.post("/histogram")
+def image_histogram():
+    image_id, error = _image_id_from_payload()
+    if error:
+        return error
+    try:
+        histogram = ProcessService(
+            current_app.config["IMAGE_SESSION_SERVICE"],
+            current_app.config["FILE_STORAGE_SERVICE"],
+        ).histogram(image_id)
+    except (FileNotFoundError, FileValidationError) as exc:
+        return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError):
+        return error_response("HISTOGRAM_FAILED", "The image histogram could not be computed.", 400)
+    return jsonify(success=True, histogram=histogram)
+
+
+@process_bp.post("/sobel")
+def sobel_edges():
+    image_id, error = _image_id_from_payload()
+    if error:
+        return error
+    payload = request.get_json(silent=True) or {}
+    ksize = payload.get("ksize", 3)
+    if isinstance(ksize, bool) or not isinstance(ksize, int) or not 1 <= ksize <= 7 or not ksize % 2:
+        return error_response("INVALID_SOBEL_KSIZE", "Sobel ksize must be an odd integer from 1 to 7.", 400)
+    try:
+        result = ProcessService(
+            current_app.config["IMAGE_SESSION_SERVICE"],
+            current_app.config["FILE_STORAGE_SERVICE"],
+        ).sobel(image_id, ksize)
+    except (FileNotFoundError, FileValidationError) as exc:
+        return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError):
+        return error_response("SOBEL_FAILED", "Sobel edge detection could not be applied.", 400)
+    return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})
+
+
+@process_bp.post("/laplacian")
+def laplacian_edges():
+    image_id, error = _image_id_from_payload()
+    if error:
+        return error
+    try:
+        result = ProcessService(
+            current_app.config["IMAGE_SESSION_SERVICE"],
+            current_app.config["FILE_STORAGE_SERVICE"],
+        ).laplacian(image_id)
+    except (FileNotFoundError, FileValidationError) as exc:
+        return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError):
+        return error_response("LAPLACIAN_FAILED", "Laplacian edge detection could not be applied.", 400)
+    return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})
+
+
+@process_bp.post("/median-filter")
+def median_filter():
+    image_id, error = _image_id_from_payload()
+    if error:
+        return error
+    payload = request.get_json(silent=True) or {}
+    ksize = payload.get("ksize", 3)
+    if isinstance(ksize, bool) or not isinstance(ksize, int) or not 1 <= ksize <= 15 or not ksize % 2:
+        return error_response("INVALID_MEDIAN_KSIZE", "Median ksize must be an odd integer from 1 to 15.", 400)
+    try:
+        result = ProcessService(
+            current_app.config["IMAGE_SESSION_SERVICE"],
+            current_app.config["FILE_STORAGE_SERVICE"],
+        ).median_filter(image_id, ksize)
+    except (FileNotFoundError, FileValidationError) as exc:
+        return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError):
+        return error_response("MEDIAN_FILTER_FAILED", "The median filter could not be applied.", 400)
+    return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})
+
+
+@process_bp.post("/morphology")
+def morphology():
+    image_id, error = _image_id_from_payload()
+    if error:
+        return error
+    payload = request.get_json(silent=True) or {}
+    operation = payload.get("operation")
+    if operation not in {"erode", "dilate", "open", "close"}:
+        return error_response("INVALID_MORPHOLOGY_OPERATION", "Morphology operation must be erode, dilate, open, or close.", 400)
+    ksize = payload.get("ksize", 3)
+    if isinstance(ksize, bool) or not isinstance(ksize, int) or not 1 <= ksize <= 15 or not ksize % 2:
+        return error_response("INVALID_MORPHOLOGY_KSIZE", "Morphology ksize must be an odd integer from 1 to 15.", 400)
+    try:
+        result = ProcessService(
+            current_app.config["IMAGE_SESSION_SERVICE"],
+            current_app.config["FILE_STORAGE_SERVICE"],
+        ).morphology(image_id, operation, ksize)
+    except (FileNotFoundError, FileValidationError) as exc:
+        return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError):
+        return error_response("MORPHOLOGY_FAILED", "The morphology operation could not be applied.", 400)
+    return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})
+
+
+@process_bp.post("/gamma")
+def gamma_correction():
+    image_id, error = _image_id_from_payload()
+    if error:
+        return error
+    payload = request.get_json(silent=True) or {}
+    value = payload.get("value", 1.0)
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0.1 <= value <= 5.0:
+        return error_response("INVALID_GAMMA", "Gamma value must be a number from 0.1 to 5.0.", 400)
+    try:
+        result = ProcessService(
+            current_app.config["IMAGE_SESSION_SERVICE"],
+            current_app.config["FILE_STORAGE_SERVICE"],
+        ).gamma(image_id, float(value))
+    except (FileNotFoundError, FileValidationError) as exc:
+        return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError):
+        return error_response("GAMMA_FAILED", "Gamma correction could not be applied.", 400)
+    return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})
+
+
+@process_bp.post("/threshold")
+def threshold_image():
+    image_id, error = _image_id_from_payload()
+    if error:
+        return error
+    payload = request.get_json(silent=True) or {}
+    value = payload.get("value", 128)
+    if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 255:
+        return error_response("INVALID_THRESHOLD", "Threshold value must be an integer from 0 to 255.", 400)
+    try:
+        result = ProcessService(
+            current_app.config["IMAGE_SESSION_SERVICE"],
+            current_app.config["FILE_STORAGE_SERVICE"],
+        ).threshold(image_id, value)
+    except (FileNotFoundError, FileValidationError) as exc:
+        return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+    except (OSError, ValueError):
+        return error_response("THRESHOLD_FAILED", "Thresholding could not be applied.", 400)
     return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})

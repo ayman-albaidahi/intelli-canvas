@@ -34,7 +34,6 @@ def _analysis_findings(image_id: str):
     from PIL import Image
 
     from ..services.analysis_service import analyze
-    from ..services.file_service import FileStorageService
 
     storage = current_app.config["FILE_STORAGE_SERVICE"]
     directory = (

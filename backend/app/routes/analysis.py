@@ -19,7 +19,6 @@ def _session_image(image_id: str):
         return None
     from pathlib import Path
 
-    from ..services.file_service import FileStorageService
 
     storage = current_app.config["FILE_STORAGE_SERVICE"]
     directory = (

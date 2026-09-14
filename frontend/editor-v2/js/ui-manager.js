@@ -3,7 +3,7 @@ import { appState, setState } from './app-state.js';
 const toast = document.querySelector('#toast');
 let toastTimer;
 
-const READY_PANELS = new Set(['adjustments']);
+const READY_PANELS = new Set(['adjustments', 'filters']);
 
 export function initUI() {
   document.querySelectorAll('[data-tool]').forEach((button) => {
@@ -21,7 +21,7 @@ export function initUI() {
 
   document.querySelectorAll('[data-panel]').forEach((button) => {
     const panel = button.dataset.panel;
-    if (panel === 'adjustments') {
+    if (READY_PANELS.has(panel)) {
       button.addEventListener('click', () => focusPanel(panel));
     } else if (panel === 'history' || panel === 'analysis') {
       button.addEventListener('click', () => switchInspector(panel));

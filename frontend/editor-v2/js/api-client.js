@@ -53,6 +53,12 @@ export class ApiClient {
     return payload.image;
   }
 
+  async histogram() {
+    if (!this.imageId) throw new Error('Upload an image before processing it.');
+    const payload = await request(`${this.baseUrl}/process/histogram`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId }) });
+    return payload.histogram;
+  }
+
   async export(format, quality = null, width = null, height = null, compositeLayers = false) {
     if (!this.imageId) throw new Error('Upload an image before exporting it.');
     let response;

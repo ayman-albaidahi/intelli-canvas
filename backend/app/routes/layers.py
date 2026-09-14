@@ -7,7 +7,7 @@ import uuid
 from flask import Blueprint, current_app, jsonify, request, send_file
 
 from ..api_utils import error_response
-from ..services.file_service import FileStorageService, FileValidationError
+from ..services.file_service import FileValidationError
 
 layers_bp = Blueprint(
     "layers",

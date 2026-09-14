@@ -9,6 +9,7 @@ import { LayerManager } from './layer-manager.js';
 import { ObjectManager } from './object-manager.js';
 import { ComparisonTool } from './comparison-tool.js';
 import { AdjustmentsManager } from './adjustments-manager.js';
+import { FiltersManager } from './filters-manager.js';
 import { HistoryManager } from './history-manager.js';
 import { ExportManager } from './export-manager.js';
 import { BackgroundManager } from './background-manager.js';
@@ -51,6 +52,7 @@ async function restoreLayers() {
 }
 new ComparisonTool(canvasManager, showToast);
 new AdjustmentsManager({ canvasManager, apiClient, showToast });
+new FiltersManager({ canvasManager, apiClient, showToast });
 const backgroundManager = new BackgroundManager({ canvasManager, apiClient, objectManager, showToast });
 window.__bm = backgroundManager;
 const historyManager = new HistoryManager({ canvasManager, apiClient, showToast });

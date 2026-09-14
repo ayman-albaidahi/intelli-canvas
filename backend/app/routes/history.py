@@ -1,7 +1,6 @@
 from flask import Blueprint, current_app, jsonify, request
 
 from ..api_utils import error_response
-from ..services.file_service import FileStorageService
 
 history_bp = Blueprint(
     "history",

@@ -2,9 +2,9 @@ from pathlib import Path
 
 from flask import Flask, request, send_from_directory
 
-from .errors import register_error_handlers
 from .config import Config
 from .database import SQLiteSessionRepository
+from .errors import register_error_handlers
 from .routes import (
     analysis_bp,
     background_bp,
