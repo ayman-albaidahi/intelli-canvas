@@ -90,6 +90,20 @@ export class ApiClient {
     return payload.image;
   }
 
+  async layers(imageId = this.imageId) {
+    const payload = await request(`${this.baseUrl}/layers?image_id=${encodeURIComponent(imageId)}`);
+    return payload.layers || [];
+  }
+
+  async saveLayers(layers, imageId = this.imageId) {
+    const payload = await request(`${this.baseUrl}/layers`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_id: imageId, layers }),
+    });
+    return payload.layers || [];
+  }
+
   async maskPreview(params) {
     if (!this.imageId) throw new Error('Upload an image first.');
     let response;

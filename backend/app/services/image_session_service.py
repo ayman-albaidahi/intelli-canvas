@@ -34,6 +34,7 @@ class ImageSessionService:
                 "storage": "uploads",
             }],
             "history_index": 0,
+            "layers": [],
         }
         self.session_store[image_id] = payload
         return payload
@@ -55,6 +56,19 @@ class ImageSessionService:
 
     def get_session(self, image_id: str) -> dict[str, Any] | None:
         return self.session_store.get(image_id)
+
+    def get_layers(self, image_id: str) -> list[dict[str, Any]]:
+        session = self.get_session(image_id)
+        if session is None:
+            raise FileNotFoundError("Image session was not found.")
+        return list(session.get("layers", []))
+
+    def save_layers(self, image_id: str, layers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        session = self.get_session(image_id)
+        if session is None:
+            raise FileNotFoundError("Image session was not found.")
+        session["layers"] = layers
+        return list(layers)
 
     def update_current_image(
         self,
