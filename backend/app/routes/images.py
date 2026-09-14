@@ -56,7 +56,7 @@ def upload_image():
             session_data = _get_session_service().create_session(
                 image_metadata
             )
-        except Exception:
+        except (OSError, TypeError, ValueError, KeyError):
             if saved_path.exists():
                 saved_path.unlink()
             raise
@@ -71,7 +71,7 @@ def upload_image():
         return jsonify(success=True, image=public_image)
     except FileValidationError as exc:
         return _error_response("INVALID_FILE", str(exc), 400)
-    except Exception:
+    except (OSError, TypeError, ValueError, KeyError):
         return _error_response(
             "UPLOAD_FAILED", "The image could not be uploaded.", 500
         )

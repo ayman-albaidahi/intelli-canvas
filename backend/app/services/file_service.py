@@ -114,7 +114,7 @@ class FileStorageService:
         except FileValidationError:
             file_obj.seek(position)
             raise
-        except Exception:
+        except (OSError, SyntaxError, ValueError):
             file_obj.seek(position)
             raise FileValidationError("File content is not a valid image.")
         file_obj.seek(position)

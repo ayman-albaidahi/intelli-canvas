@@ -1,6 +1,5 @@
 from flask import Blueprint, jsonify
 
-
 layers_bp = Blueprint(
     "layers",
     __name__,

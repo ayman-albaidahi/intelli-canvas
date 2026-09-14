@@ -16,7 +16,6 @@ from .routes import (
 )
 from .services.image_session_service import ImageSessionService
 
-
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
 
 
