@@ -2,13 +2,21 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import uuid
 from pathlib import Path
 from typing import Any
 
 SCHEMA = """
 PRAGMA foreign_keys = ON;
+CREATE TABLE IF NOT EXISTS projects (
+    project_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS image_sessions (
     image_id TEXT PRIMARY KEY,
+    project_id TEXT REFERENCES projects(project_id),
     original_filename TEXT NOT NULL,
     base_stem TEXT NOT NULL,
     stored_filename TEXT NOT NULL,
@@ -42,8 +50,18 @@ CREATE TABLE IF NOT EXISTS image_layers (
     updated_at INTEGER NOT NULL,
     UNIQUE(image_id, layer_id)
 );
+CREATE TABLE IF NOT EXISTS image_assets (
+    asset_id TEXT PRIMARY KEY,
+    image_id TEXT NOT NULL REFERENCES image_sessions(image_id) ON DELETE CASCADE,
+    storage_category TEXT NOT NULL,
+    stored_filename TEXT NOT NULL,
+    mime_type TEXT NOT NULL,
+    size INTEGER NOT NULL,
+    created_at INTEGER NOT NULL
+);
 CREATE INDEX IF NOT EXISTS idx_image_history_image_id ON image_history(image_id, history_index);
 CREATE INDEX IF NOT EXISTS idx_image_layers_image_id ON image_layers(image_id, z_index);
+CREATE INDEX IF NOT EXISTS idx_image_assets_image_id ON image_assets(image_id);
 """
 
 
@@ -66,6 +84,9 @@ class SQLiteSessionRepository:
     def _initialize(self) -> None:
         with self._connect() as connection:
             connection.executescript(SCHEMA)
+            columns = {row[1] for row in connection.execute("PRAGMA table_info(image_sessions)")}
+            if "project_id" not in columns:
+                connection.execute("ALTER TABLE image_sessions ADD COLUMN project_id TEXT REFERENCES projects(project_id)")
 
     def __contains__(self, image_id: str) -> bool:
         return self.get_session(image_id) is not None
@@ -75,14 +96,21 @@ class SQLiteSessionRepository:
 
     def create_session(self, payload: dict[str, Any]) -> dict[str, Any]:
         with self._connect() as connection:
+            project_id = payload.get("project_id")
+            if project_id is None:
+                project_id = uuid.uuid4().hex
+                connection.execute(
+                    "INSERT INTO projects (project_id, name, created_at, updated_at) VALUES (?, ?, ?, ?)",
+                    (project_id, payload["original_filename"], payload["created_at"], payload["updated_at"]),
+                )
             connection.execute(
                 """INSERT INTO image_sessions
-                (image_id, original_filename, base_stem, stored_filename,
+                (image_id, project_id, original_filename, base_stem, stored_filename,
                  current_filename, current_storage, format, mime_type, size,
                  history_index, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)""",
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)""",
                 (
-                    payload["image_id"], payload["original_filename"], payload["base_stem"],
+                    payload["image_id"], project_id, payload["original_filename"], payload["base_stem"],
                     payload["stored_filename"], payload["current_filename"],
                     payload["current_storage"], payload["format"], payload["mime_type"],
                     payload["size"], payload["created_at"], payload["updated_at"],
@@ -95,6 +123,21 @@ class SQLiteSessionRepository:
                 (payload["image_id"], "Upload", payload["stored_filename"], "uploads", payload["created_at"]),
             )
         return self.get_session(payload["image_id"]) or payload
+
+    def create_asset(self, asset: dict[str, Any]) -> dict[str, Any]:
+        with self._connect() as connection:
+            if connection.execute("SELECT 1 FROM image_sessions WHERE image_id = ?", (asset["image_id"],)).fetchone() is None:
+                raise FileNotFoundError("Image session was not found.")
+            connection.execute(
+                "INSERT INTO image_assets (asset_id, image_id, storage_category, stored_filename, mime_type, size, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (asset["asset_id"], asset["image_id"], asset["storage_category"], asset["stored_filename"], asset["mime_type"], asset["size"], asset["created_at"]),
+            )
+        return self.get_asset(asset["asset_id"])  # type: ignore[return-value]
+
+    def get_asset(self, asset_id: str) -> dict[str, Any] | None:
+        with self._connect() as connection:
+            row = connection.execute("SELECT * FROM image_assets WHERE asset_id = ?", (asset_id,)).fetchone()
+        return dict(row) if row else None
 
     def get_session(self, image_id: str) -> dict[str, Any] | None:
         with self._connect() as connection:

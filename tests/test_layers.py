@@ -1,3 +1,4 @@
+import base64
 import io
 
 from PIL import Image
@@ -66,3 +67,26 @@ def test_layers_reject_invalid_payload_and_unknown_session():
     missing = client.get("/api/layers?image_id=missing")
     assert missing.status_code == 404
     assert missing.get_json()["error"]["code"] == "IMAGE_SESSION_NOT_FOUND"
+
+
+def test_image_layer_data_url_is_moved_to_file_storage(tmp_path):
+    app = create_app()
+    session = create_session(app, tmp_path, None)
+    client = app.test_client()
+    image = io.BytesIO()
+    Image.new("RGBA", (2, 2), (255, 0, 0, 255)).save(image, format="PNG")
+    data_url = "data:image/png;base64," + base64.b64encode(image.getvalue()).decode()
+
+    response = client.put("/api/layers", json={
+        "image_id": session["image_id"],
+        "layers": [{"id": "o1", "type": "image", "src": data_url, "x": 0, "y": 0, "w": 2, "h": 2}],
+    })
+
+    assert response.status_code == 200
+    saved = response.get_json()["layers"][0]
+    assert saved["src"].startswith("/api/layers/assets/")
+    assert saved["asset_id"]
+    asset = client.get(saved["src"])
+    assert asset.status_code == 200
+    assert asset.mimetype == "image/png"
+    assert asset.data.startswith(b"\x89PNG")
