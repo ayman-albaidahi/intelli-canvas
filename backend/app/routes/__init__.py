@@ -1,5 +1,6 @@
 from .analysis import analysis_bp
 from .background import background_bp
+from .explain import explain_bp
 from .health import health_bp
 from .history import history_bp
 from .images import images_bp
@@ -12,6 +13,7 @@ from .transform import transform_bp
 __all__ = [
     "analysis_bp",
     "background_bp",
+    "explain_bp",
     "health_bp",
     "history_bp",
     "images_bp",

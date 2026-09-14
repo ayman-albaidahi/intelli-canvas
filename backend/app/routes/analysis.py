@@ -4,6 +4,7 @@ from flask import Blueprint, current_app, jsonify, request, send_file
 
 from ..api_utils import error_response
 from ..services.analysis_service import analyze_cached
+from ..services.explainability_service import explain_finding
 
 analysis_bp = Blueprint(
     "analysis",
@@ -47,6 +48,7 @@ def analyze_image():
     with image:
         options = payload.get("options") if isinstance(payload.get("options"), dict) else {}
         report = analyze_cached(image, source_path, current_app.config["FILE_STORAGE_SERVICE"].resolve_storage_dir("analysis-cache"), options)
+        report["findings"] = [explain_finding(finding) for finding in report["findings"]]
     return jsonify(success=True, image_id=image_id, **report)
 
 
@@ -63,6 +65,7 @@ def export_report():
     with image:
         options = payload.get("options") if isinstance(payload.get("options"), dict) else {}
         report = analyze_cached(image, source_path, current_app.config["FILE_STORAGE_SERVICE"].resolve_storage_dir("analysis-cache"), options)
+        report["findings"] = [explain_finding(finding) for finding in report["findings"]]
     buffer = io.BytesIO()
     buffer.write(jsonify(success=True, image_id=image_id, **report).get_data())
     buffer.seek(0)

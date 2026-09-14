@@ -115,12 +115,14 @@ All transformation endpoints accept JSON with `image_id`.
 | POST | `/api/suggestions/preview` | Executes the selected suggestion Pipeline from the fixed source and returns a PNG without changing image history. |
 | POST | `/api/suggestions/apply` | Applies the selected suggestion Pipeline, records one `Apply pipeline` History entry, and returns provenance metadata. |
 | POST | `/api/suggestions/dismiss` | Accepts dismissal of a suggestion without changing the image. |
+| POST | `/api/explain-operation` | Explains an operation, its parameters, an optional finding, and the source of an optional suggestion. |
 
 ## Operational limits
 
 The backend enforces request, file, image-side, pixel-count, and export-dimension limits. Clients should display the returned error `code` and `message` rather than exposing internal paths or exception details. Pipeline validation returns `INVALID_PIPELINE` for unsupported operations or invalid parameters; execution failures return `PIPELINE_EXECUTION_FAILED`; and missing sessions return `IMAGE_SESSION_NOT_FOUND`. Preview is read-only, while apply records one History operation.
 
 Analysis is read-only and uses a versioned source-content cache. Cache keys include the analyzer version and canonical options; cache hits return `cache_hit: true` and never create History entries. See [`docs/v0.8.0-analyzer.md`](v0.8.0-analyzer.md) for metric definitions and quality-score behavior.
+Explainability responses are deterministic and reuse Pipeline operation validation. Invalid operations or parameters return `INVALID_OPERATION`; finding evidence is returned as structured JSON and does not mutate the image or History. See [`docs/v0.8.2-explainability.md`](v0.8.2-explainability.md).
 
 The v0.7.3 client applies a 15-second request timeout and a 30-second Pipeline preview timeout. A failed Pipeline refresh or mutation exposes a retry action in the Pipeline panel. See [`docs/v0.7.3-quality.md`](v0.7.3-quality.md) for keyboard controls, accessibility states, and performance test limits.
 
