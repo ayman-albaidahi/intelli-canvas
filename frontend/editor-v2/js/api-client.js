@@ -170,8 +170,13 @@ export class ApiClient {
     return payload.backgrounds;
   }
 
-  async uploadBackground(file) {
-    const body = new FormData(); body.append('file', file);
+  async backgroundCatalog() {
+    const payload = await request(`${this.baseUrl}/background/backgrounds/catalog`);
+    return payload.backgrounds || [];
+  }
+
+  async uploadBackground(file, category = 'general') {
+    const body = new FormData(); body.append('file', file); body.append('category', category);
     const payload = await request(`${this.baseUrl}/background/backgrounds`, { method: 'POST', body });
     return payload.background;
   }

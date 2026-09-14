@@ -74,7 +74,9 @@ All transformation endpoints accept JSON with `image_id`.
 | POST | `/api/background/replace-preview` | JSON with `image_id`, mask parameters, one replacement target, and optional blur/scale/offset/shadow fields | Returns a non-destructive PNG replacement preview. |
 | POST | `/api/background/replace` | JSON with `image_id` and one replacement target | Replaces the background with a solid color or library asset; optional blur, scale, offsets, and foreground shadow are supported. |
 | GET | `/api/background/backgrounds` | None | Lists available background assets. |
-| POST | `/api/background/backgrounds` | Multipart image field | Uploads a background asset. |
+| GET | `/api/background/backgrounds/catalog` | None | Lists background metadata including category, dimensions, and thumbnail URL. |
+| GET | `/api/background/backgrounds/<name>/thumbnail` | Path background name | Returns a generated 320×200 JPEG thumbnail. |
+| POST | `/api/background/backgrounds` | Multipart image field and optional `category` | Uploads a background asset and stores its category metadata. |
 
 ## History
 

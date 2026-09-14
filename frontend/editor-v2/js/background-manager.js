@@ -22,6 +22,8 @@ export class BackgroundManager {
       shadowBlur: document.querySelector('[data-bg-param="shadow_blur"]'),
       shadowOffsetY: document.querySelector('[data-bg-param="shadow_offset_y"]'),
       library: document.querySelector('#bg-library'),
+      category: document.querySelector('#bg-category'),
+      libraryGrid: document.querySelector('#bg-library-grid'),
       replaceColor: document.querySelector('#bg-replace-color'),
       status: document.querySelector('#status-message'),
     };
@@ -49,6 +51,8 @@ export class BackgroundManager {
     document.querySelector('[data-action="preview-mask"]')?.addEventListener('click', () => this.previewMask());
     document.querySelector('[data-action="clear-mask"]')?.addEventListener('click', () => this.clearPreviews());
     document.querySelector('[data-action="preview-replacement"]')?.addEventListener('click', () => this.previewReplacement());
+    document.querySelector('[data-action="reset-background"]')?.addEventListener('click', () => this.resetControls());
+    document.querySelector('[data-action="cancel-background"]')?.addEventListener('click', () => this.clearPreviews());
     document.querySelector('[data-action="remove-background"]')?.addEventListener('click', () => this.applyOperation('remove'));
     document.querySelector('[data-action="replace-background"]')?.addEventListener('click', () => this.applyOperation('replace'));
     document.querySelector('[data-action="upload-background"]')?.addEventListener('click', () => document.querySelector('#bg-upload-input').click());
@@ -57,6 +61,8 @@ export class BackgroundManager {
       if (file) this.uploadLibraryBackground(file);
       target.value = '';
     });
+    this.controls.category?.addEventListener('change', () => this.renderCatalog());
+    this.controls.library?.addEventListener('change', () => this.renderCatalog());
     this.updateLabels();
   }
 
@@ -132,6 +138,34 @@ export class BackgroundManager {
     this.canvasManager.setPreviewOverlay(null);
   }
 
+  resetControls() {
+    const defaults = {
+      keyColor: '#ffffff', tolerance: 25, feather: 2, smooth: 1,
+      backgroundBlur: 0, backgroundScale: 1, backgroundX: 0, backgroundY: 0,
+      shadowOpacity: 25, shadowBlur: 12, shadowOffsetY: 10,
+    };
+    this.controls.keyColor.value = defaults.keyColor;
+    this.controls.tolerance.value = defaults.tolerance;
+    this.controls.feather.value = defaults.feather;
+    this.controls.smooth.value = defaults.smooth;
+    this.controls.backgroundBlur.value = defaults.backgroundBlur;
+    this.controls.backgroundScale.value = defaults.backgroundScale;
+    this.controls.backgroundX.value = defaults.backgroundX;
+    this.controls.backgroundY.value = defaults.backgroundY;
+    this.controls.shadow.checked = false;
+    this.controls.shadowOpacity.value = defaults.shadowOpacity;
+    this.controls.shadowBlur.value = defaults.shadowBlur;
+    this.controls.shadowOffsetY.value = defaults.shadowOffsetY;
+    this.controls.invert.checked = false;
+    this.controls.library.value = '';
+    this.controls.category.value = 'all';
+    this.pickedColor = null;
+    this.clearPreviews();
+    this.updateLabels();
+    this.renderCatalog();
+    this.showToast('Background settings reset');
+  }
+
   async previewReplacement() {
     if (!this.apiClient.imageId) return this.showToast('Upload an image first');
     try {
@@ -173,19 +207,33 @@ export class BackgroundManager {
 
   async refreshLibrary() {
     try {
-      const backgrounds = await this.apiClient.listBackgrounds();
+      this.catalog = await this.apiClient.backgroundCatalog();
       if (!this.controls.library) return;
       const escapeHtml = (value) => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       this.controls.library.innerHTML = '<option value="">— choose background —</option>'
-        + backgrounds.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
+        + this.catalog.map((item) => `<option value="${escapeHtml(item.name)}">${escapeHtml(item.label)}</option>`).join('');
+      this.renderCatalog();
     } catch {
       /* library stays empty when the API is offline */
     }
   }
 
+  renderCatalog() {
+    if (!this.controls.libraryGrid) return;
+    const category = this.controls.category?.value || 'all';
+    const catalog = (this.catalog || []).filter((item) => category === 'all' || item.category === category);
+    const escapeHtml = (value) => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    this.controls.libraryGrid.innerHTML = catalog.map((item) => `<button type="button" class="bg-thumb${this.controls.library.value === item.name ? ' is-selected' : ''}" data-bg-name="${escapeHtml(item.name)}" title="${escapeHtml(item.label)}"><img src="${escapeHtml(item.thumbnail_url)}" alt="" loading="lazy"><span>${escapeHtml(item.label)}</span></button>`).join('');
+    this.controls.libraryGrid.querySelectorAll('[data-bg-name]').forEach((button) => button.addEventListener('click', () => {
+      this.controls.library.value = button.dataset.bgName;
+      this.renderCatalog();
+    }));
+  }
+
   async uploadLibraryBackground(file) {
     try {
-      const name = await this.apiClient.uploadBackground(file);
+      const category = this.controls.category.value === 'all' ? 'general' : this.controls.category.value;
+      const name = await this.apiClient.uploadBackground(file, category);
       await this.refreshLibrary();
       this.controls.library.value = name;
       this.showToast(`${name} added to the background library`);

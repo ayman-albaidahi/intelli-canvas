@@ -111,14 +111,31 @@ def list_backgrounds():
     return jsonify(success=True, backgrounds=_service().list_backgrounds())
 
 
+@background_bp.get("/backgrounds/catalog")
+def background_catalog():
+    return jsonify(success=True, backgrounds=_service().list_background_catalog())
+
+
+@background_bp.get("/backgrounds/<name>/thumbnail")
+def background_thumbnail(name):
+    try:
+        path = _service().thumbnail_path(name)
+    except FileValidationError as exc:
+        return error_response("BACKGROUND_NOT_FOUND", str(exc), 404)
+    return send_file(path, mimetype="image/jpeg", max_age=3600)
+
+
 @background_bp.post("/backgrounds")
 def upload_background():
     uploaded_file = request.files.get("file")
     filename = uploaded_file.filename if uploaded_file else ""
     if not uploaded_file or not filename.strip():
         return error_response("INVALID_REQUEST", "A background image file is required.", 400)
+    category = request.form.get("category", "general")
     try:
-        name = _service().save_background(uploaded_file, filename)
+        name = _service().save_background(uploaded_file, filename, category=category)
+    except BackgroundParamError as exc:
+        return error_response("INVALID_BACKGROUND_CATEGORY", str(exc), 400)
     except FileValidationError as exc:
         return error_response("INVALID_FILE", str(exc), 400)
     return jsonify(success=True, background=name)

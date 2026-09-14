@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from io import BytesIO
 from pathlib import Path
@@ -17,6 +18,7 @@ MAX_SMOOTH = 5
 MAX_BACKGROUND_BLUR = 40
 MAX_BACKGROUND_SCALE = 5.0
 MAX_BACKGROUND_OFFSET = 10000
+BACKGROUND_CATEGORIES = {"general", "product", "studio", "social", "seasonal"}
 
 
 class BackgroundParamError(ValueError):
@@ -254,6 +256,69 @@ class BackgroundService:
             if p.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
         )
 
-    def save_background(self, file_obj: Any, filename: str) -> str:
+    @property
+    def _manifest_path(self) -> Path:
+        return self.storage_service.storage_root / "backgrounds.json"
+
+    def _read_manifest(self) -> dict[str, dict[str, Any]]:
+        try:
+            data = json.loads(self._manifest_path.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError):
+            return {}
+        return data if isinstance(data, dict) else {}
+
+    def _write_manifest(self, manifest: dict[str, dict[str, Any]]) -> None:
+        temporary = self._manifest_path.with_suffix(".tmp")
+        temporary.write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
+        temporary.replace(self._manifest_path)
+
+    def list_background_catalog(self) -> list[dict[str, Any]]:
+        manifest = self._read_manifest()
+        catalog = []
+        for name in self.list_backgrounds():
+            path = self.storage_service.backgrounds_dir / name
+            with Image.open(path) as image:
+                width, height = image.size
+                mime_type = Image.MIME.get(image.format or "PNG", "image/png")
+            metadata = manifest.get(name, {})
+            catalog.append({
+                "name": name,
+                "label": metadata.get("label", Path(name).stem.replace("_", " ").title()),
+                "category": metadata.get("category", "general"),
+                "width": width,
+                "height": height,
+                "mime_type": mime_type,
+                "thumbnail_url": f"/api/background/backgrounds/{name}/thumbnail",
+            })
+        return sorted(catalog, key=lambda item: (item["category"], item["label"].lower()))
+
+    def thumbnail_path(self, name: str) -> Path:
+        if not isinstance(name, str) or not name or "/" in name or "\\" in name or ".." in name:
+            raise FileValidationError("Background name is invalid.")
+        source = self.storage_service.backgrounds_dir / name
+        if not source.is_file():
+            raise FileValidationError("Library background was not found.")
+        thumbnail_dir = self.storage_service.resolve_storage_dir("background-thumbnails")
+        thumbnail = thumbnail_dir / f"{Path(name).stem}.jpg"
+        if not thumbnail.exists() or thumbnail.stat().st_mtime < source.stat().st_mtime:
+            with Image.open(source) as image:
+                preview = ImageOps.contain(image.convert("RGB"), (320, 200))
+                canvas = Image.new("RGB", (320, 200), "#eeeeee")
+                canvas.paste(preview, ((320 - preview.width) // 2, (200 - preview.height) // 2))
+                canvas.save(thumbnail, format="JPEG", quality=85, optimize=True)
+                preview.close()
+                canvas.close()
+        return thumbnail
+
+    def save_background(self, file_obj: Any, filename: str, category: str = "general") -> str:
+        if not isinstance(category, str) or category not in BACKGROUND_CATEGORIES:
+            raise BackgroundParamError("category is not supported.")
         path = self.storage_service.save_file(file_obj, filename, destination="backgrounds")
+        metadata = {
+            "label": Path(path.name).stem.replace("_", " ").title(),
+            "category": category,
+        }
+        manifest = self._read_manifest()
+        manifest[path.name] = metadata
+        self._write_manifest(manifest)
         return path.name
