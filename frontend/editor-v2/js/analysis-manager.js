@@ -121,9 +121,3 @@ export class AnalysisManager {
     }
   }
 }
-
-const FINDING_LABELS = {
-  LOW_BRIGHTNESS: 'سطوع منخفض',
-  HIGH_BRIGHTNESS: 'سطوع مرتفع',
-  LOW_CONTRAST: 'تباين منخفض',
-};

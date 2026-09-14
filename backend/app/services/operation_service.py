@@ -13,7 +13,7 @@ from typing import Any
 
 from PIL import Image, ImageEnhance
 
-from .resource_guard import ResourceExceededError, ResourceGuard
+from .resource_guard import ResourceGuard
 
 
 class UnknownOperationError(ValueError):

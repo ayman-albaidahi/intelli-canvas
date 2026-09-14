@@ -38,6 +38,7 @@ window.__bm = backgroundManager;
 const historyManager = new HistoryManager({ canvasManager, apiClient, showToast });
 window.__hm = historyManager;
 new ExportManager({ canvasManager, apiClient, showToast });
+new AnalysisManager({ canvasManager, apiClient, showToast });
 objectManager.setInteractive(true);
 document.addEventListener('appstatechange', ({ detail }) => objectManager.setInteractive(['select', 'brush', 'eraser', 'shape', 'text'].includes(detail.activeTool)));
 document.querySelectorAll('[data-action="add-layer"]').forEach((button) => button.remove());

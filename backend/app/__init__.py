@@ -15,8 +15,9 @@ from .routes import (
     suggestions_bp,
     transform_bp,
 )
-
+from .services.file_service import FileStorageService
 from .services.image_session_service import ImageSessionService
+from .services.operation_service import NodeService
 
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
 
@@ -31,6 +32,9 @@ def create_app() -> Flask:
     app.config["JSON_SORT_KEYS"] = False
     app.config["IMAGE_SESSIONS"] = {}
     app.config["IMAGE_SESSION_SERVICE"] = ImageSessionService(app.config["IMAGE_SESSIONS"])
+    app.config["NODE_SERVICE"] = NodeService(
+        app.config["IMAGE_SESSION_SERVICE"], FileStorageService()
+    )
 
     app.register_blueprint(health_bp)
     app.register_blueprint(images_bp)

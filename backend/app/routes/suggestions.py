@@ -1,9 +1,16 @@
 from flask import Blueprint, current_app, jsonify, request, send_file
 
 from ..api_utils import error_response
-from ..services.operation_service import NodeService, OperationParamError, UnknownOperationError
+from ..services.operation_service import (
+    NodeService,
+    OperationParamError,
+    UnknownOperationError,
+)
 from ..services.resource_guard import ResourceExceededError
-from ..services.suggestion_service import build_suggestions, validate_suggested_operation
+from ..services.suggestion_service import (
+    build_suggestions,
+    validate_suggested_operation,
+)
 
 suggestions_bp = Blueprint(
     "suggestions",
