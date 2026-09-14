@@ -1,6 +1,6 @@
 async function applyServerTransform(canvasManager, apiClient, path, data) {
   const image = await apiClient.transform(path, data);
-  await canvasManager.loadFromUrl(apiClient.contentUrl(image.image_id), image);
+  await canvasManager.applyTransformResult(path, image, apiClient.contentUrl(image.image_id));
   document.dispatchEvent(new CustomEvent('ic-operation'));
 }
 

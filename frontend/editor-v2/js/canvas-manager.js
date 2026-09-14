@@ -323,6 +323,19 @@ export class CanvasManager {
     this.fit();
   }
 
+  async applyTransformResult(type, result, sourceUrl) {
+    if (!['crop', 'rotate', 'flip'].includes(type)) {
+      throw new Error(`Unsupported transform result: ${type}`);
+    }
+    if (!sourceUrl) throw new Error('A transform result URL is required.');
+    // Transform endpoints return baked pixels. One reload path keeps the
+    // preview and its dimensions identical for crop, rotate, and flip.
+    await this.loadFromUrl(sourceUrl, result);
+    const size = `${result.width ?? this.documentSize.width} × ${result.height ?? this.documentSize.height}`;
+    document.querySelector('#canvas-size')?.replaceChildren(size);
+    return result;
+  }
+
   snapshot() { return { rotation: this.rotation, flipX: this.flipX, flipY: this.flipY, crop: { ...this.crop }, documentSize: { ...this.documentSize }, adjustments: { ...this.adjustments } }; }
 
   commit() { this.history.push(this.snapshot()); if (this.history.length > 30) this.history.shift(); this.future = []; }
