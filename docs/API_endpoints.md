@@ -88,6 +88,9 @@ All transformation endpoints accept JSON with `image_id`.
 | POST | `/api/history/goto` | JSON: `image_id`, `index` | Jumps to a history state. |
 | POST | `/api/history/clear` | JSON: `image_id` | Clears history while keeping the current state. |
 | GET | `/api/history/current-file?image_id=<id>` | Query `image_id` | Returns metadata for the current file. |
+| GET | `/api/history/content/<image_id>/<index>` | Path image and History index | Returns the image bytes for a specific History state. |
+| GET | `/api/history/compare?image_id=<id>&from=<index>&to=<index>` | Query source and target indices | Returns read-only Before/After metadata and content URLs. |
+| POST | `/api/history/diff` | JSON: `image_id`, `from_index`, `to_index`, optional `mode`, `threshold` | Returns a read-only PNG difference map. |
 
 ## Layers, pipeline, analysis, and suggestions
 

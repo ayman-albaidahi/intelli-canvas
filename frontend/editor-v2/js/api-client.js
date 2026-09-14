@@ -95,6 +95,26 @@ export class ApiClient {
     const payload = await request(`${this.baseUrl}/history/clear`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId }) });
     return payload.image;
   }
+  async compareHistory(fromIndex, toIndex, imageId = this.imageId) {
+    const payload = await request(`${this.baseUrl}/history/compare?image_id=${encodeURIComponent(imageId)}&from=${fromIndex}&to=${toIndex}`);
+    return payload.comparison;
+  }
+  historyContentUrl(index, imageId = this.imageId) {
+    return `${this.baseUrl}/history/content/${encodeURIComponent(imageId)}/${index}`;
+  }
+  async diffHistory(fromIndex, toIndex, mode = 'absolute', threshold = 0, imageId = this.imageId) {
+    let response;
+    try {
+      response = await fetch(`${this.baseUrl}/history/diff`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, from_index: fromIndex, to_index: toIndex, mode, threshold }) });
+    } catch {
+      throw new Error(OFFLINE_MESSAGE);
+    }
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(friendlyMessage(payload, response.status));
+    }
+    return response.blob();
+  }
 
   async layers(imageId = this.imageId) {
     const payload = await request(`${this.baseUrl}/layers?image_id=${encodeURIComponent(imageId)}`);

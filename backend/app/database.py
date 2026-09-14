@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS image_history (
     filename TEXT NOT NULL,
     storage TEXT NOT NULL,
     created_at INTEGER NOT NULL,
+    parameters_json TEXT NOT NULL DEFAULT '{}',
     UNIQUE(image_id, history_index)
 );
 CREATE TABLE IF NOT EXISTS image_layers (
@@ -87,6 +88,9 @@ class SQLiteSessionRepository:
             columns = {row[1] for row in connection.execute("PRAGMA table_info(image_sessions)")}
             if "project_id" not in columns:
                 connection.execute("ALTER TABLE image_sessions ADD COLUMN project_id TEXT REFERENCES projects(project_id)")
+            history_columns = {row[1] for row in connection.execute("PRAGMA table_info(image_history)")}
+            if "parameters_json" not in history_columns:
+                connection.execute("ALTER TABLE image_history ADD COLUMN parameters_json TEXT NOT NULL DEFAULT '{}'")
 
     def __contains__(self, image_id: str) -> bool:
         return self.get_session(image_id) is not None
@@ -191,7 +195,7 @@ class SQLiteSessionRepository:
         with self._connect() as connection:
             return int(connection.execute("SELECT COUNT(*) FROM image_sessions").fetchone()[0])
 
-    def update_current_image(self, image_id: str, filename: str, storage: str, operation: str | None, now: int) -> dict[str, Any]:
+    def update_current_image(self, image_id: str, filename: str, storage: str, operation: str | None, now: int, parameters: dict[str, Any] | None = None) -> dict[str, Any]:
         with self._connect() as connection:
             session = connection.execute("SELECT history_index FROM image_sessions WHERE image_id = ?", (image_id,)).fetchone()
             if session is None:
@@ -200,7 +204,7 @@ class SQLiteSessionRepository:
             if operation:
                 next_index = int(session[0]) + 1
                 connection.execute("DELETE FROM image_history WHERE image_id = ? AND history_index > ?", (image_id, int(session[0])))
-                connection.execute("INSERT INTO image_history (image_id, history_index, operation, filename, storage, created_at) VALUES (?, ?, ?, ?, ?, ?)", (image_id, next_index, operation, filename, storage, now))
+                connection.execute("INSERT INTO image_history (image_id, history_index, operation, filename, storage, created_at, parameters_json) VALUES (?, ?, ?, ?, ?, ?, ?)", (image_id, next_index, operation, filename, storage, now, json.dumps(parameters or {}, separators=(",", ":"))))
                 connection.execute("UPDATE image_sessions SET history_index = ? WHERE image_id = ?", (next_index, image_id))
         return self.get_session(image_id)  # type: ignore[return-value]
 
@@ -221,7 +225,7 @@ class SQLiteSessionRepository:
             if row is None:
                 raise FileNotFoundError("Image session was not found.")
             connection.execute("DELETE FROM image_history WHERE image_id = ?", (image_id,))
-            connection.execute("INSERT INTO image_history (image_id, history_index, operation, filename, storage, created_at) VALUES (?, 0, 'Current state', ?, ?, ?)", (image_id, row["current_filename"], row["current_storage"], now))
+            connection.execute("INSERT INTO image_history (image_id, history_index, operation, filename, storage, created_at, parameters_json) VALUES (?, 0, 'Current state', ?, ?, ?, '{}')", (image_id, row["current_filename"], row["current_storage"], now))
             connection.execute("UPDATE image_sessions SET history_index = 0, updated_at = ? WHERE image_id = ?", (now, image_id))
         return self.get_session(image_id)  # type: ignore[return-value]
 
@@ -242,8 +246,17 @@ class SQLiteSessionRepository:
         return [json.loads(row[0]) for row in rows]
 
     def _history(self, connection: sqlite3.Connection, image_id: str) -> list[dict[str, Any]]:
-        rows = connection.execute("SELECT operation, filename, storage, created_at FROM image_history WHERE image_id = ? ORDER BY history_index", (image_id,)).fetchall()
-        return [{"operation": row["operation"], "filename": row["filename"], "time": row["created_at"], "storage": row["storage"]} for row in rows]
+        rows = connection.execute("SELECT history_index, operation, filename, storage, created_at, parameters_json FROM image_history WHERE image_id = ? ORDER BY history_index", (image_id,)).fetchall()
+        return [{"index": row["history_index"], "operation": row["operation"], "filename": row["filename"], "time": row["created_at"], "storage": row["storage"], "parameters": json.loads(row["parameters_json"] or "{}")} for row in rows]
+
+    def get_history_entry(self, image_id: str, index: int) -> dict[str, Any] | None:
+        with self._connect() as connection:
+            row = connection.execute("SELECT history_index, operation, filename, storage, created_at, parameters_json FROM image_history WHERE image_id = ? AND history_index = ?", (image_id, index)).fetchone()
+        if row is None:
+            return None
+        entry = dict(row)
+        entry["parameters"] = json.loads(entry.pop("parameters_json") or "{}")
+        return entry
 
     def _layers(self, connection: sqlite3.Connection, image_id: str) -> list[dict[str, Any]]:
         rows = connection.execute("SELECT payload_json FROM image_layers WHERE image_id = ? ORDER BY z_index", (image_id,)).fetchall()

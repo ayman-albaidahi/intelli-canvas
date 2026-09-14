@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-09-14  
 **Reference branch:** `main`  
-**Reference commit:** `3a4894fad850db7540543be23886a8fb1deee8d1`
+**Reference commit:** `TBD — v0.7.0 implementation in progress`
 
 ## Purpose
 
@@ -14,7 +14,7 @@ When a statement in an older document describes a planned capability rather than
 
 | Check | Result |
 |---|---:|
-| Automated Python tests | 209 expected after the v0.6 full-suite run |
+| Automated Python tests | 214 passed in the v0.7.0 validation run |
 | Ruff | Required to pass |
 | JavaScript syntax checks | Required to pass for changed editor modules |
 | Vitest | Existing frontend suite remains required |
@@ -47,6 +47,8 @@ The v0.5 Layers & Compositing scope includes validated image, shape, text, and b
 
 The v0.6 Background Studio scope extends the existing color-mask workflow with non-destructive replacement previews, background blur, background scale and X/Y offsets, optional foreground shadow, stronger parameter validation, and corrected single-entry History behavior. v0.6.2 adds categorized background metadata, generated thumbnails, a catalog endpoint, and Background Studio reset/cancel controls. Preview endpoints do not change the current image or History. Applied removal and replacement operations preserve the existing PNG/RGBA behavior.
 
+The v0.7.0 History scope adds structured operation parameters, read-only History content URLs, Before/After comparison metadata, and PNG difference maps in absolute, heatmap, and threshold modes. The History panel now exposes comparison selectors and displays Before/After images or a diff map. These comparison operations do not change the current image or append History entries.
+
 Processing and transformation use Flask, Pillow, OpenCV, and NumPy at runtime. SQLite is used for persistent image-session metadata, editing history, projects, layers, and image-layer asset metadata; image binaries remain in file storage, including the `layer-assets` category. OpenCV and NumPy are isolated to `backend/app/services/process_operations.py`; routes and orchestration services remain stack-agnostic.
 
 ## Current API additions
@@ -73,12 +75,15 @@ Processing and transformation use Flask, Pillow, OpenCV, and NumPy at runtime. S
 | GET | `/api/background/backgrounds/catalog` | Lists category, dimensions, and generated thumbnail metadata for background assets. |
 | GET | `/api/background/backgrounds/<name>/thumbnail` | Returns a generated 320×200 JPEG thumbnail. |
 | POST | `/api/background/backgrounds` | Validates and uploads a categorized background library asset. |
+| GET | `/api/history/content/<image_id>/<index>` | Returns a specific stored History image. |
+| GET | `/api/history/compare?image_id=<id>&from=<index>&to=<index>` | Returns read-only Before/After metadata and URLs. |
+| POST | `/api/history/diff` | Returns a read-only PNG difference map. |
 
 ## Known non-current or deferred capabilities
 
 The architecture and requirements documents describe a broader roadmap that includes the processing pipeline, multiple-selection and grouping enhancements, per-layer filters, histogram stretching/equalization, general-purpose AI segmentation, and future intelligent assistance. The current v0.6 implementation deliberately does not add these capabilities.
 
-The pipeline endpoint remains a separate v0.7 scope. Smart Crop and suggested processing pipelines remain v0.8 scope. Advanced layer features such as clipping masks, adjustment layers, and per-layer pixel operations are deferred until the layer model and pipeline model evolve together.
+The processing pipeline endpoint remains a separate v0.7.1/v0.7.2 scope. Smart Crop and suggested processing pipelines remain v0.8 scope. Advanced layer features such as clipping masks, adjustment layers, and per-layer pixel operations are deferred until the layer model and pipeline model evolve together.
 
 The legacy frontend files outside `frontend/editor-v2/` were removed in the dedicated `refactor/remove-legacy-frontend` change after repository-wide reference checks found no operational dependency on them. Historical documents may still mention the former paths because they preserve the project's development history; those references are not runtime entry points.
 

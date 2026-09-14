@@ -1,6 +1,9 @@
-from flask import Blueprint, current_app, jsonify, request
+import io
+
+from flask import Blueprint, current_app, jsonify, request, send_file
 
 from ..api_utils import error_response
+from ..services.history_comparison_service import HistoryComparisonService
 
 history_bp = Blueprint(
     "history",
@@ -12,6 +15,19 @@ history_bp = Blueprint(
 
 def _session_service():
     return current_app.config["IMAGE_SESSION_SERVICE"]
+
+
+def _comparison_service() -> HistoryComparisonService:
+    return HistoryComparisonService(
+        current_app.config["IMAGE_SESSION_SERVICE"],
+        current_app.config["FILE_STORAGE_SERVICE"],
+    )
+
+
+def _parse_index(value):
+    if isinstance(value, bool):
+        raise ValueError("History index must be an integer.")
+    return int(value)
 
 
 def _image_id():
@@ -109,3 +125,51 @@ def current_file():
     storage = current_app.config["FILE_STORAGE_SERVICE"]
     directory = storage.processed_dir if session.get("current_storage") == "processed" else storage.uploads_dir
     return jsonify(success=True, filename=session.get("current_filename"), directory=directory.name)
+
+
+@history_bp.get("/content/<image_id>/<int:index>")
+def history_content(image_id: str, index: int):
+    try:
+        path = _comparison_service().path_for(image_id, index)
+    except FileNotFoundError as exc:
+        return error_response("HISTORY_IMAGE_NOT_FOUND", str(exc), 404)
+    except ValueError as exc:
+        return error_response("HISTORY_INDEX_INVALID", str(exc), 400)
+    return send_file(path, max_age=3600)
+
+
+@history_bp.get("/compare")
+def compare_history():
+    image_id = request.args.get("image_id")
+    try:
+        from_index = _parse_index(request.args.get("from"))
+        to_index = _parse_index(request.args.get("to"))
+        comparison = _comparison_service().compare(image_id, from_index, to_index)
+    except (TypeError, ValueError) as exc:
+        return error_response("HISTORY_COMPARISON_INVALID", str(exc), 400)
+    except FileNotFoundError as exc:
+        return error_response("IMAGE_SESSION_NOT_FOUND", str(exc), 404)
+    comparison["from"]["url"] = f"/api/history/content/{image_id}/{from_index}"
+    comparison["to"]["url"] = f"/api/history/content/{image_id}/{to_index}"
+    return jsonify(success=True, comparison=comparison)
+
+
+@history_bp.post("/diff")
+def diff_history():
+    payload = request.get_json(silent=True) or {}
+    image_id = payload.get("image_id")
+    try:
+        from_index = _parse_index(payload.get("from_index"))
+        to_index = _parse_index(payload.get("to_index"))
+        data = _comparison_service().diff_bytes(
+            image_id,
+            from_index,
+            to_index,
+            payload.get("mode", "absolute"),
+            payload.get("threshold", 0),
+        )
+    except (TypeError, ValueError) as exc:
+        return error_response("HISTORY_DIFF_INVALID", str(exc), 400)
+    except FileNotFoundError as exc:
+        return error_response("IMAGE_SESSION_NOT_FOUND", str(exc), 404)
+    return send_file(io.BytesIO(data), mimetype="image/png")

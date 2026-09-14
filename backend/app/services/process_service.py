@@ -195,7 +195,7 @@ class ProcessService:
         with Image.open(output_path) as image:
             width, height = image.size
         self.session_service.update_current_image(
-            image_id, output_path.name, "processed", operation=history_label
+            image_id, output_path.name, "processed", operation=history_label, parameters=metadata
         )
         return {
             "image_id": image_id,

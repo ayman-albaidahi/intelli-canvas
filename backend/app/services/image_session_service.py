@@ -59,9 +59,10 @@ class ImageSessionService:
         filename: str,
         storage: str = "processed",
         operation: str | None = None,
+        parameters: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         return self.repository.update_current_image(
-            image_id, filename, storage, operation, int(time.time())
+            image_id, filename, storage, operation, int(time.time()), parameters
         )
 
     def history(self, image_id: str) -> dict[str, Any]:
@@ -73,7 +74,7 @@ class ImageSessionService:
             "index": index,
             "total": len(entries),
             "entries": [
-                {"index": i, "operation": entry["operation"], "time": entry["time"], "current": i == index}
+                {"index": i, "operation": entry["operation"], "time": entry["time"], "parameters": entry.get("parameters", {}), "current": i == index}
                 for i, entry in enumerate(entries)
             ],
         }
