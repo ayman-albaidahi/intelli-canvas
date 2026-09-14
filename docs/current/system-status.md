@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-09-14  
 **Reference branch:** `main`  
-**Reference commit:** `TBD — v0.6.2 completion in progress`
+**Reference commit:** `3a4894fad850db7540543be23886a8fb1deee8d1`
 
 ## Purpose
 
