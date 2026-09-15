@@ -7,6 +7,13 @@ const DEFAULT_PARAMETERS = {
   grayscale: {}, negative: {}, laplacian: {},
 };
 
+const OPERATION_LABELS = {
+  gamma: 'Tone balance', blur: 'Soft focus', sharpen: 'Detail sharpen',
+  grayscale: 'Black & white', negative: 'Invert colors', threshold: 'High contrast',
+  sobel: 'Detail boost', laplacian: 'Edge enhance', 'median-filter': 'Noise reducer',
+  morphology: 'Texture refine',
+};
+
 export class PipelineManager {
   constructor({ apiClient, canvasManager, showToast }) {
     this.apiClient = apiClient;
@@ -163,7 +170,8 @@ export class PipelineManager {
         if (typeof value === 'boolean' || typeof value === 'object') return '';
         return `<label>${escapeHtml(key)}<input type="number" data-node-parameter="${escapeHtml(key)}" value="${escapeHtml(value)}" step="any" /></label>`;
       }).join('');
-      return `<div class="pipeline-row${node.enabled ? '' : ' is-disabled'}" data-node-id="${escapeHtml(node.id)}" tabindex="0" role="listitem" aria-label="${escapeHtml(node.operation)} operation, ${node.enabled ? 'enabled' : 'disabled'}"><div class="pipeline-row-head"><span class="pipeline-drag" aria-hidden="true">☰</span><strong>${escapeHtml(node.operation)}</strong><span class="pipeline-order" aria-label="Order ${index + 1}">${index + 1}</span><button class="mini-button" data-pipeline-action="toggle" aria-label="${node.enabled ? 'Disable' : 'Enable'} ${escapeHtml(node.operation)}" title="Enable or disable">${node.enabled ? 'On' : 'Off'}</button><button class="mini-button" data-pipeline-action="up" aria-label="Move ${escapeHtml(node.operation)} up" title="Move up">↑</button><button class="mini-button" data-pipeline-action="down" aria-label="Move ${escapeHtml(node.operation)} down" title="Move down">↓</button><button class="mini-button" data-pipeline-action="delete" aria-label="Delete ${escapeHtml(node.operation)}" title="Delete">×</button></div><div class="pipeline-params">${parameters || '<span class="muted">No parameters</span>'}</div></div>`;
+      const label = OPERATION_LABELS[node.operation] || node.operation;
+      return `<div class="pipeline-row${node.enabled ? '' : ' is-disabled'}" data-node-id="${escapeHtml(node.id)}" tabindex="0" role="listitem" aria-label="${escapeHtml(label)} operation, ${node.enabled ? 'enabled' : 'disabled'}"><div class="pipeline-row-head"><span class="pipeline-drag" aria-hidden="true">☰</span><strong>${escapeHtml(label)}</strong><span class="pipeline-order" aria-label="Order ${index + 1}">${index + 1}</span><button class="mini-button" data-pipeline-action="toggle" aria-label="${node.enabled ? 'Disable' : 'Enable'} ${escapeHtml(label)}" title="Enable or disable">${node.enabled ? 'On' : 'Off'}</button><button class="mini-button" data-pipeline-action="up" aria-label="Move ${escapeHtml(label)} up" title="Move up">↑</button><button class="mini-button" data-pipeline-action="down" aria-label="Move ${escapeHtml(label)} down" title="Move down">↓</button><button class="mini-button" data-pipeline-action="delete" aria-label="Delete ${escapeHtml(label)}" title="Delete">×</button></div><div class="pipeline-params">${parameters || '<span class="muted">No parameters</span>'}</div></div>`;
     }).join('');
   }
 }
