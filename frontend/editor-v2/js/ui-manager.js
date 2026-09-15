@@ -70,7 +70,11 @@ function closeOtherAccordions(activeSection) {
 
 export function switchInspector(name) {
   setState({ activeInspector: name });
-  document.querySelectorAll('[data-inspector]').forEach((tab) => tab.classList.toggle('is-active', tab.dataset.inspector === name));
+  document.querySelectorAll('[data-inspector]').forEach((tab) => {
+    const active = tab.dataset.inspector === name;
+    tab.classList.toggle('is-active', active);
+    tab.setAttribute('aria-selected', String(active));
+  });
   document.querySelector('#properties-panel').hidden = name !== 'properties';
   document.querySelector('#layers-panel').hidden = name !== 'layers';
   const analysisPanel = document.querySelector('#analysis-panel');

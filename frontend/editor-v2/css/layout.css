@@ -109,3 +109,13 @@ details.panel-accordion.is-flash .accordion-body{animation:ic-flash 1.1s var(--e
 .quick-action:hover,.quick-action:focus-visible{border-color:var(--accent);background:var(--accent-wash);color:var(--text);outline:none}
 .smart-crop-accordion{margin-top:17px}
 .smart-crop-accordion .smart-crop-preview{max-height:130px}
+
+/* Professional dock behavior: stable header and surface navigation. */
+.inspector-tabs{position:sticky;top:0;z-index:4;overflow-x:auto;scrollbar-width:none;white-space:nowrap}
+.inspector-tabs::-webkit-scrollbar{display:none}
+.inspector-tab{flex:0 0 auto}
+.inspector-content{scrollbar-gutter:stable}
+.inspector-content .panel-heading{position:sticky;top:-22px;z-index:3;padding:22px 0 14px;margin:0 -1px 12px;background:var(--surface)}
+.panel-group-label{margin:17px 0 8px;color:var(--muted-2);font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.quick-actions-grid{grid-template-columns:repeat(3,minmax(68px,1fr))}
+@media (max-width:1180px){.inspector-tabs{gap:12px;padding-inline:14px}.inspector-tab{font-size:10px}.editor-frame{grid-template-columns:72px minmax(0,1fr) 276px}}
