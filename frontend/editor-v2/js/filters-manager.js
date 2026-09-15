@@ -11,25 +11,25 @@ export class FiltersManager {
 
   bind() {
     document.querySelector('[data-action="apply-sobel"]')?.addEventListener('click', () => {
-      this.apply('sobel', { ksize: this.integerValue('#sobel-ksize', 3) }, 'Sobel edges applied');
+      this.apply('sobel', { ksize: this.integerValue('#sobel-ksize', 3) }, 'Detail boost applied');
     });
     document.querySelector('[data-action="apply-laplacian"]')?.addEventListener('click', () => {
-      this.apply('laplacian', {}, 'Laplacian edges applied');
+      this.apply('laplacian', {}, 'Edge enhance applied');
     });
     document.querySelector('[data-action="apply-median-filter"]')?.addEventListener('click', () => {
-      this.apply('median-filter', { ksize: this.integerValue('#median-ksize', 3) }, 'Median filter applied');
+      this.apply('median-filter', { ksize: this.integerValue('#median-ksize', 3) }, 'Noise reducer applied');
     });
     document.querySelector('[data-action="apply-morphology"]')?.addEventListener('click', () => {
       this.apply('morphology', {
         operation: document.querySelector('#morphology-operation')?.value || 'erode',
         ksize: this.integerValue('#morphology-ksize', 3),
-      }, 'Morphology operation applied');
+      }, 'Texture refine applied');
     });
     document.querySelector('[data-action="apply-gamma"]')?.addEventListener('click', () => {
-      this.apply('gamma', { value: this.numberValue('#gamma-value', 1) }, 'Gamma correction applied');
+      this.apply('gamma', { value: this.numberValue('#gamma-value', 1) }, 'Tone balance applied');
     });
     document.querySelector('[data-action="apply-threshold"]')?.addEventListener('click', () => {
-      this.apply('threshold', { value: this.integerValue('#threshold-value', 128) }, 'Threshold applied');
+      this.apply('threshold', { value: this.integerValue('#threshold-value', 128) }, 'High contrast applied');
     });
     document.querySelector('[data-action="compute-histogram"]')?.addEventListener('click', () => this.histogram());
     document.addEventListener('appstatechange', () => this.syncControls());
