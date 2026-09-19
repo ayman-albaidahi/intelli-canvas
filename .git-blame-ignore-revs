@@ -1,0 +1,3 @@
+# Reformatting commits that should not show up in git blame.
+# See https://docs.github.com/en/repositories/working-with-files/using-files/viewing-a-file#ignore-commits-in-the-blame-view
+a89873236e4451ace5250402ad34a2dbd1a8b8bc
