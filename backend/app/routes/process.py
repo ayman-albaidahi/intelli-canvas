@@ -1,20 +1,24 @@
+from __future__ import annotations
+
 from flask import Blueprint, jsonify, request
 
 from ..dependencies import get_session_service, get_storage_service
 from ..error_codes import ErrorCodes
-from ..errors import error_response
+from ..errors import InvalidRequestError, error_response
+from ..operations.registry import OPERATIONS
 from ..services.file_service import FileValidationError
 from ..services.process_service import ProcessService
-from ..validation import (
-    require_choice,
-    require_dict,
-    require_int,
-    require_number,
-    require_odd_int,
-)
+from ..validation import require_dict, require_int
 from ..views import public_image
 
 process_bp = Blueprint("process", __name__, url_prefix="/api/process")
+
+
+def _process_service() -> ProcessService:
+    return ProcessService(
+        get_session_service(),
+        get_storage_service(),
+    )
 
 
 def _image_id_from_payload():
@@ -29,119 +33,55 @@ def _image_id_from_payload():
     return image_id, None
 
 
-def _process_service() -> ProcessService:
-    return ProcessService(
-        get_session_service(),
-        get_storage_service(),
-    )
+def _run_registered(slug: str):
+    """Handle any registered image-producing operation.
 
-
-@process_bp.post("/grayscale")
-def convert_to_grayscale():
-    image_id, error = _image_id_from_payload()
-    if error:
-        return error
-    try:
-        result = _process_service().grayscale(image_id)
-    except (FileNotFoundError, FileValidationError) as exc:
-        return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
-    except (OSError, ValueError):
-        return error_response(ErrorCodes.GRAYSCALE_FAILED, "The image could not be converted to grayscale.", 400)
-    return jsonify(success=True, image=public_image(result))
-
-
-@process_bp.post("/brightness")
-def adjust_brightness():
+    Validation runs through the registry spec, so the direct API and the
+    pipeline report identical codes for the same bad parameter.
+    """
     image_id, error = _image_id_from_payload()
     if error:
         return error
     payload = request.get_json(silent=True) or {}
-    value = require_int(payload.get("value", 100), low=0, high=200, name="brightness", code="INVALID_BRIGHTNESS")
     try:
-        result = _process_service().brightness(image_id, value)
+        result = _process_service().run_op(image_id, slug, payload)
+    except InvalidRequestError as exc:
+        return error_response(exc.code, exc.message, 400)
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
     except (OSError, ValueError):
-        return error_response(ErrorCodes.BRIGHTNESS_FAILED, "The image brightness could not be adjusted.", 400)
+        return error_response(
+            ErrorCodes.PROCESSING_FAILED, f"The {slug} operation could not be applied.", 400
+        )
     return jsonify(success=True, image=public_image(result))
 
 
-@process_bp.post("/contrast")
-def adjust_contrast():
-    image_id, error = _image_id_from_payload()
-    if error:
-        return error
-    payload = request.get_json(silent=True) or {}
-    value = require_int(payload.get("value", 100), low=0, high=200, name="contrast", code="INVALID_CONTRAST")
-    try:
-        result = _process_service().contrast(image_id, value)
-    except (FileNotFoundError, FileValidationError) as exc:
-        return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
-    except (OSError, ValueError):
-        return error_response(ErrorCodes.CONTRAST_FAILED, "The image contrast could not be adjusted.", 400)
-    return jsonify(success=True, image=public_image(result))
+def _register_routes() -> None:
+    """Generate one POST route per registered image-producing operation.
+
+    Historically each operation was a hand-written endpoint repeating the same
+    ~15 lines. Generating them from the registry keeps the URL surface and the
+    dispatch in one place: adding an operation to OPERATIONS adds its route.
+    """
+    for slug, operation in OPERATIONS.items():
+        if not operation.produces_image:
+            continue
+
+        # A distinct function object per route keeps Flask's view registry happy.
+        def view(_slug=slug):
+            return _run_registered(_slug)
+
+        view.__name__ = f"process_{slug.replace('-', '_')}"
+        process_bp.add_url_rule(f"/{slug}", view_func=view, methods=["POST"])
 
 
-@process_bp.post("/saturation")
-def adjust_saturation():
-    image_id, error = _image_id_from_payload()
-    if error:
-        return error
-    payload = request.get_json(silent=True) or {}
-    value = require_int(payload.get("value", 100), low=0, high=200, name="saturation", code="INVALID_SATURATION")
-    try:
-        result = _process_service().saturation(image_id, value)
-    except (FileNotFoundError, FileValidationError) as exc:
-        return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
-    except (OSError, ValueError):
-        return error_response(ErrorCodes.SATURATION_FAILED, "The image saturation could not be adjusted.", 400)
-    return jsonify(success=True, image=public_image(result))
+_register_routes()
 
 
-@process_bp.post("/blur")
-def blur_image():
-    image_id, error = _image_id_from_payload()
-    if error:
-        return error
-    payload = request.get_json(silent=True) or {}
-    value = require_int(payload.get("value", 0), low=0, high=20, name="blur", code="INVALID_BLUR")
-    try:
-        result = _process_service().blur(image_id, value)
-    except (FileNotFoundError, FileValidationError) as exc:
-        return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
-    except (OSError, ValueError):
-        return error_response(ErrorCodes.BLUR_FAILED, "The image could not be blurred.", 400)
-    return jsonify(success=True, image=public_image(result))
-
-
-@process_bp.post("/sharpen")
-def sharpen_image():
-    image_id, error = _image_id_from_payload()
-    if error:
-        return error
-    payload = request.get_json(silent=True) or {}
-    value = require_int(payload.get("value", 0), low=0, high=5, name="sharpen", code="INVALID_SHARPEN")
-    try:
-        result = _process_service().sharpen(image_id, value)
-    except (FileNotFoundError, FileValidationError) as exc:
-        return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
-    except (OSError, ValueError):
-        return error_response(ErrorCodes.SHARPEN_FAILED, "The image could not be sharpened.", 400)
-    return jsonify(success=True, image=public_image(result))
-
-
-@process_bp.post("/negative")
-def negative_image():
-    image_id, error = _image_id_from_payload()
-    if error:
-        return error
-    try:
-        result = _process_service().negative(image_id)
-    except (FileNotFoundError, FileValidationError) as exc:
-        return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
-    except (OSError, ValueError):
-        return error_response(ErrorCodes.NEGATIVE_FAILED, "The negative could not be produced.", 400)
-    return jsonify(success=True, image=public_image(result))
+# ---- Batch and read-only endpoints ------------------------------------------
+# These do not fit the single-operation shape: adjustments applies several
+# operations in one pass with a nested response, and histogram answers with
+# data instead of producing an image file.
 
 
 @process_bp.post("/adjustments")
@@ -198,98 +138,3 @@ def image_histogram():
     except (OSError, ValueError):
         return error_response(ErrorCodes.HISTOGRAM_FAILED, "The image histogram could not be computed.", 400)
     return jsonify(success=True, histogram=histogram)
-
-
-@process_bp.post("/sobel")
-def sobel_edges():
-    image_id, error = _image_id_from_payload()
-    if error:
-        return error
-    payload = request.get_json(silent=True) or {}
-    ksize = require_odd_int(payload.get("ksize", 3), low=1, high=7, name="Sobel ksize", code="INVALID_SOBEL_KSIZE")
-    try:
-        result = _process_service().sobel(image_id, ksize)
-    except (FileNotFoundError, FileValidationError) as exc:
-        return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
-    except (OSError, ValueError):
-        return error_response(ErrorCodes.SOBEL_FAILED, "Sobel edge detection could not be applied.", 400)
-    return jsonify(success=True, image=public_image(result))
-
-
-@process_bp.post("/laplacian")
-def laplacian_edges():
-    image_id, error = _image_id_from_payload()
-    if error:
-        return error
-    try:
-        result = _process_service().laplacian(image_id)
-    except (FileNotFoundError, FileValidationError) as exc:
-        return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
-    except (OSError, ValueError):
-        return error_response(ErrorCodes.LAPLACIAN_FAILED, "Laplacian edge detection could not be applied.", 400)
-    return jsonify(success=True, image=public_image(result))
-
-
-@process_bp.post("/median-filter")
-def median_filter():
-    image_id, error = _image_id_from_payload()
-    if error:
-        return error
-    payload = request.get_json(silent=True) or {}
-    ksize = require_odd_int(payload.get("ksize", 3), low=1, high=15, name="Median ksize", code="INVALID_MEDIAN_KSIZE")
-    try:
-        result = _process_service().median_filter(image_id, ksize)
-    except (FileNotFoundError, FileValidationError) as exc:
-        return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
-    except (OSError, ValueError):
-        return error_response(ErrorCodes.MEDIAN_FILTER_FAILED, "The median filter could not be applied.", 400)
-    return jsonify(success=True, image=public_image(result))
-
-
-@process_bp.post("/morphology")
-def morphology():
-    image_id, error = _image_id_from_payload()
-    if error:
-        return error
-    payload = request.get_json(silent=True) or {}
-    operation = require_choice(payload.get("operation"), ("erode", "dilate", "open", "close"), name="Morphology operation", code="INVALID_MORPHOLOGY_OPERATION")
-    ksize = require_odd_int(payload.get("ksize", 3), low=1, high=15, name="Morphology ksize", code="INVALID_MORPHOLOGY_KSIZE")
-    try:
-        result = _process_service().morphology(image_id, operation, ksize)
-    except (FileNotFoundError, FileValidationError) as exc:
-        return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
-    except (OSError, ValueError):
-        return error_response(ErrorCodes.MORPHOLOGY_FAILED, "The morphology operation could not be applied.", 400)
-    return jsonify(success=True, image=public_image(result))
-
-
-@process_bp.post("/gamma")
-def gamma_correction():
-    image_id, error = _image_id_from_payload()
-    if error:
-        return error
-    payload = request.get_json(silent=True) or {}
-    value = require_number(payload.get("value", 1.0), low=0.1, high=5.0, name="gamma", code="INVALID_GAMMA")
-    try:
-        result = _process_service().gamma(image_id, float(value))
-    except (FileNotFoundError, FileValidationError) as exc:
-        return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
-    except (OSError, ValueError):
-        return error_response(ErrorCodes.GAMMA_FAILED, "Gamma correction could not be applied.", 400)
-    return jsonify(success=True, image=public_image(result))
-
-
-@process_bp.post("/threshold")
-def threshold_image():
-    image_id, error = _image_id_from_payload()
-    if error:
-        return error
-    payload = request.get_json(silent=True) or {}
-    value = require_int(payload.get("value", 128), low=0, high=255, name="threshold", code="INVALID_THRESHOLD")
-    try:
-        result = _process_service().threshold(image_id, value)
-    except (FileNotFoundError, FileValidationError) as exc:
-        return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
-    except (OSError, ValueError):
-        return error_response(ErrorCodes.THRESHOLD_FAILED, "The threshold could not be applied.", 400)
-    return jsonify(success=True, image=public_image(result))

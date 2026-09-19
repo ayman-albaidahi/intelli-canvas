@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..services.operation_service import operation_label, validate_params
+from ..operations.registry import operation_label
 
 RULE_VERSION = "0.8.1"
 TARGET_BRIGHTNESS = 145
@@ -68,8 +68,3 @@ def build_suggestions(findings: list[dict[str, Any]], metrics: dict[str, Any]) -
         contrast = float(metrics.get("contrast_stddev", 0))
         suggestions.insert(0, _suggestion("EXPOSURE_AND_CONTRAST", "Balance exposure and contrast", "Brightness and contrast are both below target; apply a restrained two-step Pipeline from the original source.", min(1.0, ((110 - brightness) / 110 + (20 - contrast) / 20) / 2), {"brightness_mean": brightness, "contrast_stddev": contrast, "target_brightness": [110, 180], "target_contrast_min": 20}, [_node("suggestion-brightness", "brightness", {"value": max(105, min(160, round(TARGET_BRIGHTNESS - brightness)))}), _node("suggestion-contrast", "contrast", {"value": 130})], ["LOW_BRIGHTNESS", "LOW_CONTRAST"]))
     return suggestions
-
-
-def validate_suggested_operation(suggestion: dict[str, Any]) -> dict[str, Any]:
-    operation = suggestion.get("suggested_operation") or {}
-    return validate_params(operation.get("type"), operation.get("params") or {})

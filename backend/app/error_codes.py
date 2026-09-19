@@ -46,6 +46,7 @@ class ErrorCodes(Enum):
     SMART_CROP_FAILED = "SMART_CROP_FAILED"
 
     # --- Pixel processing --------------------------------------------------
+    PROCESSING_FAILED = "PROCESSING_FAILED"
     GRAYSCALE_FAILED = "GRAYSCALE_FAILED"
     NEGATIVE_FAILED = "NEGATIVE_FAILED"
     BRIGHTNESS_FAILED = "BRIGHTNESS_FAILED"

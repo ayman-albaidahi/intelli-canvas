@@ -21,7 +21,6 @@ from .routes import (
 from .services.file_service import FileStorageService
 from .services.image_session_service import ImageSessionService
 from .services.layer_compositor_service import LayerCompositorService
-from .services.operation_service import NodeService
 
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
 
@@ -42,9 +41,6 @@ def create_app(database_path: str | None = None) -> Flask:
         app.config["IMAGE_SESSION_SERVICE"],
         app.config["FILE_STORAGE_SERVICE"],
         app.config["IMAGE_SESSIONS"],
-    )
-    app.config["NODE_SERVICE"] = NodeService(
-        app.config["IMAGE_SESSION_SERVICE"], app.config["FILE_STORAGE_SERVICE"]
     )
     register_error_handlers(app)
 
