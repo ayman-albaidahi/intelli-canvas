@@ -2,7 +2,7 @@ import io
 
 from flask import Blueprint, current_app, jsonify, request, send_file
 
-from ..api_utils import error_response
+from ..errors import error_response
 from ..services.history_comparison_service import HistoryComparisonService
 
 history_bp = Blueprint(

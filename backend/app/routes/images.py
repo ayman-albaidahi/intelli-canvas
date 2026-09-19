@@ -1,11 +1,13 @@
 from flask import Blueprint, current_app, jsonify, request, send_file
 
-from ..api_utils import error_response
+from ..errors import error_response
 from ..services.file_service import FileStorageService, FileValidationError
 from ..services.image_io_service import ImageIOService
 from ..services.image_session_service import ImageSessionService
 from ..services.image_upload_service import ImageUploadService
 
+# Captured at import time so tests can swap the module-level name via
+# monkeypatch; the identity check in _get_storage_service detects the swap.
 _DEFAULT_FILE_STORAGE_SERVICE = FileStorageService
 
 

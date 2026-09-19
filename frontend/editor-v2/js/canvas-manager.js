@@ -1,4 +1,5 @@
 import { appState, setState } from './app-state.js';
+import { clampCropSelection } from './transform-logic.js';
 
 const MIN_SCALE = 0.05;
 const MAX_SCALE = 8;
@@ -18,8 +19,6 @@ export class CanvasManager {
     this.flipY = 1;
     this.crop = { x: 0, y: 0, width: 1, height: 1 };
     this.documentSize = { width: 0, height: 0 };
-    this.history = [];
-    this.future = [];
     this.adjustments = { brightness: 100, contrast: 100, saturation: 100, blur: 0, grayscale: false, negative: false };
     this.previewEnabled = true;
     this.drag = null;
@@ -132,41 +131,29 @@ export class CanvasManager {
   resize() {
     const bounds = this.stage.getBoundingClientRect();
     if (bounds.width === 0 || bounds.height === 0) return;
+    // A resize changes the viewport but must not discard the user's zoom/pan.
+    // Re-clamp the existing offset to the new bounds instead of refitting.
+    const hadImage = !!this.image;
     const ratio = window.devicePixelRatio || 1;
     this.canvas.width = Math.max(1, Math.floor(bounds.width * ratio));
     this.canvas.height = Math.max(1, Math.floor(bounds.height * ratio));
     this.canvas.style.width = `${bounds.width}px`;
     this.canvas.style.height = `${bounds.height}px`;
     this.ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    if (this.image) this.fit(); else this.render();
-  }
-
-  load(file) {
-    const reader = new FileReader();
-    reader.addEventListener('load', () => {
-      const image = new Image();
-      image.addEventListener('load', () => {
-        this.image = image;
-        this.rotation = 0;
-        this.flipX = 1;
-        this.flipY = 1;
-        this.crop = { x: 0, y: 0, width: 1, height: 1 };
-        this.documentSize = { width: image.naturalWidth, height: image.naturalHeight };
-        this.history = [];
-        this.future = [];
-        setState({ hasImage: true });
-        this.fit();
-      });
-      image.src = reader.result;
-    });
-    reader.readAsDataURL(file);
+    if (hadImage) { this.clampOffset(); this.render(); }
+    else this.render();
   }
 
   loadFromUrl(url, metadata = {}) {
+    // Guard against out-of-order loads: only the most recent request is
+    // allowed to commit image state, so a slow older fetch can never
+    // overwrite the canvas after a newer one has already landed.
+    const token = (this._loadToken = (this._loadToken || 0) + 1);
     return new Promise((resolve, reject) => {
       const image = new Image();
       image.crossOrigin = 'anonymous';
       image.addEventListener('load', () => {
+        if (token !== this._loadToken) return;
         this.image = image;
         this._imageData = null;
         this.setMaskOverlay(null);
@@ -176,13 +163,14 @@ export class CanvasManager {
         this.flipY = 1;
         this.crop = { x: 0, y: 0, width: 1, height: 1 };
         this.documentSize = { width: image.naturalWidth || metadata.width, height: image.naturalHeight || metadata.height };
-        this.history = [];
-        this.future = [];
         setState({ hasImage: true });
         this.fit();
         resolve(image);
       });
-      image.addEventListener('error', () => reject(new Error('Could not load the image. Make sure the app server is running.')));
+      image.addEventListener('error', () => {
+        if (token !== this._loadToken) return;
+        reject(new Error('Could not load the image. Make sure the app server is running.'));
+      });
       image.src = url;
     });
   }
@@ -226,8 +214,6 @@ export class CanvasManager {
     setState({ zoom: Math.round(this.scale * 100) });
     this.render();
   }
-
-  setZoom(delta) { this.zoomStep(delta); }
 
   clampOffset() {
     if (!this.image) return;
@@ -310,8 +296,6 @@ export class CanvasManager {
 
   getSourceDimensions() { return { ...this.documentSize }; }
 
-  resizeImage(width, height) { this.commit(); this.documentSize = { width, height }; this.crop = { x: 0, y: 0, width: 1, height: 1 }; this.fit(); document.querySelector('#canvas-size').textContent = `${width} × ${height}`; }
-
   getImageRect() {
     if (!this.image) return null;
     const { width, height } = this.drawnSize();
@@ -321,11 +305,7 @@ export class CanvasManager {
   applyCropSelection(selection) {
     const imageRect = this.getImageRect();
     if (!imageRect) return;
-    this.commit();
-    const left = Math.max(0, Math.min(1, (selection.x - imageRect.x) / imageRect.width));
-    const top = Math.max(0, Math.min(1, (selection.y - imageRect.y) / imageRect.height));
-    const width = Math.max(0.05, Math.min(1 - left, selection.width / imageRect.width));
-    const height = Math.max(0.05, Math.min(1 - top, selection.height / imageRect.height));
+    const { left, top, width, height } = clampCropSelection(selection, imageRect);
     this.crop = { x: this.crop.x + this.crop.width * left, y: this.crop.y + this.crop.height * top, width: this.crop.width * width, height: this.crop.height * height };
     this.fit();
   }
@@ -343,27 +323,9 @@ export class CanvasManager {
     return result;
   }
 
-  snapshot() { return { rotation: this.rotation, flipX: this.flipX, flipY: this.flipY, crop: { ...this.crop }, documentSize: { ...this.documentSize }, adjustments: { ...this.adjustments } }; }
+  rotate(degrees) { this.rotation = (this.rotation + degrees + 360) % 360; this.fit(); }
 
-  commit() { this.history.push(this.snapshot()); if (this.history.length > 30) this.history.shift(); this.future = []; }
-
-  restore(snapshot) { this.rotation = snapshot.rotation; this.flipX = snapshot.flipX; this.flipY = snapshot.flipY; this.crop = { ...snapshot.crop }; this.documentSize = { ...snapshot.documentSize }; this.adjustments = { ...this.adjustments, ...(snapshot.adjustments || {}) }; this.fit(); }
-
-  rotate(degrees) { this.commit(); this.rotation = (this.rotation + degrees + 360) % 360; this.fit(); }
-
-  flip(axis) { this.commit(); if (axis === 'horizontal') this.flipX *= -1; if (axis === 'vertical') this.flipY *= -1; this.render(); }
-
-  cropCenter() {
-    this.commit();
-    const marginX = this.crop.width * 0.1;
-    const marginY = this.crop.height * 0.1;
-    this.crop = { x: this.crop.x + marginX, y: this.crop.y + marginY, width: this.crop.width * 0.8, height: this.crop.height * 0.8 };
-    this.fit();
-  }
-
-  undo() { const previous = this.history.pop(); if (!previous) return false; this.future.push(this.snapshot()); this.restore(previous); return true; }
-
-  redo() { const next = this.future.pop(); if (!next) return false; this.history.push(this.snapshot()); this.restore(next); return true; }
+  flip(axis) { if (axis === 'horizontal') this.flipX *= -1; if (axis === 'vertical') this.flipY *= -1; this.render(); }
 
   toggleFullscreen() {
     const zone = this.stage.closest('.canvas-zone') || this.stage;

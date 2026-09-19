@@ -26,13 +26,11 @@ const emptyCanvas = document.querySelector('#empty-canvas');
 const mockArtboard = document.querySelector('#mock-artboard');
 const statusMessage = document.querySelector('#status-message');
 const canvasManager = new CanvasManager(document.querySelector('#image-canvas'), document.querySelector('#canvas-card'));
-window.__cm = canvasManager;
 const apiClient = new ApiClient();
 bindTransformTools(canvasManager, apiClient, showToast);
 const cropTool = new CropTool(canvasManager, document.querySelector('#canvas-card'), apiClient, showToast);
 initResizeTool(canvasManager, apiClient, showToast);
 const objectManager = new ObjectManager(document.querySelector('#object-canvas'), showToast);
-window.__om = objectManager;
 const layerManager = new LayerManager(objectManager, { list: document.querySelector('#layers-list'), empty: document.querySelector('#layers-empty'), count: document.querySelector('#layer-count'), showToast });
 const refreshLayerPanel = objectManager.onChange;
 let layerSaveTimer = null;
@@ -56,9 +54,7 @@ new ComparisonTool(canvasManager, showToast);
 new AdjustmentsManager({ canvasManager, apiClient, showToast });
 new FiltersManager({ canvasManager, apiClient, showToast });
 const backgroundManager = new BackgroundManager({ canvasManager, apiClient, objectManager, showToast });
-window.__bm = backgroundManager;
 const historyManager = new HistoryManager({ canvasManager, apiClient, showToast });
-window.__hm = historyManager;
 new ExportManager({ canvasManager, apiClient, objectManager, showToast });
 new AnalysisManager({ canvasManager, apiClient, showToast });
 new PipelineManager({ apiClient, canvasManager, showToast });
@@ -158,10 +154,6 @@ document.addEventListener('keydown', (event) => {
   if (event.key.toLowerCase() === 'v') document.querySelector('[data-tool="select"]')?.click();
   if (event.key.toLowerCase() === 'c') document.querySelector('[data-tool="crop"]')?.click();
 });
-
-function updateZoom(delta) {
-  canvasManager.setZoom(delta);
-}
 
 function renderZoom() {
   document.querySelectorAll('[data-zoom-display]').forEach((element) => { element.textContent = `${appState.zoom}%`; });

@@ -1,3 +1,5 @@
+import { escapeHtml } from './escape-html.js';
+
 export class FiltersManager {
   constructor({ canvasManager, apiClient, showToast }) {
     this.canvasManager = canvasManager;
@@ -101,7 +103,7 @@ export class FiltersManager {
       const peak = Math.max(...bins);
       const count = bins.reduce((total, value) => total + value, 0);
       const peakLevel = peak ? Math.round((peak / count) * 100) : 0;
-      return `<div><strong>${channel.toUpperCase()}</strong><span>${count.toLocaleString()} px · peak ${peakLevel}%</span></div>`;
+      return `<div><strong>${escapeHtml(channel.toUpperCase())}</strong><span>${count.toLocaleString()} px · peak ${peakLevel}%</span></div>`;
     });
     this.histogramOutput.replaceChildren();
     for (const row of rows) {

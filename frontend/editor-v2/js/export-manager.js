@@ -80,7 +80,8 @@ export class ExportManager {
       link.href = url;
       link.download = filename;
       link.click();
-      URL.revokeObjectURL(url);
+      // Defer revocation so the browser has time to start the download.
+      setTimeout(() => URL.revokeObjectURL(url), 0);
       this.showToast(`Exported ${filename}`);
       this.close();
     } catch (error) {

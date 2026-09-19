@@ -69,19 +69,19 @@ export class AnalysisManager {
   }
 
   render(report) {
+    const m = report?.metrics || {};
     if (this.metricsBox) {
-      const m = report.metrics;
       if (this.qualityBox) this.qualityBox.hidden = false;
       if (this.qualityScore) this.qualityScore.textContent = `${report.quality_score ?? m.quality_score ?? '—'} / 100`;
       this.metricsBox.innerHTML =
-        `<div>الأبعاد: ${m.width}×${m.height}</div>` +
-        `<div>متوسط السطوع: ${m.brightness_mean}</div>` +
-        `<div>الوسيط: ${m.brightness_median}</div>` +
-        `<div>التباين: ${m.contrast_stddev}</div>` +
-        `<div>الحدة: ${m.sharpness_score}</div>` +
-        `<div>الضوضاء: ${m.noise_score}</div>` +
-        `<div>قص الظلال: ${Math.round(m.clipped_shadow_ratio * 10000) / 100}%</div>` +
-        `<div>قص الإضاءات: ${Math.round(m.clipped_highlight_ratio * 10000) / 100}%</div>`;
+        `<div>الأبعاد: ${escapeHtml(m.width)}×${escapeHtml(m.height)}</div>` +
+        `<div>متوسط السطوع: ${escapeHtml(m.brightness_mean)}</div>` +
+        `<div>الوسيط: ${escapeHtml(m.brightness_median)}</div>` +
+        `<div>التباين: ${escapeHtml(m.contrast_stddev)}</div>` +
+        `<div>الحدة: ${escapeHtml(m.sharpness_score)}</div>` +
+        `<div>الضوضاء: ${escapeHtml(m.noise_score)}</div>` +
+        `<div>قص الظلال: ${escapeHtml(Math.round((m.clipped_shadow_ratio ?? 0) * 10000) / 100)}%</div>` +
+        `<div>قص الإضاءات: ${escapeHtml(Math.round((m.clipped_highlight_ratio ?? 0) * 10000) / 100)}%</div>`;
       this.metricsBox.hidden = false;
     }
     if (this.findingsBox) {
@@ -124,7 +124,9 @@ export class AnalysisManager {
     try {
       const blob = await this.apiClient.previewSuggestion(this.apiClient.imageId, this.activeSuggestion.type);
       if (this.previewImg) {
-        this.previewImg.src = URL.createObjectURL(blob);
+        if (this._previewObjectUrl) URL.revokeObjectURL(this._previewObjectUrl);
+        this._previewObjectUrl = URL.createObjectURL(blob);
+        this.previewImg.src = this._previewObjectUrl;
         this.previewImg.hidden = false;
       }
       this.showToast('معاينة الاقتراح جاهزة');

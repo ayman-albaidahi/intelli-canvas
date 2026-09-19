@@ -44,14 +44,6 @@ def error_response(code: str, message: str, status_code: int):
     return jsonify(success=False, error={"code": code, "message": message}), status_code
 
 
-def not_implemented_response(feature_name: str):
-    return error_response(
-        "NOT_IMPLEMENTED",
-        f"{feature_name} management is not implemented yet.",
-        501,
-    )
-
-
 def register_error_handlers(app):
     """Register safe, consistent conversion of application errors to JSON."""
 
@@ -62,7 +54,11 @@ def register_error_handlers(app):
     @app.errorhandler(Exception)
     def handle_unexpected_error(error: Exception):
         if isinstance(error, HTTPException):
-            return error
+            return error_response(
+                error.name.upper().replace(" ", "_"),
+                error.description,
+                error.code or 500,
+            )
         app.logger.exception("Unhandled application error", exc_info=error)
         return error_response(
             "INTERNAL_ERROR",

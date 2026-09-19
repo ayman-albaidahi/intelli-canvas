@@ -1,6 +1,7 @@
 from flask import Blueprint, current_app, jsonify, request, send_file
 
-from ..api_utils import error_response
+from ..errors import error_response
+from ..services.analysis_service import ANALYZER_VERSION, analyze_cached
 from ..services.explainability_service import explain_finding
 from ..services.pipeline_execution_service import PipelineExecutionService
 from ..services.pipeline_service import PipelineParamError, PipelineService
@@ -23,8 +24,6 @@ def _analysis_findings(image_id: str):
     from pathlib import Path
 
     from PIL import Image
-
-    from ..services.analysis_service import analyze_cached
 
     storage = current_app.config["FILE_STORAGE_SERVICE"]
     directory = (
@@ -51,6 +50,12 @@ def _suggestion_for(image_id: str, sug_type: str):
     return None, error_response("SUGGESTION_NOT_AVAILABLE", "This suggestion is not available for the image.", 404)
 
 
+# Suggestions dismissed in this process, keyed by image session. The runtime is
+# single-user per process, so an in-memory set is sufficient until a shared
+# store is introduced; dismissed state resets on server restart.
+_dismissed: dict[str, set[str]] = {}
+
+
 @suggestions_bp.post("")
 def list_suggestions():
     payload = request.get_json(silent=True) or {}
@@ -60,7 +65,12 @@ def list_suggestions():
     report, error = _analysis_findings(image_id)
     if error:
         return error
-    suggestions = build_suggestions(report["findings"], report["metrics"])
+    dismissed = _dismissed.get(image_id, set())
+    suggestions = [
+        suggestion
+        for suggestion in build_suggestions(report["findings"], report["metrics"])
+        if suggestion["type"] not in dismissed
+    ]
     return jsonify(success=True, image_id=image_id, analyzer_version=report.get("analyzer_version"), analysis_hash=report.get("analysis_hash"), cache_hit=report.get("cache_hit", False), quality_score=report.get("quality_score"), metrics=report["metrics"], findings=report["findings"], suggestions=suggestions)
 
 
@@ -102,7 +112,7 @@ def apply_suggestion():
         return error
     try:
         PipelineService.validate_nodes(suggestion["pipeline"]["nodes"])
-        result = PipelineExecutionService(current_app.config["IMAGE_SESSION_SERVICE"], current_app.config["FILE_STORAGE_SERVICE"]).execute(image_id, suggestion["pipeline"], persist=True, metadata={"source": "smart-suggestion", "suggestion_id": sug_type, "suggestion_rule_version": suggestion.get("rule_version", "0.8.1")})
+        result = PipelineExecutionService(current_app.config["IMAGE_SESSION_SERVICE"], current_app.config["FILE_STORAGE_SERVICE"]).execute(image_id, suggestion["pipeline"], persist=True, metadata={"source": "smart-suggestion", "suggestion_id": sug_type, "suggestion_rule_version": suggestion.get("rule_version", ANALYZER_VERSION)})
         node = {"operation": {"label": suggestion["suggested_operation"]["label"]}, "pipeline_hash": result["pipeline_hash"], "cache_hit": result["cache_hit"]}
     except PipelineParamError as exc:
         return error_response("INVALID_PIPELINE", str(exc), 400)
@@ -118,7 +128,11 @@ def apply_suggestion():
 @suggestions_bp.post("/dismiss")
 def dismiss_suggestion():
     payload = request.get_json(silent=True) or {}
+    image_id = payload.get("image_id")
     sug_type = payload.get("type")
+    if not isinstance(image_id, str) or not image_id.strip():
+        return error_response("INVALID_IMAGE_ID", "A valid image_id is required.", 400)
     if not isinstance(sug_type, str) or not sug_type.strip():
         return error_response("INVALID_REQUEST", "A suggestion type is required.", 400)
+    _dismissed.setdefault(image_id, set()).add(sug_type)
     return jsonify(success=True, dismissed=True, type=sug_type)

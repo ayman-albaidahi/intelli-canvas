@@ -17,8 +17,6 @@ class ImageSessionService:
 
     def __init__(self, repository: SessionStore):
         self.repository = repository
-        # Kept as a compatibility alias for callers that used session_store.
-        self.session_store = repository
 
     def create_session(self, metadata: dict[str, Any]) -> dict[str, Any]:
         image_id = uuid.uuid4().hex

@@ -2,7 +2,7 @@ import io
 
 from flask import Blueprint, current_app, jsonify, request, send_file
 
-from ..api_utils import error_response
+from ..errors import error_response
 from ..services.analysis_service import analyze_cached
 from ..services.explainability_service import explain_finding
 

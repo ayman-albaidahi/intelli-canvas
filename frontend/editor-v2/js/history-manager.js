@@ -102,7 +102,7 @@ export class HistoryManager {
     if (this.busy || !this.apiClient.imageId) return;
     try {
       const blob = await this.apiClient.diffHistory(Number(this.beforeSelect.value), Number(this.afterSelect.value), 'heatmap');
-      this.diffImage.src = URL.createObjectURL(blob);
+      this.setDiffSrc(URL.createObjectURL(blob));
       this.diffImage.hidden = false;
       this.comparison.hidden = false;
     } catch (error) {
@@ -110,10 +110,20 @@ export class HistoryManager {
     }
   }
 
+  setDiffSrc(url) {
+    if (this._diffObjectUrl) URL.revokeObjectURL(this._diffObjectUrl);
+    this._diffObjectUrl = url;
+    this.diffImage.src = url;
+  }
+
   clearComparison() {
     if (!this.comparison) return;
     this.comparison.hidden = true;
     this.diffImage.hidden = true;
+    if (this._diffObjectUrl) {
+      URL.revokeObjectURL(this._diffObjectUrl);
+      this._diffObjectUrl = null;
+    }
     this.beforeImage.removeAttribute('src');
     this.afterImage.removeAttribute('src');
     this.diffImage.removeAttribute('src');
