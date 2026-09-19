@@ -36,10 +36,6 @@ class HistoryComparisonService:
             raise FileNotFoundError("History image was not found.")
         return path
 
-    def image_bytes(self, image_id: str, index: int) -> bytes:
-        path = self.path_for(image_id, index)
-        return path.read_bytes()
-
     def compare(self, image_id: str, from_index: int, to_index: int) -> dict:
         source = self.entry(image_id, from_index)
         target = self.entry(image_id, to_index)

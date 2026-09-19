@@ -108,10 +108,3 @@ def require_dict(value: Any, *, name: str = "payload") -> dict[str, Any]:
     if not isinstance(value, dict):
         raise InvalidRequestError(f"{name} must be a JSON object.")
     return value
-
-
-def require_list(value: Any, *, name: str = "value") -> list[Any]:
-    """Return ``value`` as a list, rejecting anything else."""
-    if not isinstance(value, list):
-        raise InvalidRequestError(f"{name} must be a list.")
-    return value
