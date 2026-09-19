@@ -35,7 +35,9 @@ def create_app(database_path: str | None = None) -> Flask:
     app.config["JSON_SORT_KEYS"] = False
     app.config["DATABASE_PATH"] = database_path or app.config["DATABASE_PATH"]
     app.config["IMAGE_SESSIONS"] = SQLiteSessionRepository(app.config["DATABASE_PATH"])
-    app.config["IMAGE_SESSION_SERVICE"] = ImageSessionService(app.config["IMAGE_SESSIONS"])
+    app.config["IMAGE_SESSION_SERVICE"] = ImageSessionService(
+        app.config["IMAGE_SESSIONS"]
+    )
     app.config["FILE_STORAGE_SERVICE"] = FileStorageService()
     app.config["LAYER_COMPOSITOR_SERVICE"] = LayerCompositorService(
         app.config["IMAGE_SESSION_SERVICE"],
@@ -64,21 +66,31 @@ def create_app(database_path: str | None = None) -> Flask:
             response.headers["Access-Control-Allow-Origin"] = origin
             response.headers.setdefault("Vary", "Origin")
             response.headers.setdefault("Access-Control-Allow-Headers", "Content-Type")
-            response.headers.setdefault("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            response.headers.setdefault(
+                "Access-Control-Allow-Methods", "GET, POST, OPTIONS"
+            )
         return response
 
     @app.after_request
     def add_security_headers(response):
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
-        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
-        csp = ("default-src 'self'; img-src 'self' data: blob:; "
-               "style-src 'self' 'unsafe-inline'; script-src 'self'; "
-               "connect-src 'self'; object-src 'none'; base-uri 'self'")
+        response.headers.setdefault(
+            "Referrer-Policy", "strict-origin-when-cross-origin"
+        )
+        csp = (
+            "default-src 'self'; img-src 'self' data: blob:; "
+            "style-src 'self' 'unsafe-inline'; script-src 'self'; "
+            "connect-src 'self'; object-src 'none'; base-uri 'self'"
+        )
         response.headers.setdefault("Content-Security-Policy", csp)
-        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        response.headers.setdefault(
+            "Permissions-Policy", "camera=(), microphone=(), geolocation=()"
+        )
         if request.is_secure:
-            response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+            response.headers.setdefault(
+                "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+            )
         return response
 
     @app.get("/")

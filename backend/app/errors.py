@@ -55,7 +55,9 @@ def error_response(code, message: str, status_code: int):
     from .error_codes import ErrorCodes
 
     resolved = code.value if isinstance(code, ErrorCodes) else code
-    return jsonify(success=False, error={"code": resolved, "message": message}), status_code
+    return jsonify(
+        success=False, error={"code": resolved, "message": message}
+    ), status_code
 
 
 def register_error_handlers(app):

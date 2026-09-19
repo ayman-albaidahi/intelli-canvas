@@ -13,13 +13,19 @@ def explain_operation_route():
     payload = request.get_json(silent=True) or {}
     operation = payload.get("operation")
     if not isinstance(operation, str) or not operation.strip():
-        return error_response(ErrorCodes.INVALID_OPERATION, "operation is required.", 400)
+        return error_response(
+            ErrorCodes.INVALID_OPERATION, "operation is required.", 400
+        )
     try:
         explanation = explain_operation(
             operation,
             payload.get("parameters") or {},
-            finding=payload.get("finding") if isinstance(payload.get("finding"), dict) else None,
-            source=payload.get("source") if isinstance(payload.get("source"), dict) else None,
+            finding=payload.get("finding")
+            if isinstance(payload.get("finding"), dict)
+            else None,
+            source=payload.get("source")
+            if isinstance(payload.get("source"), dict)
+            else None,
         )
     except PipelineParamError as exc:
         return error_response(ErrorCodes.INVALID_OPERATION, str(exc), 400)

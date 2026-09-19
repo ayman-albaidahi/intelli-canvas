@@ -67,7 +67,9 @@ def test_cv_transform_endpoints_process_the_current_image(endpoint, payload, ope
     client = create_app().test_client()
     image_id = _upload_png(client, pixels=_edge_pixels())
 
-    response = client.post(f"/api/process/{endpoint}", json={"image_id": image_id, **payload})
+    response = client.post(
+        f"/api/process/{endpoint}", json={"image_id": image_id, **payload}
+    )
 
     assert response.status_code == 200
     result = response.get_json()["image"]
@@ -85,7 +87,10 @@ def test_sobel_returns_visible_edges_as_rgb():
     client = create_app().test_client()
     image_id = _upload_png(client, pixels=_edge_pixels())
 
-    assert client.post("/api/process/sobel", json={"image_id": image_id}).status_code == 200
+    assert (
+        client.post("/api/process/sobel", json={"image_id": image_id}).status_code
+        == 200
+    )
 
     content = client.get(f"/api/images/{image_id}/content")
     result = Image.open(io.BytesIO(content.data)).convert("RGB")
@@ -109,7 +114,11 @@ def test_sobel_returns_visible_edges_as_rgb():
 )
 def test_cv_endpoints_reject_invalid_parameters(endpoint, payload, code):
     client = create_app().test_client()
-    request_payload = {"image_id": "placeholder", **payload} if endpoint not in {"histogram", "laplacian"} else payload
+    request_payload = (
+        {"image_id": "placeholder", **payload}
+        if endpoint not in {"histogram", "laplacian"}
+        else payload
+    )
     if "image_id" in request_payload:
         request_payload["image_id"] = _upload_png(client)
 

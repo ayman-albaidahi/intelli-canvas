@@ -12,9 +12,7 @@ from backend.app.services.file_service import FileStorageService
 def export_context(tmp_path, monkeypatch):
     app = create_app()
     storage_service = FileStorageService(storage_root=tmp_path / "storage")
-    monkeypatch.setattr(
-        images, "FileStorageService", lambda: storage_service
-    )
+    monkeypatch.setattr(images, "FileStorageService", lambda: storage_service)
 
     source = Image.new("RGB", (4, 3), color="red")
     source_buffer = io.BytesIO()
@@ -75,9 +73,10 @@ def test_export_does_not_change_session_or_original(export_context):
 
     assert response.status_code == 200
     assert source_path.read_bytes() == original_bytes
-    assert app.config["IMAGE_SESSION_SERVICE"].get_session(
-        session["image_id"]
-    ) == original_session
+    assert (
+        app.config["IMAGE_SESSION_SERVICE"].get_session(session["image_id"])
+        == original_session
+    )
     assert len(list(storage_service.processed_dir.iterdir())) == 1
 
 
@@ -89,16 +88,12 @@ def test_export_does_not_change_session_or_original(export_context):
         ({"image_id": "valid", "format": "gif"}, "EXPORT_FAILED"),
     ],
 )
-def test_export_invalid_request_is_rejected(
-    export_context, payload, expected_code
-):
+def test_export_invalid_request_is_rejected(export_context, payload, expected_code):
     app, _, session, _ = export_context
     if payload.get("image_id") == "valid":
         payload["image_id"] = session["image_id"]
 
-    response = app.test_client().post(
-        "/api/images/export", json=payload
-    )
+    response = app.test_client().post("/api/images/export", json=payload)
 
     assert response.status_code in {400, 404}
     assert response.get_json()["error"]["code"] == expected_code
@@ -145,34 +140,60 @@ def test_export_does_not_modify_conversion_endpoint(export_context):
     assert response.get_json()["image"]["format"] == "webp"
 
 
-def test_export_composites_persisted_image_layer_without_changing_history(export_context):
+def test_export_composites_persisted_image_layer_without_changing_history(
+    export_context,
+):
     app, storage_service, session, _ = export_context
     app.config["LAYER_COMPOSITOR_SERVICE"].storage_service = storage_service
     layer_image = Image.new("RGBA", (2, 2), (0, 0, 255, 255))
     layer_buffer = io.BytesIO()
     layer_image.save(layer_buffer, format="PNG")
     layer_buffer.seek(0)
-    layer_path = storage_service.save_file(layer_buffer, "layer.png", destination="layer-assets")
-    asset = app.config["IMAGE_SESSIONS"].create_asset({
-        "asset_id": "asset-blue",
-        "image_id": session["image_id"],
-        "storage_category": "layer-assets",
-        "stored_filename": layer_path.name,
-        "mime_type": "image/png",
-        "size": layer_path.stat().st_size,
-        "created_at": 1,
-    })
-    app.config["IMAGE_SESSION_SERVICE"].save_layers(session["image_id"], [{
-        "id": "o1", "type": "image", "asset_id": asset["asset_id"],
-        "x": 0, "y": 0, "w": 2, "h": 2, "opacity": 1, "rotation": 0,
-        "visible": True, "blend": "source-over",
-    }])
+    layer_path = storage_service.save_file(
+        layer_buffer, "layer.png", destination="layer-assets"
+    )
+    asset = app.config["IMAGE_SESSIONS"].create_asset(
+        {
+            "asset_id": "asset-blue",
+            "image_id": session["image_id"],
+            "storage_category": "layer-assets",
+            "stored_filename": layer_path.name,
+            "mime_type": "image/png",
+            "size": layer_path.stat().st_size,
+            "created_at": 1,
+        }
+    )
+    app.config["IMAGE_SESSION_SERVICE"].save_layers(
+        session["image_id"],
+        [
+            {
+                "id": "o1",
+                "type": "image",
+                "asset_id": asset["asset_id"],
+                "x": 0,
+                "y": 0,
+                "w": 2,
+                "h": 2,
+                "opacity": 1,
+                "rotation": 0,
+                "visible": True,
+                "blend": "source-over",
+            }
+        ],
+    )
 
-    response = app.test_client().post("/api/images/export", json={
-        "image_id": session["image_id"], "format": "png", "composite_layers": True,
-    })
+    response = app.test_client().post(
+        "/api/images/export",
+        json={
+            "image_id": session["image_id"],
+            "format": "png",
+            "composite_layers": True,
+        },
+    )
 
     assert response.status_code == 200
     with Image.open(io.BytesIO(response.data)).convert("RGBA") as exported:
         assert exported.getpixel((0, 0))[:3] == (0, 0, 255)
-    assert app.config["IMAGE_SESSION_SERVICE"].history(session["image_id"])["total"] == 1
+    assert (
+        app.config["IMAGE_SESSION_SERVICE"].history(session["image_id"])["total"] == 1
+    )

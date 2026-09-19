@@ -41,7 +41,9 @@ def test_blur_rejects_out_of_range_value():
     client = create_app().test_client()
     image_id = _upload(client)
 
-    response = client.post("/api/process/blur", json={"image_id": image_id, "value": 21})
+    response = client.post(
+        "/api/process/blur", json={"image_id": image_id, "value": 21}
+    )
 
     assert response.status_code == 400
     assert response.get_json()["error"]["code"] == "INVALID_BLUR"

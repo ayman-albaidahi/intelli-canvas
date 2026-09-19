@@ -162,7 +162,13 @@ def export_image():
     height = payload.get("height")
     for dimension, value in (("width", width), ("height", height)):
         if value is not None:
-            require_int(value, low=1, high=8000, name=dimension.capitalize(), code="INVALID_DIMENSIONS")
+            require_int(
+                value,
+                low=1,
+                high=8000,
+                name=dimension.capitalize(),
+                code="INVALID_DIMENSIONS",
+            )
     if width and height and width * height > 24_000_000:
         return error_response(
             ErrorCodes.INVALID_DIMENSIONS,
@@ -173,12 +179,19 @@ def export_image():
     try:
         composite_path = None
         if payload.get("composite_layers"):
-            composite_path = get_layer_compositor().compose(
-                image_id, persist=False
-            ).path
+            composite_path = (
+                get_layer_compositor().compose(image_id, persist=False).path
+            )
         result = ImageIOService(
             get_session_service(), get_storage_service(sys.modules[__name__])
-        ).convert(image_id, target_format, quality=quality, width=width, height=height, source_path=composite_path)
+        ).convert(
+            image_id,
+            target_format,
+            quality=quality,
+            width=width,
+            height=height,
+            source_path=composite_path,
+        )
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
     except (OSError, ValueError):

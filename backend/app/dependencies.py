@@ -31,7 +31,10 @@ def get_storage_service(module=None) -> FileStorageService:
     identity check against the pristine reference detects that swap. Passing
     ``None`` skips the check and returns the configured instance.
     """
-    if module is not None and module.FileStorageService is not _DEFAULT_FILE_STORAGE_SERVICE:
+    if (
+        module is not None
+        and module.FileStorageService is not _DEFAULT_FILE_STORAGE_SERVICE
+    ):
         return module.FileStorageService(**{})
     return current_app.config["FILE_STORAGE_SERVICE"]
 

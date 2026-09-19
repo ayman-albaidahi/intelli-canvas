@@ -32,7 +32,9 @@ PUBLIC_IMAGE_KEYS = frozenset(
 )
 
 
-def public_view(result: dict[str, Any], *, internal: frozenset[str] = INTERNAL_KEYS) -> dict[str, Any]:
+def public_view(
+    result: dict[str, Any], *, internal: frozenset[str] = INTERNAL_KEYS
+) -> dict[str, Any]:
     """Drop internal bookkeeping keys from a service result.
 
     Prefer this over hand-written comprehensions in routes: the set of keys

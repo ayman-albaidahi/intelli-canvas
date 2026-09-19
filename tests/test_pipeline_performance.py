@@ -15,11 +15,24 @@ def test_cached_pipeline_execution_avoids_render_and_stays_fast(monkeypatch):
     source = io.BytesIO()
     Image.new("RGB", (256, 256), (80, 120, 160)).save(source, format="PNG")
     source.seek(0)
-    image_id = client.post("/api/images", data={"file": (source, "performance.png")}, content_type="multipart/form-data").get_json()["image"]["image_id"]
-    pipeline = [{"id": "brightness", "operation": "brightness", "parameters": {"value": 120}, "enabled": True}]
+    image_id = client.post(
+        "/api/images",
+        data={"file": (source, "performance.png")},
+        content_type="multipart/form-data",
+    ).get_json()["image"]["image_id"]
+    pipeline = [
+        {
+            "id": "brightness",
+            "operation": "brightness",
+            "parameters": {"value": 120},
+            "enabled": True,
+        }
+    ]
 
     first_start = time.perf_counter()
-    first = client.post("/api/pipeline/apply", json={"image_id": image_id, "nodes": pipeline})
+    first = client.post(
+        "/api/pipeline/apply", json={"image_id": image_id, "nodes": pipeline}
+    )
     first_duration = time.perf_counter() - first_start
     assert first.status_code == 200
     assert first_duration < 5.0
@@ -28,9 +41,16 @@ def test_cached_pipeline_execution_avoids_render_and_stays_fast(monkeypatch):
         raise AssertionError("cached execution should not render the pipeline")
 
     from backend.app.services import pipeline_execution_service
-    monkeypatch.setattr(pipeline_execution_service.PipelineExecutionService, "_render", staticmethod(fail_render))
+
+    monkeypatch.setattr(
+        pipeline_execution_service.PipelineExecutionService,
+        "_render",
+        staticmethod(fail_render),
+    )
     cached_start = time.perf_counter()
-    cached = client.post("/api/pipeline/apply", json={"image_id": image_id, "nodes": pipeline})
+    cached = client.post(
+        "/api/pipeline/apply", json={"image_id": image_id, "nodes": pipeline}
+    )
     cached_duration = time.perf_counter() - cached_start
 
     assert cached.status_code == 200

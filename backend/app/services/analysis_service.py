@@ -1,4 +1,5 @@
 """Deterministic, read-only image quality analysis for v0.8.0."""
+
 from __future__ import annotations
 
 import hashlib
@@ -20,7 +21,13 @@ def _scaled_rgb(image: Image.Image) -> np.ndarray:
     working = image.convert("RGB")
     if max(working.size) > _MAX_ANALYSIS_SIDE:
         ratio = _MAX_ANALYSIS_SIDE / max(working.size)
-        working = working.resize((max(1, round(working.width * ratio)), max(1, round(working.height * ratio))), Image.Resampling.BILINEAR)
+        working = working.resize(
+            (
+                max(1, round(working.width * ratio)),
+                max(1, round(working.height * ratio)),
+            ),
+            Image.Resampling.BILINEAR,
+        )
     return np.asarray(working, dtype=np.uint8)
 
 
@@ -32,7 +39,9 @@ def _quality_for_brightness(mean: float) -> float:
     return round(max(0.0, 100.0 - distance * 1.25), 1)
 
 
-def analyze(image: Image.Image, options: dict[str, Any] | None = None) -> dict[str, Any]:
+def analyze(
+    image: Image.Image, options: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Return a stable quality report without changing the image or session."""
     rgb = _scaled_rgb(image)
     gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
@@ -50,7 +59,20 @@ def analyze(image: Image.Image, options: dict[str, Any] | None = None) -> dict[s
     contrast_quality = min(100.0, contrast * 2.0)
     noise_quality = max(0.0, 100.0 - noise * 5.0)
     clipping_quality = max(0.0, 100.0 - (clipped_shadows + clipped_highlights) * 500.0)
-    quality_score = round(max(0.0, min(100.0, (brightness_quality * 0.25) + (contrast_quality * 0.25) + (sharpness * 0.25) + (noise_quality * 0.15) + (clipping_quality * 0.10))), 1)
+    quality_score = round(
+        max(
+            0.0,
+            min(
+                100.0,
+                (brightness_quality * 0.25)
+                + (contrast_quality * 0.25)
+                + (sharpness * 0.25)
+                + (noise_quality * 0.15)
+                + (clipping_quality * 0.10),
+            ),
+        ),
+        1,
+    )
     metrics = {
         "width": image.width,
         "height": image.height,
@@ -70,20 +92,85 @@ def analyze(image: Image.Image, options: dict[str, Any] | None = None) -> dict[s
     findings: list[dict[str, Any]] = []
     low, high = BRIGHTNESS_RANGE
     if mean < low:
-        findings.append({"code": "LOW_BRIGHTNESS", "severity": "high" if mean < 70 else "medium", "evidence": {"brightness_mean": metrics["brightness_mean"], "target_range": [low, high]}})
+        findings.append(
+            {
+                "code": "LOW_BRIGHTNESS",
+                "severity": "high" if mean < 70 else "medium",
+                "evidence": {
+                    "brightness_mean": metrics["brightness_mean"],
+                    "target_range": [low, high],
+                },
+            }
+        )
     elif mean > high:
-        findings.append({"code": "HIGH_BRIGHTNESS", "severity": "medium", "evidence": {"brightness_mean": metrics["brightness_mean"], "target_range": [low, high]}})
+        findings.append(
+            {
+                "code": "HIGH_BRIGHTNESS",
+                "severity": "medium",
+                "evidence": {
+                    "brightness_mean": metrics["brightness_mean"],
+                    "target_range": [low, high],
+                },
+            }
+        )
     if contrast < LOW_CONTRAST_STDDEV:
-        findings.append({"code": "LOW_CONTRAST", "severity": "high" if contrast < 10 else "medium", "evidence": {"contrast_stddev": metrics["contrast_stddev"], "target_min": LOW_CONTRAST_STDDEV}})
+        findings.append(
+            {
+                "code": "LOW_CONTRAST",
+                "severity": "high" if contrast < 10 else "medium",
+                "evidence": {
+                    "contrast_stddev": metrics["contrast_stddev"],
+                    "target_min": LOW_CONTRAST_STDDEV,
+                },
+            }
+        )
     if sharpness < 35:
-        findings.append({"code": "LOW_SHARPNESS", "severity": "high" if sharpness < 15 else "medium", "evidence": {"sharpness_score": metrics["sharpness_score"], "target_min": 35}})
+        findings.append(
+            {
+                "code": "LOW_SHARPNESS",
+                "severity": "high" if sharpness < 15 else "medium",
+                "evidence": {
+                    "sharpness_score": metrics["sharpness_score"],
+                    "target_min": 35,
+                },
+            }
+        )
     if noise > 8:
-        findings.append({"code": "HIGH_NOISE", "severity": "medium", "evidence": {"noise_score": metrics["noise_score"], "target_max": 8}})
+        findings.append(
+            {
+                "code": "HIGH_NOISE",
+                "severity": "medium",
+                "evidence": {"noise_score": metrics["noise_score"], "target_max": 8},
+            }
+        )
     if clipped_shadows > 0.03:
-        findings.append({"code": "SHADOW_CLIPPING", "severity": "medium", "evidence": {"ratio": metrics["clipped_shadow_ratio"], "target_max": 0.03}})
+        findings.append(
+            {
+                "code": "SHADOW_CLIPPING",
+                "severity": "medium",
+                "evidence": {
+                    "ratio": metrics["clipped_shadow_ratio"],
+                    "target_max": 0.03,
+                },
+            }
+        )
     if clipped_highlights > 0.03:
-        findings.append({"code": "HIGHLIGHT_CLIPPING", "severity": "medium", "evidence": {"ratio": metrics["clipped_highlight_ratio"], "target_max": 0.03}})
-    return {"analyzer_version": ANALYZER_VERSION, "metrics": metrics, "findings": findings, "quality_score": quality_score}
+        findings.append(
+            {
+                "code": "HIGHLIGHT_CLIPPING",
+                "severity": "medium",
+                "evidence": {
+                    "ratio": metrics["clipped_highlight_ratio"],
+                    "target_max": 0.03,
+                },
+            }
+        )
+    return {
+        "analyzer_version": ANALYZER_VERSION,
+        "metrics": metrics,
+        "findings": findings,
+        "quality_score": quality_score,
+    }
 
 
 def analysis_hash(source_path: Path, options: dict[str, Any] | None = None) -> str:
@@ -92,11 +179,18 @@ def analysis_hash(source_path: Path, options: dict[str, Any] | None = None) -> s
         for chunk in iter(lambda: source.read(1024 * 1024), b""):
             digest.update(chunk)
     digest.update(ANALYZER_VERSION.encode())
-    digest.update(json.dumps(options or {}, sort_keys=True, separators=(",", ":")).encode())
+    digest.update(
+        json.dumps(options or {}, sort_keys=True, separators=(",", ":")).encode()
+    )
     return digest.hexdigest()[:32]
 
 
-def analyze_cached(image: Image.Image, source_path: Path, cache_dir: Path, options: dict[str, Any] | None = None) -> dict[str, Any]:
+def analyze_cached(
+    image: Image.Image,
+    source_path: Path,
+    cache_dir: Path,
+    options: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     cache_dir.mkdir(parents=True, exist_ok=True)
     digest = analysis_hash(source_path, options)
     cache_path = cache_dir / f"analysis-cache-{digest}.json"
@@ -111,5 +205,7 @@ def analyze_cached(image: Image.Image, source_path: Path, cache_dir: Path, optio
     report = analyze(image, options)
     report["cache_hit"] = False
     report["analysis_hash"] = digest
-    cache_path.write_text(json.dumps(report, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    cache_path.write_text(
+        json.dumps(report, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
+    )
     return report

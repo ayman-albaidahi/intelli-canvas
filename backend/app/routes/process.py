@@ -24,12 +24,18 @@ def _process_service() -> ProcessService:
 def _image_id_from_payload():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
-        return None, error_response(ErrorCodes.INVALID_REQUEST, "A JSON request body is required.", 400)
+        return None, error_response(
+            ErrorCodes.INVALID_REQUEST, "A JSON request body is required.", 400
+        )
     image_id = payload.get("image_id")
     if not isinstance(image_id, str) or not image_id.strip():
-        return None, error_response(ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400)
+        return None, error_response(
+            ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
+        )
     if get_session_service().get_session(image_id) is None:
-        return None, error_response(ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404)
+        return None, error_response(
+            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
+        )
     return image_id, None
 
 
@@ -51,7 +57,9 @@ def _run_registered(slug: str):
         return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
     except (OSError, ValueError):
         return error_response(
-            ErrorCodes.PROCESSING_FAILED, f"The {slug} operation could not be applied.", 400
+            ErrorCodes.PROCESSING_FAILED,
+            f"The {slug} operation could not be applied.",
+            400,
         )
     return jsonify(success=True, image=public_image(result))
 
@@ -102,27 +110,45 @@ def apply_adjustments():
         value = payload.get(name)
         if value is None:
             continue
-        values[name] = require_int(value, low=low, high=high, name=name, code=f"INVALID_{name.upper()}")
+        values[name] = require_int(
+            value, low=low, high=high, name=name, code=f"INVALID_{name.upper()}"
+        )
     for flag in ("grayscale", "negative"):
         value = payload.get(flag)
         if value is None:
             continue
         if not isinstance(value, bool):
-            return error_response(f"INVALID_{flag.upper()}", f"{flag.title()} must be a boolean.", 400)
+            return error_response(
+                f"INVALID_{flag.upper()}", f"{flag.title()} must be a boolean.", 400
+            )
         values[flag] = value
 
-    neutral = {"brightness": 100, "contrast": 100, "saturation": 100, "blur": 0, "sharpen": 0}
-    changed = [key for key, value in values.items() if key in neutral and value != neutral[key]]
+    neutral = {
+        "brightness": 100,
+        "contrast": 100,
+        "saturation": 100,
+        "blur": 0,
+        "sharpen": 0,
+    }
+    changed = [
+        key for key, value in values.items() if key in neutral and value != neutral[key]
+    ]
     changed += [flag for flag in ("grayscale", "negative") if values.get(flag)]
     if not changed:
-        return error_response(ErrorCodes.NO_ADJUSTMENTS, "At least one adjustment must change from its neutral value.", 400)
+        return error_response(
+            ErrorCodes.NO_ADJUSTMENTS,
+            "At least one adjustment must change from its neutral value.",
+            400,
+        )
 
     try:
         result = _process_service().adjustments(image_id, values)
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
     except (OSError, ValueError):
-        return error_response(ErrorCodes.ADJUSTMENTS_FAILED, "The adjustments could not be applied.", 400)
+        return error_response(
+            ErrorCodes.ADJUSTMENTS_FAILED, "The adjustments could not be applied.", 400
+        )
     return jsonify(success=True, image=public_image(result))
 
 
@@ -136,5 +162,9 @@ def image_histogram():
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
     except (OSError, ValueError):
-        return error_response(ErrorCodes.HISTOGRAM_FAILED, "The image histogram could not be computed.", 400)
+        return error_response(
+            ErrorCodes.HISTOGRAM_FAILED,
+            "The image histogram could not be computed.",
+            400,
+        )
     return jsonify(success=True, histogram=histogram)

@@ -82,7 +82,9 @@ def test_suggestions_propose_brightness_boost_with_reason_and_confidence():
 
     assert response.status_code == 200
     payload = response.get_json()
-    suggestion = next(s for s in payload["suggestions"] if s["type"] == "BRIGHTNESS_BOOST")
+    suggestion = next(
+        s for s in payload["suggestions"] if s["type"] == "BRIGHTNESS_BOOST"
+    )
     assert "السطوع" in suggestion["reason"]
     assert suggestion["evidence"]["brightness_mean"] < 70
     assert 0 <= suggestion["confidence"] <= 1

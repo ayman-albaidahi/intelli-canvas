@@ -8,7 +8,9 @@ from backend.app.services.file_service import FileStorageService
 
 def test_background_catalog_contains_category_and_thumbnail(tmp_path):
     app = create_app()
-    app.config["FILE_STORAGE_SERVICE"] = FileStorageService(storage_root=tmp_path / "storage")
+    app.config["FILE_STORAGE_SERVICE"] = FileStorageService(
+        storage_root=tmp_path / "storage"
+    )
     client = app.test_client()
     source = io.BytesIO()
     Image.new("RGB", (640, 360), (20, 90, 180)).save(source, format="JPEG")
@@ -24,7 +26,9 @@ def test_background_catalog_contains_category_and_thumbnail(tmp_path):
 
     catalog = client.get("/api/background/backgrounds/catalog")
     assert catalog.status_code == 200
-    item = next(entry for entry in catalog.get_json()["backgrounds"] if entry["name"] == name)
+    item = next(
+        entry for entry in catalog.get_json()["backgrounds"] if entry["name"] == name
+    )
     assert item["category"] == "product"
     assert item["width"] == 640
     assert item["height"] == 360
@@ -39,7 +43,9 @@ def test_background_catalog_contains_category_and_thumbnail(tmp_path):
 
 def test_background_upload_rejects_unknown_category(tmp_path):
     app = create_app()
-    app.config["FILE_STORAGE_SERVICE"] = FileStorageService(storage_root=tmp_path / "storage")
+    app.config["FILE_STORAGE_SERVICE"] = FileStorageService(
+        storage_root=tmp_path / "storage"
+    )
     client = app.test_client()
     source = io.BytesIO()
     Image.new("RGB", (4, 4), "white").save(source, format="PNG")

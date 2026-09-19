@@ -31,4 +31,8 @@ def test_grayscale_processes_current_session_with_pillow(tmp_path):
 
     content = client.get(f"/api/images/{image_id}/content")
     result = Image.open(io.BytesIO(content.data)).convert("RGB")
-    assert result.getpixel((0, 0))[0] == result.getpixel((0, 0))[1] == result.getpixel((0, 0))[2]
+    assert (
+        result.getpixel((0, 0))[0]
+        == result.getpixel((0, 0))[1]
+        == result.getpixel((0, 0))[2]
+    )

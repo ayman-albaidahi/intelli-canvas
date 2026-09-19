@@ -84,6 +84,7 @@ def test_unsafe_file_path_is_rejected():
     assert response.status_code == 400
     assert response.get_json()["error"]["code"] == "INVALID_FILE"
 
+
 def test_uploads_create_unique_image_ids_and_session_records():
     app = create_app()
     client = app.test_client()

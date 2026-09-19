@@ -68,7 +68,9 @@ class SmartCropService:
         finally:
             source.close()
 
-    def preview(self, image_id: str, aspect_ratio: str = "original") -> tuple[Path, dict[str, Any]]:
+    def preview(
+        self, image_id: str, aspect_ratio: str = "original"
+    ) -> tuple[Path, dict[str, Any]]:
         proposal = self.propose(image_id, aspect_ratio)
         source_path, source = self._source(image_id)
         output_name = self.storage_service.generate_safe_filename(
@@ -132,7 +134,10 @@ class SmartCropService:
             format="png",
             mime_type="image/png",
             path=output_path,
-            public_extras={**{k: v for k, v in proposal.items() if k not in ("width", "height")}, "filename": output_path.name},
+            public_extras={
+                **{k: v for k, v in proposal.items() if k not in ("width", "height")},
+                "filename": output_path.name,
+            },
         )
 
     @staticmethod
@@ -150,7 +155,12 @@ class SmartCropService:
             width, height = (float(part) for part in parts)
         except ValueError as exc:
             raise SmartCropError("aspect_ratio must use numeric W:H values.") from exc
-        if not math.isfinite(width) or not math.isfinite(height) or width <= 0 or height <= 0:
+        if (
+            not math.isfinite(width)
+            or not math.isfinite(height)
+            or width <= 0
+            or height <= 0
+        ):
             raise SmartCropError("aspect_ratio values must be positive finite numbers.")
         if width > 1000 or height > 1000:
             raise SmartCropError("aspect_ratio values are too large.")
@@ -172,7 +182,9 @@ class SmartCropService:
         try:
             path.relative_to(directory)
         except ValueError as exc:
-            raise FileValidationError("Image path escapes the storage directory.") from exc
+            raise FileValidationError(
+                "Image path escapes the storage directory."
+            ) from exc
         if not path.is_file():
             raise FileNotFoundError("Stored image was not found.")
         return path, Image.open(path).convert("RGB")
@@ -183,7 +195,9 @@ class SmartCropService:
         return x, y, x + int(proposal["width"]), y + int(proposal["height"])
 
     @staticmethod
-    def _find_box(image: Image.Image, ratio: tuple[float, float] | None) -> tuple[tuple[int, int, int, int], float]:
+    def _find_box(
+        image: Image.Image, ratio: tuple[float, float] | None
+    ) -> tuple[tuple[int, int, int, int], float]:
         width, height = image.size
         if ratio is None:
             return (0, 0, width, height), 1.0
@@ -200,7 +214,9 @@ class SmartCropService:
         scale = min(1.0, max_side / max(width, height))
         small_width = max(8, round(width * scale))
         small_height = max(8, round(height * scale))
-        small = np.asarray(image.resize((small_width, small_height), Image.Resampling.BILINEAR))
+        small = np.asarray(
+            image.resize((small_width, small_height), Image.Resampling.BILINEAR)
+        )
         gray = cv2.cvtColor(small, cv2.COLOR_RGB2GRAY)
         gx = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)
         gy = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
@@ -218,11 +234,18 @@ class SmartCropService:
         for top in range(0, small_height - small_crop_height + 1, step_y):
             for left in range(0, small_width - small_crop_width + 1, step_x):
                 bottom, right = top + small_crop_height, left + small_crop_width
-                total = integral[bottom, right] - integral[top, right] - integral[bottom, left] + integral[top, left]
+                total = (
+                    integral[bottom, right]
+                    - integral[top, right]
+                    - integral[bottom, left]
+                    + integral[top, left]
+                )
                 center_x = (left + small_crop_width / 2) / small_width
                 center_y = (top + small_crop_height / 2) / small_height
                 center_bias = 1.0 - 0.08 * math.hypot(center_x - 0.5, center_y - 0.5)
-                score = float(total / (small_crop_width * small_crop_height) * center_bias)
+                score = float(
+                    total / (small_crop_width * small_crop_height) * center_bias
+                )
                 if score > best[0]:
                     best = (score, left, top)
         left = min(width - crop_width, round(best[1] * width / small_width))

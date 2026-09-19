@@ -32,7 +32,9 @@ def test_operations_are_recorded_in_history():
     payload = history.get_json()["image"]
     assert payload["total"] == 3
     assert [entry["operation"] for entry in payload["entries"]] == [
-        "Upload", "Grayscale", "Brightness 130%",
+        "Upload",
+        "Grayscale",
+        "Brightness 130%",
     ]
     assert payload["entries"][2]["current"] is True
 

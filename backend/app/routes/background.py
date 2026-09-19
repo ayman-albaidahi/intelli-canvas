@@ -16,7 +16,6 @@ background_bp = Blueprint(
 )
 
 
-
 def _service() -> BackgroundService:
     return BackgroundService(
         get_session_service(),
@@ -27,12 +26,30 @@ def _service() -> BackgroundService:
 def _image_id_and_params():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
-        return None, None, error_response(ErrorCodes.INVALID_REQUEST, "A JSON request body is required.", 400)
+        return (
+            None,
+            None,
+            error_response(
+                ErrorCodes.INVALID_REQUEST, "A JSON request body is required.", 400
+            ),
+        )
     image_id = payload.get("image_id")
     if not isinstance(image_id, str) or not image_id.strip():
-        return None, None, error_response(ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400)
+        return (
+            None,
+            None,
+            error_response(
+                ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
+            ),
+        )
     if get_session_service().get_session(image_id) is None:
-        return None, None, error_response(ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404)
+        return (
+            None,
+            None,
+            error_response(
+                ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
+            ),
+        )
     try:
         params = BackgroundService.validate_params(payload)
     except BackgroundParamError as exc:
@@ -50,7 +67,9 @@ def mask_preview():
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
     except (OSError, ValueError):
-        return error_response(ErrorCodes.MASK_PREVIEW_FAILED, "The mask could not be generated.", 400)
+        return error_response(
+            ErrorCodes.MASK_PREVIEW_FAILED, "The mask could not be generated.", 400
+        )
     return send_file(io.BytesIO(png_bytes), mimetype="image/png")
 
 
@@ -64,7 +83,9 @@ def remove_background():
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
     except (OSError, ValueError):
-        return error_response(ErrorCodes.REMOVE_FAILED, "The background could not be removed.", 400)
+        return error_response(
+            ErrorCodes.REMOVE_FAILED, "The background could not be removed.", 400
+        )
     return jsonify(success=True, image=public_image(result))
 
 
@@ -85,7 +106,9 @@ def replace_background():
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
     except (OSError, ValueError):
-        return error_response(ErrorCodes.REPLACE_FAILED, "The background could not be replaced.", 400)
+        return error_response(
+            ErrorCodes.REPLACE_FAILED, "The background could not be replaced.", 400
+        )
     return jsonify(success=True, image=public_image(result))
 
 
@@ -105,7 +128,11 @@ def replace_background_preview():
     except FileNotFoundError as exc:
         return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
     except (OSError, ValueError):
-        return error_response(ErrorCodes.REPLACE_PREVIEW_FAILED, "The background preview could not be generated.", 400)
+        return error_response(
+            ErrorCodes.REPLACE_PREVIEW_FAILED,
+            "The background preview could not be generated.",
+            400,
+        )
     return send_file(io.BytesIO(png_bytes), mimetype="image/png")
 
 
@@ -133,7 +160,9 @@ def upload_background():
     uploaded_file = request.files.get("file")
     filename = uploaded_file.filename if uploaded_file else ""
     if not uploaded_file or not filename.strip():
-        return error_response(ErrorCodes.INVALID_REQUEST, "A background image file is required.", 400)
+        return error_response(
+            ErrorCodes.INVALID_REQUEST, "A background image file is required.", 400
+        )
     category = request.form.get("category", "general")
     try:
         name = _service().save_background(uploaded_file, filename, category=category)
