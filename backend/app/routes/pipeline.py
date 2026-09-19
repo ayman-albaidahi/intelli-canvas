@@ -39,7 +39,7 @@ def _execution(payload, persist):
             get_storage_service(),
         ).execute(image_id, pipeline, persist=persist)
         if not persist:
-            return send_file(result["path"], mimetype="image/png", max_age=0)
+            return send_file(result.path, mimetype="image/png", max_age=0)
         return jsonify(success=True, image=public_image(result))
     except PipelineParamError as exc:
         return error_response(ErrorCodes.INVALID_PIPELINE, str(exc), 400)

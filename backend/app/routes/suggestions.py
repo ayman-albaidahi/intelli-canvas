@@ -90,7 +90,7 @@ def preview_suggestion():
     try:
         PipelineService.validate_nodes(suggestion["pipeline"]["nodes"])
         result = PipelineExecutionService(get_session_service(), get_storage_service()).execute(image_id, suggestion["pipeline"], persist=False)
-        with result["path"].open("rb") as rendered:
+        with result.path.open("rb") as rendered:
             png_bytes = rendered.read()
     except PipelineParamError as exc:
         return error_response(ErrorCodes.INVALID_PIPELINE, str(exc), 400)
@@ -116,7 +116,7 @@ def apply_suggestion():
     try:
         PipelineService.validate_nodes(suggestion["pipeline"]["nodes"])
         result = PipelineExecutionService(get_session_service(), get_storage_service()).execute(image_id, suggestion["pipeline"], persist=True, metadata={"source": "smart-suggestion", "suggestion_id": sug_type, "suggestion_rule_version": suggestion.get("rule_version", ANALYZER_VERSION)})
-        node = {"operation": {"label": suggestion["suggested_operation"]["label"]}, "pipeline_hash": result["pipeline_hash"], "cache_hit": result["cache_hit"]}
+        node = {"operation": {"label": suggestion["suggested_operation"]["label"]}, "pipeline_hash": result.public_extras["pipeline_hash"], "cache_hit": result.public_extras["cache_hit"]}
     except PipelineParamError as exc:
         return error_response(ErrorCodes.INVALID_PIPELINE, str(exc), 400)
     except FileNotFoundError:

@@ -5,6 +5,7 @@ from typing import Any
 
 from PIL import Image
 
+from ..domain.results import OperationResult
 from .file_service import FileStorageService, FileValidationError
 from .image_session_service import ImageSessionService
 
@@ -67,13 +68,14 @@ class GeometryService:
             image_id, output_path.name, storage="processed",
             operation=label_Resize,
         )
-        return {
-            "image_id": image_id,
-            "width": output_width,
-            "height": output_height,
-            "format": output_path.suffix.lower().lstrip("."),
-            "mime_type": self._mime_type(output_path),
-        }
+        return OperationResult(
+            image_id=image_id,
+            width=output_width,
+            height=output_height,
+            format=output_path.suffix.lower().lstrip("."),
+            mime_type=self._mime_type(output_path),
+            path=output_path,
+        )
 
     def rotate(self, image_id: str, angle: int) -> dict[str, Any]:
         if angle not in {90, -90, 180}:
@@ -219,14 +221,15 @@ class GeometryService:
         image_id: str,
         output_path: Path,
         dimensions: tuple[int, int],
-    ) -> dict[str, Any]:
-        return {
-            "image_id": image_id,
-            "width": dimensions[0],
-            "height": dimensions[1],
-            "format": output_path.suffix.lower().lstrip("."),
-            "mime_type": self._mime_type(output_path),
-        }
+    ) -> OperationResult:
+        return OperationResult(
+            image_id=image_id,
+            width=dimensions[0],
+            height=dimensions[1],
+            format=output_path.suffix.lower().lstrip("."),
+            mime_type=self._mime_type(output_path),
+            path=output_path,
+        )
 
     def _mime_type(self, output_path: Path) -> str:
         return {
