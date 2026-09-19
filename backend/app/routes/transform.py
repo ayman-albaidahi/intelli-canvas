@@ -15,6 +15,7 @@ from ..services.file_service import (  # noqa: F401
 from ..services.geometry_service import GeometryService
 from ..services.smart_crop_service import SmartCropError, SmartCropService
 from ..validation import require_choice, require_dict, require_int, require_str
+from ..views import public_image
 
 transform_bp = Blueprint(
     "transform",
@@ -64,7 +65,7 @@ def crop_image():
     except (OSError, ValueError):
         return error_response(ErrorCodes.CROP_FAILED, "The image could not be cropped.", 400)
 
-    return jsonify(success=True, image=result)
+    return jsonify(success=True, image=public_image(result))
 
 
 @transform_bp.post("/resize")
@@ -104,7 +105,7 @@ def resize_image():
     except (OSError, ValueError):
         return error_response(ErrorCodes.RESIZE_FAILED, "The image could not be resized.", 400)
 
-    return jsonify(success=True, image=result)
+    return jsonify(success=True, image=public_image(result))
 
 
 @transform_bp.post("/rotate")
@@ -122,7 +123,7 @@ def rotate_image():
     except (OSError, ValueError):
         return error_response(ErrorCodes.ROTATE_FAILED, "The image could not be rotated.", 400)
 
-    return jsonify(success=True, image=result)
+    return jsonify(success=True, image=public_image(result))
 
 
 @transform_bp.post("/flip")
@@ -140,7 +141,7 @@ def flip_image():
     except (OSError, ValueError):
         return error_response(ErrorCodes.FLIP_FAILED, "The image could not be flipped.", 400)
 
-    return jsonify(success=True, image=result)
+    return jsonify(success=True, image=public_image(result))
 
 
 @transform_bp.post("/smart-crop/preview")
@@ -184,4 +185,4 @@ def smart_crop_apply():
     except (OSError, ValueError):
         return error_response(ErrorCodes.SMART_CROP_FAILED, "The smart crop could not be applied.", 400)
 
-    return jsonify(success=True, image=result)
+    return jsonify(success=True, image=public_image(result))

@@ -20,6 +20,7 @@ from ..services.file_service import (  # noqa: F401
 from ..services.image_io_service import ImageIOService
 from ..services.image_upload_service import ImageUploadService
 from ..validation import require_int
+from ..views import public_image
 
 images_bp = Blueprint(
     "images",
@@ -92,13 +93,7 @@ def convert_image():
 
     return jsonify(
         success=True,
-        image={
-            "image_id": result["image_id"],
-            "width": result["width"],
-            "height": result["height"],
-            "format": result["format"],
-            "mime_type": result["mime_type"],
-        },
+        image=public_image(result),
     )
 
 
@@ -180,7 +175,7 @@ def export_image():
         if payload.get("composite_layers"):
             composite_path = get_layer_compositor().compose(
                 image_id, persist=False
-            )["path"]
+            ).path
         result = ImageIOService(
             get_session_service(), get_storage_service(sys.modules[__name__])
         ).convert(image_id, target_format, quality=quality, width=width, height=height, source_path=composite_path)
@@ -192,8 +187,8 @@ def export_image():
         )
 
     return send_file(
-        result["path"],
-        mimetype=result["mime_type"],
+        result.path,
+        mimetype=result.mime_type,
         as_attachment=True,
-        download_name=result["filename"],
+        download_name=result.path.name,
     )
