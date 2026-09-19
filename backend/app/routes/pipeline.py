@@ -1,23 +1,26 @@
-from flask import Blueprint, current_app, jsonify, request, send_file
+from flask import Blueprint, jsonify, request, send_file
 
+from ..dependencies import get_session_service, get_storage_service
+from ..error_codes import ErrorCodes
 from ..errors import error_response
 from ..services.pipeline_execution_service import PipelineExecutionService
 from ..services.pipeline_service import PipelineParamError, PipelineService
+from ..views import public_image
 
 pipeline_bp = Blueprint("pipeline", __name__, url_prefix="/api/pipeline")
 
 
 def _service() -> PipelineService:
-    return PipelineService(current_app.config["IMAGE_SESSION_SERVICE"])
+    return PipelineService(get_session_service())
 
 
 def _image_id(payload=None):
     payload = payload if isinstance(payload, dict) else request.get_json(silent=True) or {}
     image_id = payload.get("image_id")
     if not isinstance(image_id, str) or not image_id.strip():
-        return None, error_response("INVALID_IMAGE_ID", "A valid image_id is required.", 400)
-    if current_app.config["IMAGE_SESSION_SERVICE"].get_session(image_id) is None:
-        return None, error_response("IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404)
+        return None, error_response(ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400)
+    if get_session_service().get_session(image_id) is None:
+        return None, error_response(ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404)
     return image_id, None
 
 
@@ -32,16 +35,16 @@ def _execution(payload, persist):
     try:
         pipeline = payload if isinstance(payload.get("nodes"), list) else _service().get(image_id)
         result = PipelineExecutionService(
-            current_app.config["IMAGE_SESSION_SERVICE"],
-            current_app.config["FILE_STORAGE_SERVICE"],
+            get_session_service(),
+            get_storage_service(),
         ).execute(image_id, pipeline, persist=persist)
         if not persist:
             return send_file(result["path"], mimetype="image/png", max_age=0)
-        return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})
+        return jsonify(success=True, image=public_image(result))
     except PipelineParamError as exc:
-        return error_response("INVALID_PIPELINE", str(exc), 400)
+        return error_response(ErrorCodes.INVALID_PIPELINE, str(exc), 400)
     except (FileNotFoundError, ValueError, OSError) as exc:
-        return error_response("PIPELINE_EXECUTION_FAILED", str(exc), 400)
+        return error_response(ErrorCodes.PIPELINE_EXECUTION_FAILED, str(exc), 400)
 
 
 def _handle(action):
@@ -52,11 +55,11 @@ def _handle(action):
     try:
         return _response(action(image_id, payload))
     except PipelineParamError as exc:
-        return error_response("INVALID_PIPELINE", str(exc), 400)
+        return error_response(ErrorCodes.INVALID_PIPELINE, str(exc), 400)
     except KeyError as exc:
-        return error_response("PIPELINE_NODE_NOT_FOUND", str(exc), 404)
+        return error_response(ErrorCodes.PIPELINE_NODE_NOT_FOUND, str(exc), 404)
     except FileNotFoundError as exc:
-        return error_response("IMAGE_SESSION_NOT_FOUND", str(exc), 404)
+        return error_response(ErrorCodes.IMAGE_SESSION_NOT_FOUND, str(exc), 404)
 
 
 @pipeline_bp.get("")
@@ -67,7 +70,7 @@ def get_pipeline():
     try:
         return _response(_service().get(image_id))
     except FileNotFoundError as exc:
-        return error_response("IMAGE_SESSION_NOT_FOUND", str(exc), 404)
+        return error_response(ErrorCodes.IMAGE_SESSION_NOT_FOUND, str(exc), 404)
 
 
 @pipeline_bp.put("")

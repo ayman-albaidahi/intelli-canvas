@@ -5,6 +5,8 @@ import time
 import uuid
 from typing import Any
 
+from ..errors import InvalidRequestError
+from ..validation import require_int, require_number, require_odd_int
 from .image_session_service import ImageSessionService
 from .smart_crop_service import SmartCropError, SmartCropService
 
@@ -19,6 +21,19 @@ MAX_NODES = 50
 
 class PipelineParamError(ValueError):
     pass
+
+
+def _param(value: Any, validator, **kwargs) -> Any:
+    """Run a shared validator but report the failure as a pipeline error.
+
+    The request-level validators raise :class:`~backend.app.errors.InvalidRequestError`;
+    pipeline nodes are validated through this service's own contract so callers
+    keep seeing ``INVALID_PIPELINE``.
+    """
+    try:
+        return validator(value, **kwargs)
+    except InvalidRequestError as exc:
+        raise PipelineParamError(exc.message) from exc
 
 
 class PipelineService:
@@ -125,20 +140,16 @@ class PipelineService:
             except SmartCropError as exc:
                 raise PipelineParamError(str(exc)) from exc
         if operation in {"sobel", "median-filter", "morphology"}:
-            ksize = parameters.get("ksize", 3)
-            if isinstance(ksize, bool) or not isinstance(ksize, int) or not 1 <= ksize <= 15 or not ksize % 2:
-                raise PipelineParamError("ksize must be an odd integer from 1 to 15.")
+            _param(parameters.get("ksize", 3), require_odd_int, low=1, high=15, name="ksize")
         if operation == "morphology" and parameters.get("operation", "open") not in {"erode", "dilate", "open", "close"}:
             raise PipelineParamError("morphology operation is invalid.")
+        # Brightness/contrast/saturation share one contract with the direct
+        # /api/process endpoints: 100 is neutral, 0 is the zero point, 200
+        # doubles the effect. The renderer divides by 100, so values outside
+        # this range have no meaningful result.
         if operation in {"brightness", "contrast", "saturation"}:
-            value = parameters.get("value", 100)
-            if isinstance(value, bool) or not isinstance(value, (int, float)) or not -1000 <= value <= 1000:
-                raise PipelineParamError("value must be a number from -1000 to 1000.")
+            _param(parameters.get("value", 100), require_number, low=0, high=200, name="value")
         if operation == "gamma":
-            value = parameters.get("value", 1)
-            if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0.1 <= value <= 5:
-                raise PipelineParamError("gamma value must be from 0.1 to 5.")
+            _param(parameters.get("value", 1), require_number, low=0.1, high=5, name="gamma value")
         if operation == "threshold":
-            value = parameters.get("value", 128)
-            if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 255:
-                raise PipelineParamError("threshold value must be an integer from 0 to 255.")
+            _param(parameters.get("value", 128), require_int, low=0, high=255, name="threshold value")
