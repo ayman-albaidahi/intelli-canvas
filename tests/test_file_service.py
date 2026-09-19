@@ -9,7 +9,9 @@ from backend.app.services.file_service import FileStorageService, FileValidation
 
 @pytest.fixture
 def storage_service(tmp_path):
-    return FileStorageService(storage_root=tmp_path / "storage", max_file_size=10 * 1024 * 1024)
+    return FileStorageService(
+        storage_root=tmp_path / "storage", max_file_size=10 * 1024 * 1024
+    )
 
 
 def _png_bytes(color=(200, 100, 50), size=(2, 2)):
@@ -19,7 +21,9 @@ def _png_bytes(color=(200, 100, 50), size=(2, 2)):
     return buffer.getvalue()
 
 
-@pytest.mark.parametrize("filename", ["test.png", "photo.jpg", "image.jpeg", "sample.webp", "image.bmp"])
+@pytest.mark.parametrize(
+    "filename", ["test.png", "photo.jpg", "image.jpeg", "sample.webp", "image.bmp"]
+)
 def test_valid_image_extensions_are_accepted(storage_service, filename):
     file_obj = io.BytesIO(_png_bytes())
 
@@ -58,7 +62,9 @@ def test_oversized_file_is_rejected(storage_service):
     file_obj = io.BytesIO(b"x" * (storage_service.max_file_size + 1))
 
     with pytest.raises(FileValidationError):
-        storage_service.validate_file(file_obj, "large.png", max_size=storage_service.max_file_size)
+        storage_service.validate_file(
+            file_obj, "large.png", max_size=storage_service.max_file_size
+        )
 
 
 def test_empty_file_is_rejected(storage_service):
@@ -81,7 +87,9 @@ def test_empty_file_is_rejected(storage_service):
     ],
 )
 def test_unsafe_filenames_are_sanitized(storage_service, filename):
-    safe_name = storage_service.generate_safe_filename(filename, directory=storage_service.uploads_dir)
+    safe_name = storage_service.generate_safe_filename(
+        filename, directory=storage_service.uploads_dir
+    )
 
     assert safe_name
     assert ".." not in safe_name

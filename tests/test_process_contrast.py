@@ -23,7 +23,9 @@ def test_contrast_processes_image_in_python():
     client = create_app().test_client()
     image_id = _upload(client)
 
-    response = client.post("/api/process/contrast", json={"image_id": image_id, "value": 200})
+    response = client.post(
+        "/api/process/contrast", json={"image_id": image_id, "value": 200}
+    )
 
     assert response.status_code == 200
     payload = response.get_json()
@@ -41,7 +43,9 @@ def test_contrast_rejects_out_of_range_value():
     client = create_app().test_client()
     image_id = _upload(client)
 
-    response = client.post("/api/process/contrast", json={"image_id": image_id, "value": -1})
+    response = client.post(
+        "/api/process/contrast", json={"image_id": image_id, "value": -1}
+    )
 
     assert response.status_code == 400
     assert response.get_json()["error"]["code"] == "INVALID_CONTRAST"

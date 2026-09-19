@@ -43,7 +43,11 @@ class BackgroundParamError(ValueError):
 class BackgroundService:
     """Color-mask background removal and replacement on the session image."""
 
-    def __init__(self, session_service: ImageSessionService, storage_service: FileStorageService | None = None):
+    def __init__(
+        self,
+        session_service: ImageSessionService,
+        storage_service: FileStorageService | None = None,
+    ):
         self.session_service = session_service
         self.storage_service = storage_service or FileStorageService()
         self.image_io = ImageIOService(session_service, self.storage_service)
@@ -63,8 +67,11 @@ class BackgroundService:
                 return default
             label = label or name
             try:
-                return require_number(value, low=low, high=high, name=label) if numeric \
+                return (
+                    require_number(value, low=low, high=high, name=label)
+                    if numeric
                     else require_int(value, low=low, high=high, name=label)
+                )
             except InvalidRequestError as exc:
                 raise BackgroundParamError(str(exc)) from exc
 
@@ -75,16 +82,24 @@ class BackgroundService:
         if not isinstance(invert, bool):
             raise BackgroundParamError("invert must be a boolean.")
         background_blur = bounded("background_blur", 0, MAX_BACKGROUND_BLUR)
-        background_scale = bounded("background_scale", 0.1, MAX_BACKGROUND_SCALE, numeric=True)
-        background_x = bounded("background_x", -MAX_BACKGROUND_OFFSET, MAX_BACKGROUND_OFFSET)
-        background_y = bounded("background_y", -MAX_BACKGROUND_OFFSET, MAX_BACKGROUND_OFFSET)
+        background_scale = bounded(
+            "background_scale", 0.1, MAX_BACKGROUND_SCALE, numeric=True
+        )
+        background_x = bounded(
+            "background_x", -MAX_BACKGROUND_OFFSET, MAX_BACKGROUND_OFFSET
+        )
+        background_y = bounded(
+            "background_y", -MAX_BACKGROUND_OFFSET, MAX_BACKGROUND_OFFSET
+        )
         shadow = payload.get("shadow", False)
         if not isinstance(shadow, bool):
             raise BackgroundParamError("shadow must be a boolean.")
         shadow_opacity = bounded("shadow_opacity", 0, 1, numeric=True)
         shadow_blur = bounded("shadow_blur", 0, MAX_BACKGROUND_BLUR)
         shadow_offset_y = bounded(
-            "shadow_offset_y", -MAX_BACKGROUND_OFFSET, MAX_BACKGROUND_OFFSET,
+            "shadow_offset_y",
+            -MAX_BACKGROUND_OFFSET,
+            MAX_BACKGROUND_OFFSET,
             label="shadow_offset_y",
         )
 
@@ -107,11 +122,13 @@ class BackgroundService:
     def build_mask(self, image: Image.Image, params: dict[str, Any]) -> Image.Image:
         """L-mode mask: 255 = keep, 0 = remove. Chebyshev channel distance."""
         key = params["color"]
-        key_rgb = tuple(int(key[i:i + 2], 16) for i in (1, 3, 5))
+        key_rgb = tuple(int(key[i : i + 2], 16) for i in (1, 3, 5))
         rgb = image.convert("RGB")
         solid = Image.new("RGB", rgb.size, key_rgb)
         diff = ImageChops.difference(rgb, solid)
-        distance = ImageChops.lighter(ImageChops.lighter(diff.split()[0], diff.split()[1]), diff.split()[2])
+        distance = ImageChops.lighter(
+            ImageChops.lighter(diff.split()[0], diff.split()[1]), diff.split()[2]
+        )
         threshold = params["tolerance"] * 255 // 100
         mask = distance.point(lambda value: 255 if value > threshold else 0)
         mask = mask.convert("L")
@@ -129,11 +146,19 @@ class BackgroundService:
         source_path, _ = self.image_io._resolve_source(image_id)
         return Image.open(source_path)
 
-    def _finish(self, image_id: str, output_path: Path, operation: str, extra: dict[str, Any]) -> dict[str, Any]:
+    def _finish(
+        self, image_id: str, output_path: Path, operation: str, extra: dict[str, Any]
+    ) -> dict[str, Any]:
         with Image.open(output_path) as image:
             width, height = image.size
-        label = "Remove background" if operation == "remove-background" else "Replace background"
-        self.session_service.update_current_image(image_id, output_path.name, "processed", operation=label)
+        label = (
+            "Remove background"
+            if operation == "remove-background"
+            else "Replace background"
+        )
+        self.session_service.update_current_image(
+            image_id, output_path.name, "processed", operation=label
+        )
         return OperationResult(
             image_id=image_id,
             width=width,
@@ -162,7 +187,9 @@ class BackgroundService:
             mask.save(buffer, format="PNG")
             return buffer.getvalue()
 
-    def remove_background(self, image_id: str, params: dict[str, Any]) -> dict[str, Any]:
+    def remove_background(
+        self, image_id: str, params: dict[str, Any]
+    ) -> dict[str, Any]:
         output_path = self._new_output_path(image_id, "no-background")
         try:
             with self._session_image(image_id) as image:
@@ -174,12 +201,19 @@ class BackgroundService:
             if output_path.exists():
                 output_path.unlink()
             raise
-        return self._finish(image_id, output_path, "remove-background", {
-            "color": params["color"],
-            "tolerance": params["tolerance"],
-        })
+        return self._finish(
+            image_id,
+            output_path,
+            "remove-background",
+            {
+                "color": params["color"],
+                "tolerance": params["tolerance"],
+            },
+        )
 
-    def replace_background(self, image_id: str, params: dict[str, Any], background: dict[str, Any]) -> dict[str, Any]:
+    def replace_background(
+        self, image_id: str, params: dict[str, Any], background: dict[str, Any]
+    ) -> dict[str, Any]:
         output_path = self._new_output_path(image_id, "replaced-background")
         try:
             with self._session_image(image_id) as image:
@@ -191,13 +225,20 @@ class BackgroundService:
             if output_path.exists():
                 output_path.unlink()
             raise
-        return self._finish(image_id, output_path, "replace-background", {
-            "background": background.get("color") or background.get("name"),
-            "background_blur": params["background_blur"],
-            "shadow": params["shadow"],
-        })
+        return self._finish(
+            image_id,
+            output_path,
+            "replace-background",
+            {
+                "background": background.get("color") or background.get("name"),
+                "background_blur": params["background_blur"],
+                "shadow": params["shadow"],
+            },
+        )
 
-    def preview_replace(self, image_id: str, params: dict[str, Any], background: dict[str, Any]) -> bytes:
+    def preview_replace(
+        self, image_id: str, params: dict[str, Any], background: dict[str, Any]
+    ) -> bytes:
         with self._session_image(image_id) as image:
             mask = self.build_mask(image, params)
             result = self._compose_replacement(image, mask, params, background)
@@ -219,7 +260,13 @@ class BackgroundService:
         else:
             with Image.open(background["path"]) as library_image:
                 source = library_image.convert("RGB")
-                scaled = ImageOps.contain(source, (round(size[0] * params["background_scale"]), round(size[1] * params["background_scale"])))
+                scaled = ImageOps.contain(
+                    source,
+                    (
+                        round(size[0] * params["background_scale"]),
+                        round(size[1] * params["background_scale"]),
+                    ),
+                )
                 backdrop = Image.new("RGB", size, (0, 0, 0))
                 left = (size[0] - scaled.width) // 2 + params["background_x"]
                 top = (size[1] - scaled.height) // 2 + params["background_y"]
@@ -227,7 +274,9 @@ class BackgroundService:
                 scaled.close()
                 source.close()
         if params["background_blur"]:
-            backdrop = backdrop.filter(ImageFilter.GaussianBlur(params["background_blur"]))
+            backdrop = backdrop.filter(
+                ImageFilter.GaussianBlur(params["background_blur"])
+            )
         result = backdrop.convert("RGBA")
         foreground = image.convert("RGBA")
         if params["shadow"]:
@@ -238,7 +287,11 @@ class BackgroundService:
                 shadow_alpha.close()
                 shadow_alpha = shifted
             shadow = Image.new("RGBA", size, (0, 0, 0, 0))
-            shadow.putalpha(shadow_alpha.point(lambda value: round(value * params["shadow_opacity"])))
+            shadow.putalpha(
+                shadow_alpha.point(
+                    lambda value: round(value * params["shadow_opacity"])
+                )
+            )
             result.alpha_composite(shadow)
             shadow.close()
             shadow_alpha.close()
@@ -250,11 +303,15 @@ class BackgroundService:
         color = payload.get("background_color")
         name = payload.get("background_name")
         if color and name:
-            raise BackgroundParamError("Choose either a solid color or a library background, not both.")
+            raise BackgroundParamError(
+                "Choose either a solid color or a library background, not both."
+            )
         if color:
             if not isinstance(color, str) or not HEX_COLOR.match(color):
-                raise BackgroundParamError("background_color must be a hex value like #ffffff.")
-            return {"color": tuple(int(color[i:i + 2], 16) for i in (1, 3, 5))}
+                raise BackgroundParamError(
+                    "background_color must be a hex value like #ffffff."
+                )
+            return {"color": tuple(int(color[i : i + 2], 16) for i in (1, 3, 5))}
         if name:
             if not isinstance(name, str) or "/" in name or "\\" in name or ".." in name:
                 raise BackgroundParamError("background_name is invalid.")
@@ -267,7 +324,8 @@ class BackgroundService:
     def list_backgrounds(self) -> list[str]:
         directory = self.storage_service.backgrounds_dir
         return sorted(
-            p.name for p in directory.iterdir()
+            p.name
+            for p in directory.iterdir()
             if p.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
         )
 
@@ -284,7 +342,9 @@ class BackgroundService:
 
     def _write_manifest(self, manifest: dict[str, dict[str, Any]]) -> None:
         temporary = self._manifest_path.with_suffix(".tmp")
-        temporary.write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
+        temporary.write_text(
+            json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8"
+        )
         temporary.replace(self._manifest_path)
 
     def list_background_catalog(self) -> list[dict[str, Any]]:
@@ -296,39 +356,59 @@ class BackgroundService:
                 width, height = image.size
                 mime_type = Image.MIME.get(image.format or "PNG", "image/png")
             metadata = manifest.get(name, {})
-            catalog.append({
-                "name": name,
-                "label": metadata.get("label", Path(name).stem.replace("_", " ").title()),
-                "category": metadata.get("category", "general"),
-                "width": width,
-                "height": height,
-                "mime_type": mime_type,
-                "thumbnail_url": f"/api/background/backgrounds/{name}/thumbnail",
-            })
-        return sorted(catalog, key=lambda item: (item["category"], item["label"].lower()))
+            catalog.append(
+                {
+                    "name": name,
+                    "label": metadata.get(
+                        "label", Path(name).stem.replace("_", " ").title()
+                    ),
+                    "category": metadata.get("category", "general"),
+                    "width": width,
+                    "height": height,
+                    "mime_type": mime_type,
+                    "thumbnail_url": f"/api/background/backgrounds/{name}/thumbnail",
+                }
+            )
+        return sorted(
+            catalog, key=lambda item: (item["category"], item["label"].lower())
+        )
 
     def thumbnail_path(self, name: str) -> Path:
-        if not isinstance(name, str) or not name or "/" in name or "\\" in name or ".." in name:
+        if (
+            not isinstance(name, str)
+            or not name
+            or "/" in name
+            or "\\" in name
+            or ".." in name
+        ):
             raise FileValidationError("Background name is invalid.")
         source = self.storage_service.backgrounds_dir / name
         if not source.is_file():
             raise FileValidationError("Library background was not found.")
-        thumbnail_dir = self.storage_service.resolve_storage_dir("background-thumbnails")
+        thumbnail_dir = self.storage_service.resolve_storage_dir(
+            "background-thumbnails"
+        )
         thumbnail = thumbnail_dir / f"{Path(name).stem}.jpg"
         if not thumbnail.exists() or thumbnail.stat().st_mtime < source.stat().st_mtime:
             with Image.open(source) as image:
                 preview = ImageOps.contain(image.convert("RGB"), (320, 200))
                 canvas = Image.new("RGB", (320, 200), "#eeeeee")
-                canvas.paste(preview, ((320 - preview.width) // 2, (200 - preview.height) // 2))
+                canvas.paste(
+                    preview, ((320 - preview.width) // 2, (200 - preview.height) // 2)
+                )
                 canvas.save(thumbnail, format="JPEG", quality=85, optimize=True)
                 preview.close()
                 canvas.close()
         return thumbnail
 
-    def save_background(self, file_obj: Any, filename: str, category: str = "general") -> str:
+    def save_background(
+        self, file_obj: Any, filename: str, category: str = "general"
+    ) -> str:
         if not isinstance(category, str) or category not in BACKGROUND_CATEGORIES:
             raise BackgroundParamError("category is not supported.")
-        path = self.storage_service.save_file(file_obj, filename, destination="backgrounds")
+        path = self.storage_service.save_file(
+            file_obj, filename, destination="backgrounds"
+        )
         metadata = {
             "label": Path(path.name).stem.replace("_", " ").title(),
             "category": category,

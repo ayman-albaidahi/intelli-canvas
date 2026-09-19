@@ -26,9 +26,13 @@ def require_int(
     if isinstance(value, bool) or not isinstance(value, int):
         raise InvalidRequestError(f"{name} must be an integer.", code=code)
     if low is not None and value < low:
-        raise InvalidRequestError(f"{name} must be an integer from {low} to {high}.", code=code)
+        raise InvalidRequestError(
+            f"{name} must be an integer from {low} to {high}.", code=code
+        )
     if high is not None and value > high:
-        raise InvalidRequestError(f"{name} must be an integer from {low} to {high}.", code=code)
+        raise InvalidRequestError(
+            f"{name} must be an integer from {low} to {high}.", code=code
+        )
     return value
 
 
@@ -44,14 +48,23 @@ def require_number(
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise InvalidRequestError(f"{name} must be a number.", code=code)
     if low is not None and value < low:
-        raise InvalidRequestError(f"{name} must be a number from {low} to {high}.", code=code)
+        raise InvalidRequestError(
+            f"{name} must be a number from {low} to {high}.", code=code
+        )
     if high is not None and value > high:
-        raise InvalidRequestError(f"{name} must be a number from {low} to {high}.", code=code)
+        raise InvalidRequestError(
+            f"{name} must be a number from {low} to {high}.", code=code
+        )
     return value
 
 
-def require_str(value: Any, *, allow_empty: bool = False, name: str = "value",
-                empty_code: str | None = None) -> str:
+def require_str(
+    value: Any,
+    *,
+    allow_empty: bool = False,
+    name: str = "value",
+    empty_code: str | None = None,
+) -> str:
     """Return ``value`` as a non-empty string unless emptiness is allowed.
 
     ``empty_code`` overrides the error code reported for an empty string, so
@@ -65,8 +78,9 @@ def require_str(value: Any, *, allow_empty: bool = False, name: str = "value",
     return value
 
 
-def require_choice(value: Any, choices: Sequence[Any], *, name: str = "value",
-                    code: str | None = None) -> Any:
+def require_choice(
+    value: Any, choices: Sequence[Any], *, name: str = "value", code: str | None = None
+) -> Any:
     """Return ``value`` only if it is one of ``choices``."""
     if value not in choices:
         allowed = ", ".join(str(choice) for choice in choices)

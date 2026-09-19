@@ -25,20 +25,29 @@ transform_bp = Blueprint(
 
 
 def _image_id_from_payload(payload):
-    image_id = require_str(payload.get("image_id"), name="image_id", empty_code="INVALID_IMAGE_ID")
+    image_id = require_str(
+        payload.get("image_id"), name="image_id", empty_code="INVALID_IMAGE_ID"
+    )
     if get_session_service().get_session(image_id) is None:
-        return None, error_response(ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404)
+        return None, error_response(
+            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
+        )
     return image_id, None
 
 
 def _smart_crop_payload():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
-        return None, error_response(ErrorCodes.INVALID_REQUEST, "A JSON request body is required.", 400)
+        return None, error_response(
+            ErrorCodes.INVALID_REQUEST, "A JSON request body is required.", 400
+        )
     image_id, error = _image_id_from_payload(payload)
     if error:
         return None, error
-    return {"image_id": image_id, "aspect_ratio": payload.get("aspect_ratio", "original")}, None
+    return {
+        "image_id": image_id,
+        "aspect_ratio": payload.get("aspect_ratio", "original"),
+    }, None
 
 
 def _geometry_service() -> GeometryService:
@@ -63,7 +72,9 @@ def crop_image():
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
     except (OSError, ValueError):
-        return error_response(ErrorCodes.CROP_FAILED, "The image could not be cropped.", 400)
+        return error_response(
+            ErrorCodes.CROP_FAILED, "The image could not be cropped.", 400
+        )
 
     return jsonify(success=True, image=public_image(result))
 
@@ -71,27 +82,37 @@ def crop_image():
 @transform_bp.post("/resize")
 def resize_image():
     payload = require_dict(request.get_json(silent=True), name="request body")
-    image_id = require_str(payload.get("image_id"), name="image_id", empty_code="INVALID_IMAGE_ID")
+    image_id = require_str(
+        payload.get("image_id"), name="image_id", empty_code="INVALID_IMAGE_ID"
+    )
     width = payload.get("width")
     height = payload.get("height")
     lock_aspect_ratio = payload.get("lock_aspect_ratio", True)
 
     if width is None and height is None:
-        return error_response(ErrorCodes.INVALID_DIMENSIONS, "Width or height is required.", 400)
+        return error_response(
+            ErrorCodes.INVALID_DIMENSIONS, "Width or height is required.", 400
+        )
     if width is not None:
         width = require_int(width, low=1, name="width", code="INVALID_DIMENSIONS")
     if height is not None:
         height = require_int(height, low=1, name="height", code="INVALID_DIMENSIONS")
     if not isinstance(lock_aspect_ratio, bool):
-        return error_response(ErrorCodes.INVALID_ASPECT_RATIO, "lock_aspect_ratio must be a boolean.", 400)
+        return error_response(
+            ErrorCodes.INVALID_ASPECT_RATIO, "lock_aspect_ratio must be a boolean.", 400
+        )
     if not lock_aspect_ratio and (width is None or height is None):
         return error_response(
-            ErrorCodes.INVALID_DIMENSIONS, "Width and height are required when aspect ratio is unlocked.", 400
+            ErrorCodes.INVALID_DIMENSIONS,
+            "Width and height are required when aspect ratio is unlocked.",
+            400,
         )
 
     session_service = get_session_service()
     if session_service.get_session(image_id) is None:
-        return error_response(ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404)
+        return error_response(
+            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
+        )
 
     try:
         result = _geometry_service().resize(
@@ -103,7 +124,9 @@ def resize_image():
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
     except (OSError, ValueError):
-        return error_response(ErrorCodes.RESIZE_FAILED, "The image could not be resized.", 400)
+        return error_response(
+            ErrorCodes.RESIZE_FAILED, "The image could not be resized.", 400
+        )
 
     return jsonify(success=True, image=public_image(result))
 
@@ -114,14 +137,18 @@ def rotate_image():
     image_id, error = _image_id_from_payload(payload)
     if error:
         return error
-    angle = require_choice(payload.get("angle"), (90, -90, 180), name="angle", code="INVALID_ROTATION")
+    angle = require_choice(
+        payload.get("angle"), (90, -90, 180), name="angle", code="INVALID_ROTATION"
+    )
 
     try:
         result = _geometry_service().rotate(image_id, angle)
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
     except (OSError, ValueError):
-        return error_response(ErrorCodes.ROTATE_FAILED, "The image could not be rotated.", 400)
+        return error_response(
+            ErrorCodes.ROTATE_FAILED, "The image could not be rotated.", 400
+        )
 
     return jsonify(success=True, image=public_image(result))
 
@@ -132,14 +159,21 @@ def flip_image():
     image_id, error = _image_id_from_payload(payload)
     if error:
         return error
-    direction = require_choice(payload.get("direction"), ("horizontal", "vertical"), name="direction", code="INVALID_FLIP_DIRECTION")
+    direction = require_choice(
+        payload.get("direction"),
+        ("horizontal", "vertical"),
+        name="direction",
+        code="INVALID_FLIP_DIRECTION",
+    )
 
     try:
         result = _geometry_service().flip(image_id, direction)
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
     except (OSError, ValueError):
-        return error_response(ErrorCodes.FLIP_FAILED, "The image could not be flipped.", 400)
+        return error_response(
+            ErrorCodes.FLIP_FAILED, "The image could not be flipped.", 400
+        )
 
     return jsonify(success=True, image=public_image(result))
 
@@ -158,7 +192,11 @@ def smart_crop_preview():
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
     except (OSError, ValueError):
-        return error_response(ErrorCodes.SMART_CROP_FAILED, "The smart crop preview could not be generated.", 400)
+        return error_response(
+            ErrorCodes.SMART_CROP_FAILED,
+            "The smart crop preview could not be generated.",
+            400,
+        )
 
     response = send_file(str(output_path), mimetype="image/png", max_age=0)
     # Surface the crop geometry so the client can read the proposal without
@@ -183,6 +221,8 @@ def smart_crop_apply():
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
     except (OSError, ValueError):
-        return error_response(ErrorCodes.SMART_CROP_FAILED, "The smart crop could not be applied.", 400)
+        return error_response(
+            ErrorCodes.SMART_CROP_FAILED, "The smart crop could not be applied.", 400
+        )
 
     return jsonify(success=True, image=public_image(result))

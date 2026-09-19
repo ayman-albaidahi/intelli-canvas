@@ -22,7 +22,6 @@ def _session_image(image_id: str):
         return None
     from pathlib import Path
 
-
     storage = get_storage_service()
     directory = (
         storage.processed_dir
@@ -42,15 +41,28 @@ def analyze_image():
     payload = request.get_json(silent=True) or {}
     image_id = payload.get("image_id")
     if not isinstance(image_id, str) or not image_id.strip():
-        return error_response(ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400)
+        return error_response(
+            ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
+        )
     source = _session_image(image_id)
     if source is None:
-        return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, "Stored image was not found.", 404)
+        return error_response(
+            ErrorCodes.IMAGE_NOT_AVAILABLE, "Stored image was not found.", 404
+        )
     image, source_path = source
     with image:
-        options = payload.get("options") if isinstance(payload.get("options"), dict) else {}
-        report = analyze_cached(image, source_path, get_storage_service().resolve_storage_dir("analysis-cache"), options)
-        report["findings"] = [explain_finding(finding) for finding in report["findings"]]
+        options = (
+            payload.get("options") if isinstance(payload.get("options"), dict) else {}
+        )
+        report = analyze_cached(
+            image,
+            source_path,
+            get_storage_service().resolve_storage_dir("analysis-cache"),
+            options,
+        )
+        report["findings"] = [
+            explain_finding(finding) for finding in report["findings"]
+        ]
     return jsonify(success=True, image_id=image_id, **report)
 
 
@@ -59,16 +71,34 @@ def export_report():
     payload = request.get_json(silent=True) or {}
     image_id = payload.get("image_id")
     if not isinstance(image_id, str) or not image_id.strip():
-        return error_response(ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400)
+        return error_response(
+            ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
+        )
     source = _session_image(image_id)
     if source is None:
-        return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, "Stored image was not found.", 404)
+        return error_response(
+            ErrorCodes.IMAGE_NOT_AVAILABLE, "Stored image was not found.", 404
+        )
     image, source_path = source
     with image:
-        options = payload.get("options") if isinstance(payload.get("options"), dict) else {}
-        report = analyze_cached(image, source_path, get_storage_service().resolve_storage_dir("analysis-cache"), options)
-        report["findings"] = [explain_finding(finding) for finding in report["findings"]]
+        options = (
+            payload.get("options") if isinstance(payload.get("options"), dict) else {}
+        )
+        report = analyze_cached(
+            image,
+            source_path,
+            get_storage_service().resolve_storage_dir("analysis-cache"),
+            options,
+        )
+        report["findings"] = [
+            explain_finding(finding) for finding in report["findings"]
+        ]
     buffer = io.BytesIO()
     buffer.write(jsonify(success=True, image_id=image_id, **report).get_data())
     buffer.seek(0)
-    return send_file(buffer, mimetype="application/json", as_attachment=True, download_name="analysis.json")
+    return send_file(
+        buffer,
+        mimetype="application/json",
+        as_attachment=True,
+        download_name="analysis.json",
+    )

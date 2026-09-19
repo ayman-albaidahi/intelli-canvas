@@ -48,7 +48,9 @@ class ImageSessionService:
     def get_layers(self, image_id: str) -> list[dict[str, Any]]:
         return self.repository.get_layers(image_id)
 
-    def save_layers(self, image_id: str, layers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def save_layers(
+        self, image_id: str, layers: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         return self.repository.save_layers(image_id, layers, int(time.time()))
 
     def update_current_image(
@@ -72,14 +74,22 @@ class ImageSessionService:
             "index": index,
             "total": len(entries),
             "entries": [
-                {"index": i, "operation": entry["operation"], "time": entry["time"], "parameters": entry.get("parameters", {}), "current": i == index}
+                {
+                    "index": i,
+                    "operation": entry["operation"],
+                    "time": entry["time"],
+                    "parameters": entry.get("parameters", {}),
+                    "current": i == index,
+                }
                 for i, entry in enumerate(entries)
             ],
         }
 
     def goto(self, image_id: str, index: int) -> dict[str, Any]:
         session = self._require(image_id)
-        if not isinstance(index, int) or not 0 <= index < len(session.get("history", [])):
+        if not isinstance(index, int) or not 0 <= index < len(
+            session.get("history", [])
+        ):
             raise ValueError("History index is out of range.")
         return self.repository.set_current_history(image_id, index, int(time.time()))
 

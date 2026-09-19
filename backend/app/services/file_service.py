@@ -40,11 +40,19 @@ class FileValidationError(ValueError):
 class FileStorageService:
     """Utility service for validating and storing image files with safe paths."""
 
-    def __init__(self, storage_root: str | os.PathLike[str] | None = None, max_file_size: int | None = None):
+    def __init__(
+        self,
+        storage_root: str | os.PathLike[str] | None = None,
+        max_file_size: int | None = None,
+    ):
         project_root = Path(__file__).resolve().parents[2]
-        root = Path(storage_root) if storage_root is not None else project_root / "storage"
+        root = (
+            Path(storage_root) if storage_root is not None else project_root / "storage"
+        )
         self.storage_root = root.resolve()
-        self.max_file_size = max_file_size if max_file_size is not None else Config.MAX_FILE_SIZE
+        self.max_file_size = (
+            max_file_size if max_file_size is not None else Config.MAX_FILE_SIZE
+        )
 
     @property
     def uploads_dir(self) -> Path:
@@ -68,12 +76,16 @@ class FileStorageService:
         try:
             candidate.relative_to(self.storage_root)
         except ValueError as exc:
-            raise FileValidationError("Resolved path escapes the storage root.") from exc
+            raise FileValidationError(
+                "Resolved path escapes the storage root."
+            ) from exc
 
     def _get_extension(self, filename: str) -> str:
         return Path(filename).suffix.lower()
 
-    def validate_file(self, file_obj: BinaryIO, filename: str, *, max_size: int | None = None) -> None:
+    def validate_file(
+        self, file_obj: BinaryIO, filename: str, *, max_size: int | None = None
+    ) -> None:
         if file_obj is None:
             raise FileValidationError("File object is required.")
 
@@ -108,8 +120,13 @@ class FileStorageService:
         try:
             with Image.open(file_obj) as probe:
                 width, height = probe.size
-                if max(width, height) > Config.MAX_IMAGE_SIDE or width * height > Config.MAX_IMAGE_PIXELS:
-                    raise FileValidationError("Image dimensions exceed the allowed limit.")
+                if (
+                    max(width, height) > Config.MAX_IMAGE_SIDE
+                    or width * height > Config.MAX_IMAGE_PIXELS
+                ):
+                    raise FileValidationError(
+                        "Image dimensions exceed the allowed limit."
+                    )
                 probe.verify()
         except FileValidationError:
             file_obj.seek(position)
@@ -147,7 +164,9 @@ class FileStorageService:
     def _detect_mime_type(self, file_obj: BinaryIO, filename: str) -> str:
         return self.detect_mime_type(file_obj, filename)
 
-    def generate_safe_filename(self, filename: str, *, directory: str | Path | None = None) -> str:
+    def generate_safe_filename(
+        self, filename: str, *, directory: str | Path | None = None
+    ) -> str:
         safe_name = secure_filename(filename)
         if not safe_name or safe_name in {".", ".."}:
             safe_name = "uploaded_file"
@@ -174,15 +193,28 @@ class FileStorageService:
         candidate = target_dir / final_filename
         counter = 1
         while candidate.exists():
-            candidate = target_dir / f"{sanitized_basename}_{unique_id}_{counter}{extension}"
+            candidate = (
+                target_dir / f"{sanitized_basename}_{unique_id}_{counter}{extension}"
+            )
             counter += 1
 
         return candidate.name
 
-    def save_file(self, file_obj: BinaryIO, filename: str, *, destination: str | Path | None = None, max_size: int | None = None) -> Path:
+    def save_file(
+        self,
+        file_obj: BinaryIO,
+        filename: str,
+        *,
+        destination: str | Path | None = None,
+        max_size: int | None = None,
+    ) -> Path:
         self.validate_file(file_obj, filename, max_size=max_size)
 
-        target_dir = self.resolve_storage_dir(destination) if destination is not None else self.uploads_dir
+        target_dir = (
+            self.resolve_storage_dir(destination)
+            if destination is not None
+            else self.uploads_dir
+        )
         safe_name = self.generate_safe_filename(filename, directory=target_dir)
         destination_path = target_dir / safe_name
 

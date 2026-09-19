@@ -23,7 +23,9 @@ def test_sharpen_processes_image_in_python():
     client = create_app().test_client()
     image_id = _upload(client)
 
-    response = client.post("/api/process/sharpen", json={"image_id": image_id, "value": 5})
+    response = client.post(
+        "/api/process/sharpen", json={"image_id": image_id, "value": 5}
+    )
 
     assert response.status_code == 200
     payload = response.get_json()
@@ -42,7 +44,9 @@ def test_sharpen_rejects_out_of_range_value():
     client = create_app().test_client()
     image_id = _upload(client)
 
-    response = client.post("/api/process/sharpen", json={"image_id": image_id, "value": 6})
+    response = client.post(
+        "/api/process/sharpen", json={"image_id": image_id, "value": 6}
+    )
 
     assert response.status_code == 400
     assert response.get_json()["error"]["code"] == "INVALID_SHARPEN"

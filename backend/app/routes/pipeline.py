@@ -15,12 +15,18 @@ def _service() -> PipelineService:
 
 
 def _image_id(payload=None):
-    payload = payload if isinstance(payload, dict) else request.get_json(silent=True) or {}
+    payload = (
+        payload if isinstance(payload, dict) else request.get_json(silent=True) or {}
+    )
     image_id = payload.get("image_id")
     if not isinstance(image_id, str) or not image_id.strip():
-        return None, error_response(ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400)
+        return None, error_response(
+            ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
+        )
     if get_session_service().get_session(image_id) is None:
-        return None, error_response(ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404)
+        return None, error_response(
+            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
+        )
     return image_id, None
 
 
@@ -33,7 +39,11 @@ def _execution(payload, persist):
     if error:
         return error
     try:
-        pipeline = payload if isinstance(payload.get("nodes"), list) else _service().get(image_id)
+        pipeline = (
+            payload
+            if isinstance(payload.get("nodes"), list)
+            else _service().get(image_id)
+        )
         result = PipelineExecutionService(
             get_session_service(),
             get_storage_service(),
@@ -95,7 +105,9 @@ def add_node():
 
 @pipeline_bp.patch("/nodes/<node_id>")
 def patch_node(node_id):
-    return _handle(lambda image_id, payload: _service().patch(image_id, node_id, payload))
+    return _handle(
+        lambda image_id, payload: _service().patch(image_id, node_id, payload)
+    )
 
 
 @pipeline_bp.delete("/nodes/<node_id>")
@@ -110,4 +122,8 @@ def toggle_node(node_id):
 
 @pipeline_bp.post("/reorder")
 def reorder_node():
-    return _handle(lambda image_id, payload: _service().reorder(image_id, payload.get("node_id"), payload.get("order")))
+    return _handle(
+        lambda image_id, payload: _service().reorder(
+            image_id, payload.get("node_id"), payload.get("order")
+        )
+    )

@@ -35,7 +35,9 @@ class ProcessService:
             "adjustments",
             "Adjustments",
             lambda source: apply_chain(source, values),
-            history_parameters={"values": {key: value for key, value in values.items()}},
+            history_parameters={
+                "values": {key: value for key, value in values.items()}
+            },
         )
 
     def histogram(self, image_id: str) -> dict[str, list[int]]:
@@ -44,7 +46,9 @@ class ProcessService:
         with Image.open(source_path) as source:
             return compute_histogram(source)
 
-    def run_op(self, image_id: str, slug: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+    def run_op(
+        self, image_id: str, slug: str, params: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Dispatch a registered operation by its slug.
 
         Single entry point for the REST routes, replacing one wrapper method
@@ -87,7 +91,11 @@ class ProcessService:
         with Image.open(output_path) as image:
             width, height = image.size
         self.session_service.update_current_image(
-            image_id, output_path.name, "processed", operation=history_label, parameters=history_parameters
+            image_id,
+            output_path.name,
+            "processed",
+            operation=history_label,
+            parameters=history_parameters,
         )
         return OperationResult(
             image_id=image_id,

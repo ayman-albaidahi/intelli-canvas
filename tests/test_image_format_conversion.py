@@ -12,9 +12,7 @@ from backend.app.services.file_service import FileStorageService
 def conversion_context(tmp_path, monkeypatch):
     app = create_app()
     storage_service = FileStorageService(storage_root=tmp_path / "storage")
-    monkeypatch.setattr(
-        images, "FileStorageService", lambda: storage_service
-    )
+    monkeypatch.setattr(images, "FileStorageService", lambda: storage_service)
 
     source = Image.new("RGB", (4, 3), color="red")
     source_buffer = io.BytesIO()
@@ -84,9 +82,7 @@ def test_supported_source_and_target_formats_convert(
             "stored_filename": source_path.name,
             "format": extension,
             "mime_type": (
-                "image/jpeg"
-                if source_format == "JPEG"
-                else f"image/{extension}"
+                "image/jpeg" if source_format == "JPEG" else f"image/{extension}"
             ),
             "size": source_path.stat().st_size,
         }
@@ -134,8 +130,12 @@ def test_conversion_preserves_original_and_stores_processed_file(
 
 @pytest.mark.parametrize(
     "target_format, expected_code",
-    [("gif", "CONVERSION_FAILED"), ("bmp", "CONVERSION_FAILED"),
-     ("txt", "CONVERSION_FAILED"), ("", "INVALID_FORMAT")],
+    [
+        ("gif", "CONVERSION_FAILED"),
+        ("bmp", "CONVERSION_FAILED"),
+        ("txt", "CONVERSION_FAILED"),
+        ("", "INVALID_FORMAT"),
+    ],
 )
 def test_unsupported_format_is_rejected(
     conversion_context, target_format, expected_code

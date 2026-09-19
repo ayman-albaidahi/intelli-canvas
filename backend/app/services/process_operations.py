@@ -87,9 +87,7 @@ def apply_median_filter(image: Image.Image, ksize: int = 3) -> Image.Image:
     return Image.fromarray(cv2.medianBlur(rgb, ksize), mode="RGB")
 
 
-def apply_morphology(
-    image: Image.Image, operation: str, ksize: int = 3
-) -> Image.Image:
+def apply_morphology(image: Image.Image, operation: str, ksize: int = 3) -> Image.Image:
     rgb = np.asarray(image.convert("RGB"))
     kernel = np.ones((ksize, ksize), dtype=np.uint8)
     if operation == "erode":

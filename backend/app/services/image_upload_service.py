@@ -25,9 +25,7 @@ class ImageUploadService:
             "original_filename": filename,
             "stored_filename": saved_path.name,
             "format": saved_path.suffix.lower().lstrip("."),
-            "mime_type": self.storage_service.detect_mime_type(
-                uploaded_file, filename
-            ),
+            "mime_type": self.storage_service.detect_mime_type(uploaded_file, filename),
             "size": saved_path.stat().st_size,
         }
 

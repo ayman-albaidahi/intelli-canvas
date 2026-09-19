@@ -107,7 +107,9 @@ def test_upload_rejects_header_dimension_bomb():
     app = create_app()
     client = app.test_client()
     real = _png_bytes()
-    forged = real[:16] + (16000).to_bytes(4, "big") + (16000).to_bytes(4, "big") + real[24:]
+    forged = (
+        real[:16] + (16000).to_bytes(4, "big") + (16000).to_bytes(4, "big") + real[24:]
+    )
 
     response = _upload(client, content=forged, filename="bomb.png")
 

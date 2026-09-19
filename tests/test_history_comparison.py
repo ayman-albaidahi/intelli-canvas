@@ -21,7 +21,9 @@ def test_history_metadata_content_and_compare_are_read_only():
     app = create_app()
     client = app.test_client()
     image_id = _upload(client)
-    processed = client.post("/api/process/brightness", json={"image_id": image_id, "value": 130})
+    processed = client.post(
+        "/api/process/brightness", json={"image_id": image_id, "value": 130}
+    )
     assert processed.status_code == 200
     before_history = client.get(f"/api/history?image_id={image_id}").get_json()["image"]
 
@@ -40,7 +42,10 @@ def test_history_metadata_content_and_compare_are_read_only():
     assert payload["to"]["index"] == 1
     assert payload["same_dimensions"] is True
     assert payload["from"]["url"].endswith(f"/{image_id}/0")
-    assert client.get(f"/api/history?image_id={image_id}").get_json()["image"] == before_history
+    assert (
+        client.get(f"/api/history?image_id={image_id}").get_json()["image"]
+        == before_history
+    )
 
 
 def test_history_diff_returns_png_without_mutating_current_state():
@@ -53,21 +58,32 @@ def test_history_diff_returns_png_without_mutating_current_state():
 
     diff = client.post(
         "/api/history/diff",
-        json={"image_id": image_id, "from_index": 0, "to_index": 1, "mode": "heatmap", "threshold": 5},
+        json={
+            "image_id": image_id,
+            "from_index": 0,
+            "to_index": 1,
+            "mode": "heatmap",
+            "threshold": 5,
+        },
     )
 
     assert diff.status_code == 200
     assert diff.mimetype == "image/png"
     assert Image.open(io.BytesIO(diff.data)).size == (6, 4)
     assert client.get(f"/api/images/{image_id}/content").data == before
-    assert client.get(f"/api/history?image_id={image_id}").get_json()["image"] == history_before
+    assert (
+        client.get(f"/api/history?image_id={image_id}").get_json()["image"]
+        == history_before
+    )
 
 
 def test_history_diff_rejects_mismatched_dimensions():
     app = create_app()
     client = app.test_client()
     image_id = _upload(client)
-    client.post("/api/transform/resize", json={"image_id": image_id, "width": 3, "height": 3})
+    client.post(
+        "/api/transform/resize", json={"image_id": image_id, "width": 3, "height": 3}
+    )
 
     diff = client.post(
         "/api/history/diff",

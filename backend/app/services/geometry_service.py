@@ -49,9 +49,7 @@ class GeometryService:
 
         try:
             with Image.open(input_path) as source:
-                image_format = source.format or input_path.suffix.lstrip(
-                    "."
-                ).upper()
+                image_format = source.format or input_path.suffix.lstrip(".").upper()
                 resized = source.resize(
                     (output_width, output_height), Image.Resampling.LANCZOS
                 )
@@ -65,7 +63,9 @@ class GeometryService:
             raise
 
         self.session_service.update_current_image(
-            image_id, output_path.name, storage="processed",
+            image_id,
+            output_path.name,
+            storage="processed",
             operation=label_Resize,
         )
         return OperationResult(
@@ -103,7 +103,9 @@ class GeometryService:
             image.close()
 
         self.session_service.update_current_image(
-            image_id, output_path.name, storage="processed",
+            image_id,
+            output_path.name,
+            storage="processed",
             operation=label_Rotate,
         )
         return self._transform_metadata(image_id, output_path, dimensions)
@@ -134,7 +136,9 @@ class GeometryService:
             image.close()
 
         self.session_service.update_current_image(
-            image_id, output_path.name, storage="processed",
+            image_id,
+            output_path.name,
+            storage="processed",
             operation=label_Flip,
         )
         return self._transform_metadata(image_id, output_path, dimensions)
@@ -143,7 +147,9 @@ class GeometryService:
         self, image_id: str, x: int, y: int, width: int, height: int
     ) -> dict[str, Any]:
         if x < 0 or y < 0 or width <= 0 or height <= 0:
-            raise ValueError("Crop dimensions must be positive and coordinates non-negative.")
+            raise ValueError(
+                "Crop dimensions must be positive and coordinates non-negative."
+            )
 
         label = f"Crop {width}x{height} at {x},{y}"
         image, session, output_path = self._prepare_transform(image_id)
@@ -251,9 +257,7 @@ class GeometryService:
 
         if not lock_aspect_ratio:
             if width is None or height is None:
-                raise ValueError(
-                    "Both dimensions are required when ratio is unlocked."
-                )
+                raise ValueError("Both dimensions are required when ratio is unlocked.")
             return width, height
 
         if width is None and height is not None:

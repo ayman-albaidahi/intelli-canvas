@@ -47,69 +47,157 @@ class OperationSpec:
     produces_image: bool = True
 
 
-def _number(params: dict[str, Any], key: str, *, name: str, low: float, high: float, code: str, default: float) -> float:
+def _number(
+    params: dict[str, Any],
+    key: str,
+    *,
+    name: str,
+    low: float,
+    high: float,
+    code: str,
+    default: float,
+) -> float:
     """Validate a numeric field. ``key`` looks the value up; ``name`` labels errors."""
-    return require_number(params.get(key, default), low=low, high=high, name=name, code=code)
+    return require_number(
+        params.get(key, default), low=low, high=high, name=name, code=code
+    )
 
 
-def _integer(params: dict[str, Any], key: str, *, name: str, low: int, high: int, code: str, default: int) -> int:
+def _integer(
+    params: dict[str, Any],
+    key: str,
+    *,
+    name: str,
+    low: int,
+    high: int,
+    code: str,
+    default: int,
+) -> int:
     """Validate an integer field. ``key`` looks the value up; ``name`` labels errors."""
-    return require_int(params.get(key, default), low=low, high=high, name=name, code=code)
+    return require_int(
+        params.get(key, default), low=low, high=high, name=name, code=code
+    )
 
 
-def _odd_ksize(params: dict[str, Any], *, name: str, low: int, high: int, code: str) -> int:
-    return require_odd_int(params.get("ksize", 3), low=low, high=high, name=name, code=code)
+def _odd_ksize(
+    params: dict[str, Any], *, name: str, low: int, high: int, code: str
+) -> int:
+    return require_odd_int(
+        params.get("ksize", 3), low=low, high=high, name=name, code=code
+    )
 
 
 def _brightness(params: dict[str, Any]) -> dict[str, Any]:
-    value = _integer(params, "value", name="brightness", low=0, high=200, code="INVALID_BRIGHTNESS", default=100)
+    value = _integer(
+        params,
+        "value",
+        name="brightness",
+        low=0,
+        high=200,
+        code="INVALID_BRIGHTNESS",
+        default=100,
+    )
     return {"value": value}
 
 
 def _contrast(params: dict[str, Any]) -> dict[str, Any]:
-    value = _integer(params, "value", name="contrast", low=0, high=200, code="INVALID_CONTRAST", default=100)
+    value = _integer(
+        params,
+        "value",
+        name="contrast",
+        low=0,
+        high=200,
+        code="INVALID_CONTRAST",
+        default=100,
+    )
     return {"value": value}
 
 
 def _saturation(params: dict[str, Any]) -> dict[str, Any]:
-    value = _integer(params, "value", name="saturation", low=0, high=200, code="INVALID_SATURATION", default=100)
+    value = _integer(
+        params,
+        "value",
+        name="saturation",
+        low=0,
+        high=200,
+        code="INVALID_SATURATION",
+        default=100,
+    )
     return {"value": value}
 
 
 def _blur(params: dict[str, Any]) -> dict[str, Any]:
-    value = _integer(params, "value", name="blur", low=0, high=20, code="INVALID_BLUR", default=0)
+    value = _integer(
+        params, "value", name="blur", low=0, high=20, code="INVALID_BLUR", default=0
+    )
     return {"value": value}
 
 
 def _sharpen(params: dict[str, Any]) -> dict[str, Any]:
-    value = _integer(params, "value", name="sharpen", low=0, high=5, code="INVALID_SHARPEN", default=0)
+    value = _integer(
+        params,
+        "value",
+        name="sharpen",
+        low=0,
+        high=5,
+        code="INVALID_SHARPEN",
+        default=0,
+    )
     return {"value": value}
 
 
 def _gamma(params: dict[str, Any]) -> dict[str, Any]:
-    value = _number(params, "value", name="gamma", low=0.1, high=5.0, code="INVALID_GAMMA", default=1.0)
+    value = _number(
+        params,
+        "value",
+        name="gamma",
+        low=0.1,
+        high=5.0,
+        code="INVALID_GAMMA",
+        default=1.0,
+    )
     return {"value": float(value)}
 
 
 def _threshold(params: dict[str, Any]) -> dict[str, Any]:
-    value = _integer(params, "value", name="threshold", low=0, high=255, code="INVALID_THRESHOLD", default=128)
+    value = _integer(
+        params,
+        "value",
+        name="threshold",
+        low=0,
+        high=255,
+        code="INVALID_THRESHOLD",
+        default=128,
+    )
     return {"value": value}
 
 
 def _sobel(params: dict[str, Any]) -> dict[str, Any]:
-    return {"ksize": _odd_ksize(params, name="Sobel ksize", low=1, high=7, code="INVALID_SOBEL_KSIZE")}
+    return {
+        "ksize": _odd_ksize(
+            params, name="Sobel ksize", low=1, high=7, code="INVALID_SOBEL_KSIZE"
+        )
+    }
 
 
 def _median_filter(params: dict[str, Any]) -> dict[str, Any]:
-    return {"ksize": _odd_ksize(params, name="Median ksize", low=1, high=15, code="INVALID_MEDIAN_KSIZE")}
+    return {
+        "ksize": _odd_ksize(
+            params, name="Median ksize", low=1, high=15, code="INVALID_MEDIAN_KSIZE"
+        )
+    }
 
 
 def _morphology(params: dict[str, Any]) -> dict[str, Any]:
     operation = require_choice(
-        params.get("operation"), ("erode", "dilate", "open", "close"),
-        name="Morphology operation", code="INVALID_MORPHOLOGY_OPERATION",
+        params.get("operation"),
+        ("erode", "dilate", "open", "close"),
+        name="Morphology operation",
+        code="INVALID_MORPHOLOGY_OPERATION",
     )
-    ksize = _odd_ksize(params, name="Morphology ksize", low=1, high=15, code="INVALID_MORPHOLOGY_KSIZE")
+    ksize = _odd_ksize(
+        params, name="Morphology ksize", low=1, high=15, code="INVALID_MORPHOLOGY_KSIZE"
+    )
     return {"operation": operation, "ksize": ksize}
 
 
@@ -195,7 +283,9 @@ OPERATIONS: dict[str, OperationSpec] = {
         slug="morphology",
         label="Morphology",
         validate=_morphology,
-        run=lambda image, params: apply_morphology(image, params["operation"], params["ksize"]),
+        run=lambda image, params: apply_morphology(
+            image, params["operation"], params["ksize"]
+        ),
     ),
     # Read-only analysis: answers with data, never writes a new image.
     "histogram": OperationSpec(

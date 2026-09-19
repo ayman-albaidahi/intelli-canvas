@@ -22,7 +22,9 @@ def test_saturation_processes_image_in_python():
     client = create_app().test_client()
     image_id = _upload(client)
 
-    response = client.post("/api/process/saturation", json={"image_id": image_id, "value": 0})
+    response = client.post(
+        "/api/process/saturation", json={"image_id": image_id, "value": 0}
+    )
 
     assert response.status_code == 200
     payload = response.get_json()
@@ -40,7 +42,9 @@ def test_saturation_rejects_out_of_range_value():
     client = create_app().test_client()
     image_id = _upload(client)
 
-    response = client.post("/api/process/saturation", json={"image_id": image_id, "value": 201})
+    response = client.post(
+        "/api/process/saturation", json={"image_id": image_id, "value": 201}
+    )
 
     assert response.status_code == 400
     assert response.get_json()["error"]["code"] == "INVALID_SATURATION"

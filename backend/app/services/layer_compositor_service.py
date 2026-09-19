@@ -39,7 +39,9 @@ def _resolve_font(size: int) -> ImageFont.FreeTypeFont:
 class LayerCompositorService:
     """Deterministically renders persisted layers over the current base image."""
 
-    def __init__(self, session_service, storage_service: FileStorageService, repository):
+    def __init__(
+        self, session_service, storage_service: FileStorageService, repository
+    ):
         self.session_service = session_service
         self.storage_service = storage_service
         self.repository = repository
@@ -54,11 +56,19 @@ class LayerCompositorService:
             for layer in session.get("layers", []):
                 if layer.get("visible", True):
                     self._render_layer(canvas, layer, image_id)
-            output_path = self.storage_service.resolve_storage_destination("processed", f"{session.get('base_stem', 'image')}_composite.png")
+            output_path = self.storage_service.resolve_storage_destination(
+                "processed", f"{session.get('base_stem', 'image')}_composite.png"
+            )
             canvas.save(output_path, format="PNG")
             width, height = canvas.size
             canvas.close()
-        updated = self.session_service.update_current_image(image_id, output_path.name, "processed", "Composite layers") if persist else None
+        updated = (
+            self.session_service.update_current_image(
+                image_id, output_path.name, "processed", "Composite layers"
+            )
+            if persist
+            else None
+        )
         return OperationResult(
             image_id=image_id,
             width=width,
@@ -67,12 +77,18 @@ class LayerCompositorService:
             mime_type="image/png",
             path=output_path,
             filename=output_path.name,
-            public_extras={"history_index": updated["history_index"] if updated else None},
+            public_extras={
+                "history_index": updated["history_index"] if updated else None
+            },
         )
 
     def _source_path(self, session: dict[str, Any]) -> Path:
         filename = session.get("current_filename") or session.get("stored_filename")
-        directory = self.storage_service.processed_dir if session.get("current_storage") == "processed" else self.storage_service.uploads_dir
+        directory = (
+            self.storage_service.processed_dir
+            if session.get("current_storage") == "processed"
+            else self.storage_service.uploads_dir
+        )
         path = (directory / str(filename)).resolve()
         try:
             path.relative_to(directory.resolve())
@@ -82,7 +98,9 @@ class LayerCompositorService:
             raise FileNotFoundError("Stored image was not found.")
         return path
 
-    def _render_layer(self, canvas: Image.Image, layer: dict[str, Any], image_id: str) -> None:
+    def _render_layer(
+        self, canvas: Image.Image, layer: dict[str, Any], image_id: str
+    ) -> None:
         layer_type = layer.get("type")
         if layer_type == "image":
             rendered = self._image_layer(layer, image_id)
@@ -103,11 +121,16 @@ class LayerCompositorService:
         asset = self.repository.get_asset_for_image(layer.get("asset_id", ""), image_id)
         if asset is None:
             raise FileNotFoundError("Layer image asset was not found.")
-        path = self.storage_service.resolve_storage_dir(asset["storage_category"]) / asset["stored_filename"]
+        path = (
+            self.storage_service.resolve_storage_dir(asset["storage_category"])
+            / asset["stored_filename"]
+        )
         with Image.open(path) as image:
             width = max(1, round(float(layer.get("w", image.width))))
             height = max(1, round(float(layer.get("h", image.height))))
-            return image.convert("RGBA").resize((width, height), Image.Resampling.LANCZOS)
+            return image.convert("RGBA").resize(
+                (width, height), Image.Resampling.LANCZOS
+            )
 
     def _text_layer(self, layer: dict[str, Any]) -> Image.Image:
         width = max(1, round(float(layer.get("w", 100))))
@@ -116,7 +139,13 @@ class LayerCompositorService:
         draw = ImageDraw.Draw(image)
         size = max(1, round(float(layer.get("fontSize", 26))))
         font = _resolve_font(size)
-        draw.text((6, height / 2), str(layer.get("text", "")), fill=layer.get("color", "#000000"), font=font, anchor="lm")
+        draw.text(
+            (6, height / 2),
+            str(layer.get("text", "")),
+            fill=layer.get("color", "#000000"),
+            font=font,
+            anchor="lm",
+        )
         return image
 
     def _vector_layer(self, layer: dict[str, Any]) -> Image.Image:
@@ -128,23 +157,46 @@ class LayerCompositorService:
             points = layer.get("pointsRel", [])
             if len(points) > 1:
                 offset_x, offset_y = width / 2, height / 2
-                draw.line([(round(x + offset_x), round(y + offset_y)) for x, y in points], fill=layer.get("color", "#000000"), width=max(1, round(float(layer.get("strokeWidth", 1)))), joint="curve")
+                draw.line(
+                    [(round(x + offset_x), round(y + offset_y)) for x, y in points],
+                    fill=layer.get("color", "#000000"),
+                    width=max(1, round(float(layer.get("strokeWidth", 1)))),
+                    joint="curve",
+                )
         else:
             box = (0, 0, width - 1, height - 1)
             stroke = layer.get("stroke", "#000000")
             fill = layer.get("fill", "#000000") if layer.get("fillOn") else None
             if layer.get("shape") == "ellipse":
-                draw.ellipse(box, outline=stroke, fill=fill, width=max(1, round(float(layer.get("strokeWidth", 1)))))
+                draw.ellipse(
+                    box,
+                    outline=stroke,
+                    fill=fill,
+                    width=max(1, round(float(layer.get("strokeWidth", 1)))),
+                )
             elif layer.get("shape") == "line":
-                draw.line((0, height - 1, width - 1, 0), fill=stroke, width=max(1, round(float(layer.get("strokeWidth", 1)))))
+                draw.line(
+                    (0, height - 1, width - 1, 0),
+                    fill=stroke,
+                    width=max(1, round(float(layer.get("strokeWidth", 1)))),
+                )
             else:
-                draw.rectangle(box, outline=stroke, fill=fill, width=max(1, round(float(layer.get("strokeWidth", 1)))))
+                draw.rectangle(
+                    box,
+                    outline=stroke,
+                    fill=fill,
+                    width=max(1, round(float(layer.get("strokeWidth", 1)))),
+                )
         return image
 
-    def _composite(self, canvas: Image.Image, rendered: Image.Image, layer: dict[str, Any]) -> None:
+    def _composite(
+        self, canvas: Image.Image, rendered: Image.Image, layer: dict[str, Any]
+    ) -> None:
         angle = float(layer.get("rotation", 0))
         if angle:
-            rendered = rendered.rotate(-angle, expand=True, resample=Image.Resampling.BICUBIC)
+            rendered = rendered.rotate(
+                -angle, expand=True, resample=Image.Resampling.BICUBIC
+            )
         center_x = float(layer.get("x", 0)) + float(layer.get("w", rendered.width)) / 2
         center_y = float(layer.get("y", 0)) + float(layer.get("h", rendered.height)) / 2
         left = round(center_x - rendered.width / 2)

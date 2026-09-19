@@ -5,13 +5,34 @@ from typing import Any
 from .pipeline_service import SUPPORTED_OPERATIONS, PipelineParamError, PipelineService
 
 FINDING_EXPLANATIONS = {
-    "LOW_BRIGHTNESS": ("Low brightness", "The measured brightness is below the target range, so shadow detail may be difficult to see."),
-    "HIGH_BRIGHTNESS": ("High brightness", "The measured brightness is above the target range, so highlight detail may be at risk."),
-    "LOW_CONTRAST": ("Low contrast", "The image has limited separation between dark and light tones."),
-    "LOW_SHARPNESS": ("Low sharpness", "Edge variation is below the target level, which can make the image appear soft."),
-    "HIGH_NOISE": ("High noise", "The residual signal after light smoothing is elevated, indicating visible image noise."),
-    "SHADOW_CLIPPING": ("Shadow clipping", "A meaningful portion of pixels is near black and may have lost shadow detail."),
-    "HIGHLIGHT_CLIPPING": ("Highlight clipping", "A meaningful portion of pixels is near white and may have lost highlight detail."),
+    "LOW_BRIGHTNESS": (
+        "Low brightness",
+        "The measured brightness is below the target range, so shadow detail may be difficult to see.",
+    ),
+    "HIGH_BRIGHTNESS": (
+        "High brightness",
+        "The measured brightness is above the target range, so highlight detail may be at risk.",
+    ),
+    "LOW_CONTRAST": (
+        "Low contrast",
+        "The image has limited separation between dark and light tones.",
+    ),
+    "LOW_SHARPNESS": (
+        "Low sharpness",
+        "Edge variation is below the target level, which can make the image appear soft.",
+    ),
+    "HIGH_NOISE": (
+        "High noise",
+        "The residual signal after light smoothing is elevated, indicating visible image noise.",
+    ),
+    "SHADOW_CLIPPING": (
+        "Shadow clipping",
+        "A meaningful portion of pixels is near black and may have lost shadow detail.",
+    ),
+    "HIGHLIGHT_CLIPPING": (
+        "Highlight clipping",
+        "A meaningful portion of pixels is near white and may have lost highlight detail.",
+    ),
 }
 PARAMETER_EXPLANATIONS = {
     "value": "Controls the strength or target value of this operation.",
@@ -19,35 +40,63 @@ PARAMETER_EXPLANATIONS = {
     "operation": "Selects the morphology operation applied to the image.",
 }
 OPERATION_LABELS = {
-    "brightness": "Brightness correction", "contrast": "Contrast correction", "saturation": "Saturation correction",
-    "gamma": "Gamma correction", "blur": "Blur", "sharpen": "Sharpen", "grayscale": "Grayscale",
-    "negative": "Negative", "threshold": "Threshold", "sobel": "Sobel edges", "laplacian": "Laplacian edges",
-    "median-filter": "Median noise reduction", "morphology": "Morphology filter",
+    "brightness": "Brightness correction",
+    "contrast": "Contrast correction",
+    "saturation": "Saturation correction",
+    "gamma": "Gamma correction",
+    "blur": "Blur",
+    "sharpen": "Sharpen",
+    "grayscale": "Grayscale",
+    "negative": "Negative",
+    "threshold": "Threshold",
+    "sobel": "Sobel edges",
+    "laplacian": "Laplacian edges",
+    "median-filter": "Median noise reduction",
+    "morphology": "Morphology filter",
     "smart-crop": "Smart saliency crop",
 }
 
 
 def explain_finding(finding: dict[str, Any]) -> dict[str, Any]:
     code = str(finding.get("code", "UNKNOWN"))
-    title, explanation = FINDING_EXPLANATIONS.get(code, (code, "The analyzer reported this image condition for review."))
-    return {**finding, "title": title, "explanation": explanation, "evidence": finding.get("evidence", {})}
+    title, explanation = FINDING_EXPLANATIONS.get(
+        code, (code, "The analyzer reported this image condition for review.")
+    )
+    return {
+        **finding,
+        "title": title,
+        "explanation": explanation,
+        "evidence": finding.get("evidence", {}),
+    }
 
 
-def explain_operation(operation: str, parameters: dict[str, Any] | None = None, *, finding: dict[str, Any] | None = None, source: dict[str, Any] | None = None) -> dict[str, Any]:
+def explain_operation(
+    operation: str,
+    parameters: dict[str, Any] | None = None,
+    *,
+    finding: dict[str, Any] | None = None,
+    source: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     if operation not in SUPPORTED_OPERATIONS:
         raise PipelineParamError("Operation is not supported.")
     params = parameters or {}
     if not isinstance(params, dict):
         raise PipelineParamError("Operation parameters must be an object.")
     PipelineService.validate_parameters(operation, params)
-    parameter_explanations = {key: PARAMETER_EXPLANATIONS.get(key, "Operation-specific parameter used by the deterministic processor.") for key in params}
+    parameter_explanations = {
+        key: PARAMETER_EXPLANATIONS.get(
+            key, "Operation-specific parameter used by the deterministic processor."
+        )
+        for key in params
+    }
     result: dict[str, Any] = {
         "operation": operation,
         "title": OPERATION_LABELS.get(operation, operation),
         "summary": f"{OPERATION_LABELS.get(operation, operation)} runs with the supplied parameters without changing the source until Apply.",
         "parameters": params,
         "parameter_explanations": parameter_explanations,
-        "source": source or {"kind": "manual", "description": "Manual operation selected by the user."},
+        "source": source
+        or {"kind": "manual", "description": "Manual operation selected by the user."},
     }
     if finding:
         result["finding"] = explain_finding(finding)
@@ -57,5 +106,27 @@ def explain_operation(operation: str, parameters: dict[str, Any] | None = None, 
 
 def explain_suggestion(suggestion: dict[str, Any]) -> dict[str, Any]:
     nodes = suggestion.get("pipeline", {}).get("nodes", [])
-    operation_explanations = [explain_operation(node.get("operation"), node.get("parameters", {}), source={"kind": "smart-suggestion", "suggestion_id": suggestion.get("id", suggestion.get("type")), "rule_version": suggestion.get("rule_version", "0.8.1"), "description": "Generated by the deterministic Smart Suggestions rule engine."}) for node in nodes]
-    return {"source": {"kind": "smart-suggestion", "suggestion_id": suggestion.get("id", suggestion.get("type")), "rule_version": suggestion.get("rule_version", "0.8.1"), "description": "Generated from analyzer findings by the Smart Suggestions rule engine."}, "reason": suggestion.get("reason", ""), "evidence": suggestion.get("evidence", {}), "operations": operation_explanations}
+    operation_explanations = [
+        explain_operation(
+            node.get("operation"),
+            node.get("parameters", {}),
+            source={
+                "kind": "smart-suggestion",
+                "suggestion_id": suggestion.get("id", suggestion.get("type")),
+                "rule_version": suggestion.get("rule_version", "0.8.1"),
+                "description": "Generated by the deterministic Smart Suggestions rule engine.",
+            },
+        )
+        for node in nodes
+    ]
+    return {
+        "source": {
+            "kind": "smart-suggestion",
+            "suggestion_id": suggestion.get("id", suggestion.get("type")),
+            "rule_version": suggestion.get("rule_version", "0.8.1"),
+            "description": "Generated from analyzer findings by the Smart Suggestions rule engine.",
+        },
+        "reason": suggestion.get("reason", ""),
+        "evidence": suggestion.get("evidence", {}),
+        "operations": operation_explanations,
+    }

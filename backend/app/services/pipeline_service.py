@@ -11,8 +11,19 @@ from .image_session_service import ImageSessionService
 from .smart_crop_service import SmartCropError, SmartCropService
 
 SUPPORTED_OPERATIONS = {
-    "grayscale", "negative", "brightness", "contrast", "saturation", "gamma",
-    "blur", "sharpen", "threshold", "sobel", "laplacian", "median-filter", "morphology",
+    "grayscale",
+    "negative",
+    "brightness",
+    "contrast",
+    "saturation",
+    "gamma",
+    "blur",
+    "sharpen",
+    "threshold",
+    "sobel",
+    "laplacian",
+    "median-filter",
+    "morphology",
     "smart-crop",
 }
 NODE_ID = re.compile(r"^[A-Za-z0-9_-]{1,80}$")
@@ -47,7 +58,14 @@ class PipelineService:
         pipeline = self.repository.get_pipeline(image_id)
         if pipeline is not None:
             return pipeline
-        return {"pipeline_id": None, "image_id": image_id, "version": 1, "created_at": None, "updated_at": None, "nodes": []}
+        return {
+            "pipeline_id": None,
+            "image_id": image_id,
+            "version": 1,
+            "created_at": None,
+            "updated_at": None,
+            "nodes": [],
+        }
 
     def save(self, image_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         nodes = self.validate_nodes(payload.get("nodes"))
@@ -60,9 +78,13 @@ class PipelineService:
         pipeline = self.get(image_id)
         nodes = list(pipeline["nodes"])
         nodes.append(self.validate_node(payload))
-        return self.repository.save_pipeline(image_id, nodes, pipeline["version"] + 1, int(time.time()))
+        return self.repository.save_pipeline(
+            image_id, nodes, pipeline["version"] + 1, int(time.time())
+        )
 
-    def patch(self, image_id: str, node_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    def patch(
+        self, image_id: str, node_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
         pipeline = self.get(image_id)
         nodes = list(pipeline["nodes"])
         node = next((item for item in nodes if item["id"] == node_id), None)
@@ -72,14 +94,18 @@ class PipelineService:
         updated = self.validate_node(candidate)
         updated["created_at"] = node.get("created_at")
         nodes[nodes.index(node)] = updated
-        return self.repository.save_pipeline(image_id, nodes, pipeline["version"] + 1, int(time.time()))
+        return self.repository.save_pipeline(
+            image_id, nodes, pipeline["version"] + 1, int(time.time())
+        )
 
     def delete(self, image_id: str, node_id: str) -> dict[str, Any]:
         pipeline = self.get(image_id)
         nodes = [node for node in pipeline["nodes"] if node["id"] != node_id]
         if len(nodes) == len(pipeline["nodes"]):
             raise KeyError("Pipeline node was not found.")
-        return self.repository.save_pipeline(image_id, nodes, pipeline["version"] + 1, int(time.time()))
+        return self.repository.save_pipeline(
+            image_id, nodes, pipeline["version"] + 1, int(time.time())
+        )
 
     def toggle(self, image_id: str, node_id: str) -> dict[str, Any]:
         pipeline = self.get(image_id)
@@ -89,7 +115,12 @@ class PipelineService:
             raise KeyError("Pipeline node was not found.")
         node = {**node, "enabled": not node["enabled"]}
         nodes[nodes.index(next(item for item in nodes if item["id"] == node_id))] = node
-        return self.repository.save_pipeline(image_id, self.validate_nodes(nodes), pipeline["version"] + 1, int(time.time()))
+        return self.repository.save_pipeline(
+            image_id,
+            self.validate_nodes(nodes),
+            pipeline["version"] + 1,
+            int(time.time()),
+        )
 
     def reorder(self, image_id: str, node_id: str, order: int) -> dict[str, Any]:
         pipeline = self.get(image_id)
@@ -97,16 +128,27 @@ class PipelineService:
         node = next((item for item in nodes if item["id"] == node_id), None)
         if node is None:
             raise KeyError("Pipeline node was not found.")
-        if isinstance(order, bool) or not isinstance(order, int) or not 0 <= order < len(nodes):
+        if (
+            isinstance(order, bool)
+            or not isinstance(order, int)
+            or not 0 <= order < len(nodes)
+        ):
             raise PipelineParamError("order is out of range.")
         nodes.remove(node)
         nodes.insert(order, node)
-        return self.repository.save_pipeline(image_id, self.validate_nodes(nodes), pipeline["version"] + 1, int(time.time()))
+        return self.repository.save_pipeline(
+            image_id,
+            self.validate_nodes(nodes),
+            pipeline["version"] + 1,
+            int(time.time()),
+        )
 
     @classmethod
     def validate_nodes(cls, nodes: Any) -> list[dict[str, Any]]:
         if not isinstance(nodes, list) or len(nodes) > MAX_NODES:
-            raise PipelineParamError(f"nodes must be a list with at most {MAX_NODES} items.")
+            raise PipelineParamError(
+                f"nodes must be a list with at most {MAX_NODES} items."
+            )
         validated = [cls.validate_node(node) for node in nodes]
         ids = [node["id"] for node in validated]
         if len(ids) != len(set(ids)):
@@ -126,30 +168,68 @@ class PipelineService:
         if operation not in SUPPORTED_OPERATIONS:
             raise PipelineParamError("Pipeline operation is not supported.")
         if not isinstance(parameters, dict) or len(parameters) > 20:
-            raise PipelineParamError("Node parameters must be an object with at most 20 fields.")
+            raise PipelineParamError(
+                "Node parameters must be an object with at most 20 fields."
+            )
         if not isinstance(enabled, bool):
             raise PipelineParamError("Node enabled must be boolean.")
         cls.validate_parameters(operation, parameters)
-        return {"id": node_id, "operation": operation, "parameters": parameters, "enabled": enabled}
+        return {
+            "id": node_id,
+            "operation": operation,
+            "parameters": parameters,
+            "enabled": enabled,
+        }
 
     @staticmethod
     def validate_parameters(operation: str, parameters: dict[str, Any]) -> None:
         if operation == "smart-crop":
             try:
-                SmartCropService.parse_aspect_ratio(parameters.get("aspect_ratio", "original"))
+                SmartCropService.parse_aspect_ratio(
+                    parameters.get("aspect_ratio", "original")
+                )
             except SmartCropError as exc:
                 raise PipelineParamError(str(exc)) from exc
         if operation in {"sobel", "median-filter", "morphology"}:
-            _param(parameters.get("ksize", 3), require_odd_int, low=1, high=15, name="ksize")
-        if operation == "morphology" and parameters.get("operation", "open") not in {"erode", "dilate", "open", "close"}:
+            _param(
+                parameters.get("ksize", 3),
+                require_odd_int,
+                low=1,
+                high=15,
+                name="ksize",
+            )
+        if operation == "morphology" and parameters.get("operation", "open") not in {
+            "erode",
+            "dilate",
+            "open",
+            "close",
+        }:
             raise PipelineParamError("morphology operation is invalid.")
         # Brightness/contrast/saturation share one contract with the direct
         # /api/process endpoints: 100 is neutral, 0 is the zero point, 200
         # doubles the effect. The renderer divides by 100, so values outside
         # this range have no meaningful result.
         if operation in {"brightness", "contrast", "saturation"}:
-            _param(parameters.get("value", 100), require_number, low=0, high=200, name="value")
+            _param(
+                parameters.get("value", 100),
+                require_number,
+                low=0,
+                high=200,
+                name="value",
+            )
         if operation == "gamma":
-            _param(parameters.get("value", 1), require_number, low=0.1, high=5, name="gamma value")
+            _param(
+                parameters.get("value", 1),
+                require_number,
+                low=0.1,
+                high=5,
+                name="gamma value",
+            )
         if operation == "threshold":
-            _param(parameters.get("value", 128), require_int, low=0, high=255, name="threshold value")
+            _param(
+                parameters.get("value", 128),
+                require_int,
+                low=0,
+                high=255,
+                name="threshold value",
+            )

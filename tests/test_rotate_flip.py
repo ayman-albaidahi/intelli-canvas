@@ -12,9 +12,7 @@ from backend.app.services.file_service import FileStorageService
 def transform_context(tmp_path, monkeypatch):
     app = create_app()
     storage_service = FileStorageService(storage_root=tmp_path / "storage")
-    monkeypatch.setattr(
-        transform, "FileStorageService", lambda: storage_service
-    )
+    monkeypatch.setattr(transform, "FileStorageService", lambda: storage_service)
 
     source = Image.new("RGB", (3, 2))
     source.putdata(
@@ -83,16 +81,25 @@ def test_rotate_ninety_degrees_swaps_dimensions(transform_context, angle):
     assert source_path.read_bytes() == original_bytes
     assert_processed_image(storage_service, (2, 3))
     expected_pixels = (
-        [(255, 255, 0), (255, 0, 0), (255, 0, 255), (0, 255, 0),
-         (0, 255, 255), (0, 0, 255)]
+        [
+            (255, 255, 0),
+            (255, 0, 0),
+            (255, 0, 255),
+            (0, 255, 0),
+            (0, 255, 255),
+            (0, 0, 255),
+        ]
         if angle == 90
-        else [(0, 0, 255), (0, 255, 255), (0, 255, 0), (255, 0, 255),
-              (255, 0, 0), (255, 255, 0)]
+        else [
+            (0, 0, 255),
+            (0, 255, 255),
+            (0, 255, 0),
+            (255, 0, 255),
+            (255, 0, 0),
+            (255, 255, 0),
+        ]
     )
-    assert (
-        read_pixels(next(storage_service.processed_dir.iterdir()))
-        == expected_pixels
-    )
+    assert read_pixels(next(storage_service.processed_dir.iterdir())) == expected_pixels
 
 
 def test_rotate_180_degrees_preserves_dimensions(transform_context):
@@ -107,8 +114,12 @@ def test_rotate_180_degrees_preserves_dimensions(transform_context):
     assert (result["width"], result["height"]) == (3, 2)
     assert_processed_image(storage_service, (3, 2))
     assert read_pixels(next(storage_service.processed_dir.iterdir())) == [
-        (0, 255, 255), (255, 0, 255), (255, 255, 0),
-        (0, 0, 255), (0, 255, 0), (255, 0, 0),
+        (0, 255, 255),
+        (255, 0, 255),
+        (255, 255, 0),
+        (0, 0, 255),
+        (0, 255, 0),
+        (255, 0, 0),
     ]
 
 
@@ -129,16 +140,25 @@ def test_flip_preserves_dimensions_and_creates_valid_output(
     assert source_path.read_bytes() == original_bytes
     assert_processed_image(storage_service, (3, 2))
     expected_pixels = (
-        [(0, 0, 255), (0, 255, 0), (255, 0, 0), (0, 255, 255),
-         (255, 0, 255), (255, 255, 0)]
+        [
+            (0, 0, 255),
+            (0, 255, 0),
+            (255, 0, 0),
+            (0, 255, 255),
+            (255, 0, 255),
+            (255, 255, 0),
+        ]
         if direction == "horizontal"
-        else [(255, 255, 0), (255, 0, 255), (0, 255, 255), (255, 0, 0),
-              (0, 255, 0), (0, 0, 255)]
+        else [
+            (255, 255, 0),
+            (255, 0, 255),
+            (0, 255, 255),
+            (255, 0, 0),
+            (0, 255, 0),
+            (0, 0, 255),
+        ]
     )
-    assert (
-        read_pixels(next(storage_service.processed_dir.iterdir()))
-        == expected_pixels
-    )
+    assert read_pixels(next(storage_service.processed_dir.iterdir())) == expected_pixels
 
 
 def test_crop_creates_cropped_image_and_records_history(transform_context):
@@ -160,9 +180,11 @@ def test_crop_creates_cropped_image_and_records_history(transform_context):
     assert result["mime_type"] == "image/png"
     assert source_path.exists()
     assert_processed_image(storage_service, (2, 2))
-    history = app.test_client().get(
-        f"/api/history?image_id={session['image_id']}"
-    ).get_json()["image"]
+    history = (
+        app.test_client()
+        .get(f"/api/history?image_id={session['image_id']}")
+        .get_json()["image"]
+    )
     assert history["total"] == 2
     assert history["entries"][-1]["operation"].startswith("Crop")
 
@@ -207,13 +229,14 @@ def test_invalid_flip_direction_is_rejected(transform_context):
     assert response.get_json()["error"]["code"] == "INVALID_FLIP_DIRECTION"
 
 
-@pytest.mark.parametrize("endpoint, values", [
-    ("/api/transform/rotate", {"angle": 90}),
-    ("/api/transform/flip", {"direction": "horizontal"}),
-])
-def test_invalid_transform_payload_is_rejected(
-    transform_context, endpoint, values
-):
+@pytest.mark.parametrize(
+    "endpoint, values",
+    [
+        ("/api/transform/rotate", {"angle": 90}),
+        ("/api/transform/flip", {"direction": "horizontal"}),
+    ],
+)
+def test_invalid_transform_payload_is_rejected(transform_context, endpoint, values):
     app, _, _, _ = transform_context
 
     response = post_transform(app, endpoint, "", **values)
@@ -225,23 +248,15 @@ def test_invalid_transform_payload_is_rejected(
 def test_nonexistent_session_is_rejected(transform_context):
     app, _, _, _ = transform_context
 
-    rotate_response = post_transform(
-        app, "/api/transform/rotate", "missing", angle=90
-    )
+    rotate_response = post_transform(app, "/api/transform/rotate", "missing", angle=90)
     flip_response = post_transform(
         app, "/api/transform/flip", "missing", direction="horizontal"
     )
 
     assert rotate_response.status_code == 404
     assert flip_response.status_code == 404
-    assert (
-        rotate_response.get_json()["error"]["code"]
-        == "IMAGE_SESSION_NOT_FOUND"
-    )
-    assert (
-        flip_response.get_json()["error"]["code"]
-        == "IMAGE_SESSION_NOT_FOUND"
-    )
+    assert rotate_response.get_json()["error"]["code"] == "IMAGE_SESSION_NOT_FOUND"
+    assert flip_response.get_json()["error"]["code"] == "IMAGE_SESSION_NOT_FOUND"
 
 
 def test_corrupted_source_image_is_rejected(transform_context):

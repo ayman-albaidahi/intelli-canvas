@@ -69,7 +69,12 @@ def test_invert_keeps_key_color_instead():
 
     processed = client.post(
         "/api/background/remove",
-        json={"image_id": image_id, "color": "#ff0000", "tolerance": 10, "invert": True},
+        json={
+            "image_id": image_id,
+            "color": "#ff0000",
+            "tolerance": 10,
+            "invert": True,
+        },
     )
 
     assert processed.status_code == 200
@@ -85,7 +90,12 @@ def test_replace_with_solid_color():
 
     processed = client.post(
         "/api/background/replace",
-        json={"image_id": image_id, "color": "#ff0000", "tolerance": 10, "background_color": "#00ff00"},
+        json={
+            "image_id": image_id,
+            "color": "#ff0000",
+            "tolerance": 10,
+            "background_color": "#00ff00",
+        },
     )
 
     assert processed.status_code == 200
@@ -117,7 +127,12 @@ def test_replace_with_library_background():
 
     processed = client.post(
         "/api/background/replace",
-        json={"image_id": image_id, "color": "#ff0000", "tolerance": 10, "background_name": name},
+        json={
+            "image_id": image_id,
+            "color": "#ff0000",
+            "tolerance": 10,
+            "background_name": name,
+        },
     )
 
     assert processed.status_code == 200
@@ -189,8 +204,13 @@ def test_replace_rejects_both_targets():
 
     response = client.post(
         "/api/background/replace",
-        json={"image_id": image_id, "color": "#ff0000", "tolerance": 10,
-              "background_color": "#00ff00", "background_name": "studio.jpg"},
+        json={
+            "image_id": image_id,
+            "color": "#ff0000",
+            "tolerance": 10,
+            "background_color": "#00ff00",
+            "background_name": "studio.jpg",
+        },
     )
 
     assert response.status_code == 400

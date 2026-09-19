@@ -59,7 +59,11 @@ class ImageIOService:
                 if pillow_format == "JPEG":
                     if source.mode in ("RGBA", "LA", "P"):
                         flattened = Image.new("RGB", source.size, (255, 255, 255))
-                        flattened.paste(source.convert("RGBA"), (0, 0), source.convert("RGBA").split()[-1])
+                        flattened.paste(
+                            source.convert("RGBA"),
+                            (0, 0),
+                            source.convert("RGBA").split()[-1],
+                        )
                         image = flattened
                     else:
                         image = source.convert("RGB")
@@ -69,9 +73,15 @@ class ImageIOService:
                     if width and height:
                         target = (width, height)
                     elif width:
-                        target = (width, max(1, round(image.height * width / image.width)))
+                        target = (
+                            width,
+                            max(1, round(image.height * width / image.width)),
+                        )
                     else:
-                        target = (max(1, round(image.width * height / image.height)), height)
+                        target = (
+                            max(1, round(image.width * height / image.height)),
+                            height,
+                        )
                     image = image.resize(target, Image.Resampling.LANCZOS)
                 try:
                     save_kwargs: dict[str, Any] = {}
@@ -92,9 +102,7 @@ class ImageIOService:
             image_id=image_id,
             width=width,
             height=height,
-            format=(
-                "jpeg" if pillow_format == "JPEG" else target_format.lower()
-            ),
+            format=("jpeg" if pillow_format == "JPEG" else target_format.lower()),
             mime_type=mime_type,
             path=output_path,
         )
@@ -108,9 +116,7 @@ class ImageIOService:
             "stored_filename"
         )
         if not isinstance(stored_filename, str) or not stored_filename:
-            raise FileValidationError(
-                "Image session has no valid stored file."
-            )
+            raise FileValidationError("Image session has no valid stored file.")
 
         source_dir = (
             self.storage_service.processed_dir

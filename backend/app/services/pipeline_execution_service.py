@@ -16,16 +16,27 @@ from .smart_crop_service import SmartCropService
 
 
 class PipelineExecutionService:
-    def __init__(self, session_service: ImageSessionService, storage_service: FileStorageService):
+    def __init__(
+        self, session_service: ImageSessionService, storage_service: FileStorageService
+    ):
         self.session_service = session_service
         self.storage_service = storage_service
 
-    def execute(self, image_id: str, pipeline: dict[str, Any], *, persist: bool, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+    def execute(
+        self,
+        image_id: str,
+        pipeline: dict[str, Any],
+        *,
+        persist: bool,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         source_path = self._source_path(image_id)
         nodes = PipelineService.validate_nodes(pipeline.get("nodes", []))
         active_nodes = [node for node in nodes if node.get("enabled", True)]
         cache_hash = self.cache_hash(source_path, nodes)
-        cache_path = self.storage_service.processed_dir / f"pipeline-cache-{cache_hash}.png"
+        cache_path = (
+            self.storage_service.processed_dir / f"pipeline-cache-{cache_hash}.png"
+        )
         cache_hit = cache_path.is_file()
         if not cache_hit:
             self._render(source_path, cache_path, active_nodes)
@@ -33,7 +44,11 @@ class PipelineExecutionService:
             session = self.session_service.get_session(image_id)
             if session is None:
                 raise FileNotFoundError("Image session was not found.")
-            history_parameters = {"pipeline_hash": cache_hash, "enabled_nodes": len(active_nodes), "source_history_index": 0}
+            history_parameters = {
+                "pipeline_hash": cache_hash,
+                "enabled_nodes": len(active_nodes),
+                "source_history_index": 0,
+            }
             if metadata:
                 history_parameters.update(metadata)
             self.session_service.update_current_image(
@@ -87,12 +102,16 @@ class PipelineExecutionService:
         return path
 
     @staticmethod
-    def _render(source_path: Path, output_path: Path, nodes: list[dict[str, Any]]) -> None:
+    def _render(
+        source_path: Path, output_path: Path, nodes: list[dict[str, Any]]
+    ) -> None:
         with Image.open(source_path) as source:
             current = source.convert("RGBA")
             try:
                 for node in nodes:
-                    next_image = PipelineExecutionService._apply(current, node["operation"], node.get("parameters", {}))
+                    next_image = PipelineExecutionService._apply(
+                        current, node["operation"], node.get("parameters", {})
+                    )
                     if next_image is not current:
                         current.close()
                     current = next_image.convert("RGBA")
@@ -103,10 +122,14 @@ class PipelineExecutionService:
                 current.close()
 
     @staticmethod
-    def _apply(image: Image.Image, operation: str, params: dict[str, Any]) -> Image.Image:
+    def _apply(
+        image: Image.Image, operation: str, params: dict[str, Any]
+    ) -> Image.Image:
         if operation == "smart-crop":
             # Not a pixel transform: needs the saliency box, so it stays bespoke.
-            ratio = SmartCropService.parse_aspect_ratio(params.get("aspect_ratio", "original"))
+            ratio = SmartCropService.parse_aspect_ratio(
+                params.get("aspect_ratio", "original")
+            )
             box, _score = SmartCropService._find_box(image, ratio)
             return image.crop((box[0], box[1], box[0] + box[2], box[1] + box[3]))
         return OPERATIONS[operation].run(image, params)

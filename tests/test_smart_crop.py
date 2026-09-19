@@ -43,7 +43,12 @@ def test_preview_returns_crop_without_changing_history(smart_crop_context):
     app, storage, session, source_path = smart_crop_context
     before = app.config["IMAGE_SESSION_SERVICE"].history(session["image_id"])
 
-    response = post(app, "/api/transform/smart-crop/preview", session["image_id"], aspect_ratio="1:1")
+    response = post(
+        app,
+        "/api/transform/smart-crop/preview",
+        session["image_id"],
+        aspect_ratio="1:1",
+    )
 
     assert response.status_code == 200
     assert response.mimetype == "image/png"
@@ -58,7 +63,9 @@ def test_preview_returns_crop_without_changing_history(smart_crop_context):
 def test_apply_returns_expected_ratio_and_records_history(smart_crop_context):
     app, _, session, _ = smart_crop_context
 
-    response = post(app, "/api/transform/smart-crop/apply", session["image_id"], aspect_ratio="16:9")
+    response = post(
+        app, "/api/transform/smart-crop/apply", session["image_id"], aspect_ratio="16:9"
+    )
 
     assert response.status_code == 200
     result = response.get_json()["image"]
@@ -73,7 +80,9 @@ def test_apply_integrates_with_undo_and_redo(smart_crop_context):
     app, _, session, _ = smart_crop_context
     client = app.test_client()
 
-    applied = post(app, "/api/transform/smart-crop/apply", session["image_id"], aspect_ratio="1:1")
+    applied = post(
+        app, "/api/transform/smart-crop/apply", session["image_id"], aspect_ratio="1:1"
+    )
     assert applied.status_code == 200
     cropped_filename = applied.get_json()["image"]["filename"]
 
@@ -91,18 +100,30 @@ def test_apply_integrates_with_undo_and_redo(smart_crop_context):
 def test_original_ratio_returns_full_image(smart_crop_context):
     app, _, session, _ = smart_crop_context
 
-    response = post(app, "/api/transform/smart-crop/preview", session["image_id"], aspect_ratio="original")
+    response = post(
+        app,
+        "/api/transform/smart-crop/preview",
+        session["image_id"],
+        aspect_ratio="original",
+    )
 
     assert response.status_code == 200
     with Image.open(io.BytesIO(response.data)) as preview:
         assert preview.size == (1200, 800)
 
 
-@pytest.mark.parametrize("aspect_ratio", ["0:1", "1:0", "bad", "1", "1:-1", "1001:1", ""])
+@pytest.mark.parametrize(
+    "aspect_ratio", ["0:1", "1:0", "bad", "1", "1:-1", "1001:1", ""]
+)
 def test_invalid_aspect_ratio_is_rejected(smart_crop_context, aspect_ratio):
     app, _, session, _ = smart_crop_context
 
-    response = post(app, "/api/transform/smart-crop/preview", session["image_id"], aspect_ratio=aspect_ratio)
+    response = post(
+        app,
+        "/api/transform/smart-crop/preview",
+        session["image_id"],
+        aspect_ratio=aspect_ratio,
+    )
 
     assert response.status_code == 400
     assert response.get_json()["error"]["code"] == "INVALID_SMART_CROP"
@@ -111,7 +132,9 @@ def test_invalid_aspect_ratio_is_rejected(smart_crop_context, aspect_ratio):
 def test_crop_is_always_inside_source_bounds(smart_crop_context):
     app, _, session, _ = smart_crop_context
 
-    response = post(app, "/api/transform/smart-crop/apply", session["image_id"], aspect_ratio="9:16")
+    response = post(
+        app, "/api/transform/smart-crop/apply", session["image_id"], aspect_ratio="9:16"
+    )
 
     assert response.status_code == 200
     result = response.get_json()["image"]
@@ -124,7 +147,9 @@ def test_crop_is_always_inside_source_bounds(smart_crop_context):
 def test_missing_session_is_rejected(smart_crop_context):
     app, _, _, _ = smart_crop_context
 
-    response = post(app, "/api/transform/smart-crop/apply", "missing-session", aspect_ratio="1:1")
+    response = post(
+        app, "/api/transform/smart-crop/apply", "missing-session", aspect_ratio="1:1"
+    )
 
     assert response.status_code == 404
     assert response.get_json()["error"]["code"] == "IMAGE_SESSION_NOT_FOUND"
@@ -152,7 +177,12 @@ def test_saliency_search_is_bounded_for_large_image(tmp_path, monkeypatch):
     )
 
     started = time.perf_counter()
-    response = post(app, "/api/transform/smart-crop/preview", session["image_id"], aspect_ratio="4:5")
+    response = post(
+        app,
+        "/api/transform/smart-crop/preview",
+        session["image_id"],
+        aspect_ratio="4:5",
+    )
     elapsed = time.perf_counter() - started
 
     assert response.status_code == 200

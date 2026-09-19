@@ -14,7 +14,6 @@ history_bp = Blueprint(
 )
 
 
-
 def _session_service():
     return get_session_service()
 
@@ -38,9 +37,13 @@ def _image_id():
         payload = {}
     image_id = payload.get("image_id")
     if not isinstance(image_id, str) or not image_id.strip():
-        return None, error_response(ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400)
+        return None, error_response(
+            ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
+        )
     if _session_service().get_session(image_id) is None:
-        return None, error_response(ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404)
+        return None, error_response(
+            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
+        )
     return image_id, None
 
 
@@ -64,9 +67,13 @@ def _state(image_id: str):
 def get_history():
     image_id = request.args.get("image_id")
     if not image_id:
-        return error_response(ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400)
+        return error_response(
+            ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
+        )
     if _session_service().get_session(image_id) is None:
-        return error_response(ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404)
+        return error_response(
+            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
+        )
     return _state(image_id)
 
 
@@ -120,13 +127,23 @@ def clear_history():
 def current_file():
     image_id = request.args.get("image_id")
     if not image_id:
-        return error_response(ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400)
+        return error_response(
+            ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
+        )
     session = _session_service().get_session(image_id)
     if session is None:
-        return error_response(ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404)
+        return error_response(
+            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
+        )
     storage = get_storage_service()
-    directory = storage.processed_dir if session.get("current_storage") == "processed" else storage.uploads_dir
-    return jsonify(success=True, filename=session.get("current_filename"), directory=directory.name)
+    directory = (
+        storage.processed_dir
+        if session.get("current_storage") == "processed"
+        else storage.uploads_dir
+    )
+    return jsonify(
+        success=True, filename=session.get("current_filename"), directory=directory.name
+    )
 
 
 @history_bp.get("/content/<image_id>/<int:index>")

@@ -18,12 +18,13 @@ suggestions_bp = Blueprint(
 )
 
 
-
 def _analysis_findings(image_id: str):
     session_service = get_session_service()
     session = session_service.get_session(image_id)
     if session is None:
-        return None, error_response(ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404)
+        return None, error_response(
+            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
+        )
     from pathlib import Path
 
     from PIL import Image
@@ -36,9 +37,13 @@ def _analysis_findings(image_id: str):
     )
     source_path = Path(directory) / (session.get("current_filename") or "")
     if not source_path.is_file():
-        return None, error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, "Stored image was not found.", 404)
+        return None, error_response(
+            ErrorCodes.IMAGE_NOT_AVAILABLE, "Stored image was not found.", 404
+        )
     with Image.open(source_path) as image:
-        report = analyze_cached(image, source_path, storage.resolve_storage_dir("analysis-cache"))
+        report = analyze_cached(
+            image, source_path, storage.resolve_storage_dir("analysis-cache")
+        )
     report["findings"] = [explain_finding(finding) for finding in report["findings"]]
     return report, None
 
@@ -50,7 +55,11 @@ def _suggestion_for(image_id: str, sug_type: str):
     for suggestion in build_suggestions(report["findings"], report["metrics"]):
         if suggestion["type"] == sug_type:
             return suggestion, None
-    return None, error_response(ErrorCodes.SUGGESTION_NOT_AVAILABLE, "This suggestion is not available for the image.", 404)
+    return None, error_response(
+        ErrorCodes.SUGGESTION_NOT_AVAILABLE,
+        "This suggestion is not available for the image.",
+        404,
+    )
 
 
 # Suggestions dismissed in this process, keyed by image session. The runtime is
@@ -64,7 +73,9 @@ def list_suggestions():
     payload = request.get_json(silent=True) or {}
     image_id = payload.get("image_id")
     if not isinstance(image_id, str) or not image_id.strip():
-        return error_response(ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400)
+        return error_response(
+            ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
+        )
     report, error = _analysis_findings(image_id)
     if error:
         return error
@@ -74,7 +85,17 @@ def list_suggestions():
         for suggestion in build_suggestions(report["findings"], report["metrics"])
         if suggestion["type"] not in dismissed
     ]
-    return jsonify(success=True, image_id=image_id, analyzer_version=report.get("analyzer_version"), analysis_hash=report.get("analysis_hash"), cache_hit=report.get("cache_hit", False), quality_score=report.get("quality_score"), metrics=report["metrics"], findings=report["findings"], suggestions=suggestions)
+    return jsonify(
+        success=True,
+        image_id=image_id,
+        analyzer_version=report.get("analyzer_version"),
+        analysis_hash=report.get("analysis_hash"),
+        cache_hit=report.get("cache_hit", False),
+        quality_score=report.get("quality_score"),
+        metrics=report["metrics"],
+        findings=report["findings"],
+        suggestions=suggestions,
+    )
 
 
 @suggestions_bp.post("/preview")
@@ -83,21 +104,29 @@ def preview_suggestion():
     image_id = payload.get("image_id")
     sug_type = payload.get("type")
     if not isinstance(image_id, str) or not isinstance(sug_type, str):
-        return error_response(ErrorCodes.INVALID_REQUEST, "image_id and type are required.", 400)
+        return error_response(
+            ErrorCodes.INVALID_REQUEST, "image_id and type are required.", 400
+        )
     suggestion, error = _suggestion_for(image_id, sug_type)
     if error:
         return error
     try:
         PipelineService.validate_nodes(suggestion["pipeline"]["nodes"])
-        result = PipelineExecutionService(get_session_service(), get_storage_service()).execute(image_id, suggestion["pipeline"], persist=False)
+        result = PipelineExecutionService(
+            get_session_service(), get_storage_service()
+        ).execute(image_id, suggestion["pipeline"], persist=False)
         with result.path.open("rb") as rendered:
             png_bytes = rendered.read()
     except PipelineParamError as exc:
         return error_response(ErrorCodes.INVALID_PIPELINE, str(exc), 400)
     except FileNotFoundError:
-        return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, "Stored image was not found.", 404)
+        return error_response(
+            ErrorCodes.IMAGE_NOT_AVAILABLE, "Stored image was not found.", 404
+        )
     except (OSError, ValueError):
-        return error_response(ErrorCodes.PREVIEW_FAILED, "The preview could not be generated.", 400)
+        return error_response(
+            ErrorCodes.PREVIEW_FAILED, "The preview could not be generated.", 400
+        )
     import io
 
     return send_file(io.BytesIO(png_bytes), mimetype="image/png")
@@ -109,23 +138,52 @@ def apply_suggestion():
     image_id = payload.get("image_id")
     sug_type = payload.get("type")
     if not isinstance(image_id, str) or not isinstance(sug_type, str):
-        return error_response(ErrorCodes.INVALID_REQUEST, "image_id and type are required.", 400)
+        return error_response(
+            ErrorCodes.INVALID_REQUEST, "image_id and type are required.", 400
+        )
     suggestion, error = _suggestion_for(image_id, sug_type)
     if error:
         return error
     try:
         PipelineService.validate_nodes(suggestion["pipeline"]["nodes"])
-        result = PipelineExecutionService(get_session_service(), get_storage_service()).execute(image_id, suggestion["pipeline"], persist=True, metadata={"source": "smart-suggestion", "suggestion_id": sug_type, "suggestion_rule_version": suggestion.get("rule_version", ANALYZER_VERSION)})
-        node = {"operation": {"label": suggestion["suggested_operation"]["label"]}, "pipeline_hash": result.public_extras["pipeline_hash"], "cache_hit": result.public_extras["cache_hit"]}
+        result = PipelineExecutionService(
+            get_session_service(), get_storage_service()
+        ).execute(
+            image_id,
+            suggestion["pipeline"],
+            persist=True,
+            metadata={
+                "source": "smart-suggestion",
+                "suggestion_id": sug_type,
+                "suggestion_rule_version": suggestion.get(
+                    "rule_version", ANALYZER_VERSION
+                ),
+            },
+        )
+        node = {
+            "operation": {"label": suggestion["suggested_operation"]["label"]},
+            "pipeline_hash": result.public_extras["pipeline_hash"],
+            "cache_hit": result.public_extras["cache_hit"],
+        }
     except PipelineParamError as exc:
         return error_response(ErrorCodes.INVALID_PIPELINE, str(exc), 400)
     except FileNotFoundError:
-        return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, "Stored image was not found.", 404)
+        return error_response(
+            ErrorCodes.IMAGE_NOT_AVAILABLE, "Stored image was not found.", 404
+        )
     except ResourceExceededError as exc:
         return error_response(ErrorCodes.RESOURCE_LIMIT, str(exc), 400)
     except (OSError, ValueError):
-        return error_response(ErrorCodes.APPLY_FAILED, "The suggestion could not be applied.", 400)
-    return jsonify(success=True, node=node, suggestion_type=sug_type, pipeline=suggestion["pipeline"], image=public_image(result))
+        return error_response(
+            ErrorCodes.APPLY_FAILED, "The suggestion could not be applied.", 400
+        )
+    return jsonify(
+        success=True,
+        node=node,
+        suggestion_type=sug_type,
+        pipeline=suggestion["pipeline"],
+        image=public_image(result),
+    )
 
 
 @suggestions_bp.post("/dismiss")
@@ -134,8 +192,12 @@ def dismiss_suggestion():
     image_id = payload.get("image_id")
     sug_type = payload.get("type")
     if not isinstance(image_id, str) or not image_id.strip():
-        return error_response(ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400)
+        return error_response(
+            ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
+        )
     if not isinstance(sug_type, str) or not sug_type.strip():
-        return error_response(ErrorCodes.INVALID_REQUEST, "A suggestion type is required.", 400)
+        return error_response(
+            ErrorCodes.INVALID_REQUEST, "A suggestion type is required.", 400
+        )
     _dismissed.setdefault(image_id, set()).add(sug_type)
     return jsonify(success=True, dismissed=True, type=sug_type)
