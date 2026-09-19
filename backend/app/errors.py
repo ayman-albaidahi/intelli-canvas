@@ -11,9 +11,14 @@ class AppError(Exception):
     status_code = 500
     default_message = "An application error occurred."
 
-    def __init__(self, message: str | None = None):
+    def __init__(self, message: str | None = None, code: str | None = None):
         super().__init__(message or self.default_message)
         self.message = message or self.default_message
+        # Allow a specific error code to override the class default, so a
+        # single reusable exception can honor field-specific contracts
+        # (e.g. INVALID_IMAGE_ID) without a subclass per field.
+        if code is not None:
+            self.code = code
 
 
 class InvalidRequestError(AppError):
@@ -40,8 +45,17 @@ class ResourceLimitError(AppError):
     default_message = "The operation exceeds the allowed resource limit."
 
 
-def error_response(code: str, message: str, status_code: int):
-    return jsonify(success=False, error={"code": code, "message": message}), status_code
+def error_response(code, message: str, status_code: int):
+    """Build the standard failure envelope.
+
+    ``code`` may be a plain string (legacy call sites) or an
+    :class:`~backend.app.error_codes.ErrorCodes` member; both serialize to the
+    same response shape.
+    """
+    from .error_codes import ErrorCodes
+
+    resolved = code.value if isinstance(code, ErrorCodes) else code
+    return jsonify(success=False, error={"code": resolved, "message": message}), status_code
 
 
 def register_error_handlers(app):

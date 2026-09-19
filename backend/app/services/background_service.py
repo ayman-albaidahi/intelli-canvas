@@ -20,6 +20,20 @@ MAX_BACKGROUND_SCALE = 5.0
 MAX_BACKGROUND_OFFSET = 10000
 BACKGROUND_CATEGORIES = {"general", "product", "studio", "social", "seasonal"}
 
+# Neutral values used when a background parameter is omitted from a request.
+_BACKGROUND_DEFAULTS = {
+    "tolerance": 25,
+    "feather": 2,
+    "smooth": 1,
+    "background_blur": 0,
+    "background_scale": 1.0,
+    "background_x": 0,
+    "background_y": 0,
+    "shadow_opacity": 0.25,
+    "shadow_blur": 12,
+    "shadow_offset_y": 10,
+}
+
 
 class BackgroundParamError(ValueError):
     """Raised when mask parameters fail validation."""
@@ -35,44 +49,44 @@ class BackgroundService:
 
     @staticmethod
     def validate_params(payload: dict[str, Any]) -> dict[str, Any]:
+        from ..validation import InvalidRequestError, require_int, require_number
+
         color = payload.get("color", payload.get("key_color"))
         if not isinstance(color, str) or not HEX_COLOR.match(color):
             raise BackgroundParamError("color must be a hex value like #ff0000.")
-        tolerance = payload.get("tolerance", 25)
-        if isinstance(tolerance, bool) or not isinstance(tolerance, int) or not 0 <= tolerance <= 100:
-            raise BackgroundParamError("tolerance must be an integer from 0 to 100.")
-        feather = payload.get("feather", 2)
-        if isinstance(feather, bool) or not isinstance(feather, int) or not 0 <= feather <= MAX_FEATHER:
-            raise BackgroundParamError(f"feather must be an integer from 0 to {MAX_FEATHER}.")
-        smooth = payload.get("smooth", 1)
-        if isinstance(smooth, bool) or not isinstance(smooth, int) or not 0 <= smooth <= MAX_SMOOTH:
-            raise BackgroundParamError(f"smooth must be an integer from 0 to {MAX_SMOOTH}.")
+
+        def bounded(name, low, high, *, numeric=False, label=None):
+            value = payload.get(name)
+            default = _BACKGROUND_DEFAULTS[name]
+            if value is None:
+                return default
+            label = label or name
+            try:
+                return require_number(value, low=low, high=high, name=label) if numeric \
+                    else require_int(value, low=low, high=high, name=label)
+            except InvalidRequestError as exc:
+                raise BackgroundParamError(str(exc)) from exc
+
+        tolerance = bounded("tolerance", 0, 100)
+        feather = bounded("feather", 0, MAX_FEATHER)
+        smooth = bounded("smooth", 0, MAX_SMOOTH)
         invert = payload.get("invert", False)
         if not isinstance(invert, bool):
             raise BackgroundParamError("invert must be a boolean.")
-        background_blur = payload.get("background_blur", 0)
-        if isinstance(background_blur, bool) or not isinstance(background_blur, int) or not 0 <= background_blur <= MAX_BACKGROUND_BLUR:
-            raise BackgroundParamError(f"background_blur must be an integer from 0 to {MAX_BACKGROUND_BLUR}.")
-        background_scale = payload.get("background_scale", 1.0)
-        if isinstance(background_scale, bool) or not isinstance(background_scale, (int, float)) or not 0.1 <= background_scale <= MAX_BACKGROUND_SCALE:
-            raise BackgroundParamError(f"background_scale must be a number from 0.1 to {MAX_BACKGROUND_SCALE}.")
-        background_x = payload.get("background_x", 0)
-        background_y = payload.get("background_y", 0)
-        for name, value in (("background_x", background_x), ("background_y", background_y)):
-            if isinstance(value, bool) or not isinstance(value, int) or not -MAX_BACKGROUND_OFFSET <= value <= MAX_BACKGROUND_OFFSET:
-                raise BackgroundParamError(f"{name} must be an integer from {-MAX_BACKGROUND_OFFSET} to {MAX_BACKGROUND_OFFSET}.")
+        background_blur = bounded("background_blur", 0, MAX_BACKGROUND_BLUR)
+        background_scale = bounded("background_scale", 0.1, MAX_BACKGROUND_SCALE, numeric=True)
+        background_x = bounded("background_x", -MAX_BACKGROUND_OFFSET, MAX_BACKGROUND_OFFSET)
+        background_y = bounded("background_y", -MAX_BACKGROUND_OFFSET, MAX_BACKGROUND_OFFSET)
         shadow = payload.get("shadow", False)
         if not isinstance(shadow, bool):
             raise BackgroundParamError("shadow must be a boolean.")
-        shadow_opacity = payload.get("shadow_opacity", 0.25)
-        if isinstance(shadow_opacity, bool) or not isinstance(shadow_opacity, (int, float)) or not 0 <= shadow_opacity <= 1:
-            raise BackgroundParamError("shadow_opacity must be a number from 0 to 1.")
-        shadow_blur = payload.get("shadow_blur", 12)
-        if isinstance(shadow_blur, bool) or not isinstance(shadow_blur, int) or not 0 <= shadow_blur <= MAX_BACKGROUND_BLUR:
-            raise BackgroundParamError(f"shadow_blur must be an integer from 0 to {MAX_BACKGROUND_BLUR}.")
-        shadow_offset_y = payload.get("shadow_offset_y", 10)
-        if isinstance(shadow_offset_y, bool) or not isinstance(shadow_offset_y, int) or not -MAX_BACKGROUND_OFFSET <= shadow_offset_y <= MAX_BACKGROUND_OFFSET:
-            raise BackgroundParamError("shadow_offset_y is out of range.")
+        shadow_opacity = bounded("shadow_opacity", 0, 1, numeric=True)
+        shadow_blur = bounded("shadow_blur", 0, MAX_BACKGROUND_BLUR)
+        shadow_offset_y = bounded(
+            "shadow_offset_y", -MAX_BACKGROUND_OFFSET, MAX_BACKGROUND_OFFSET,
+            label="shadow_offset_y",
+        )
+
         return {
             "color": color.lower(),
             "tolerance": tolerance,

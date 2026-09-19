@@ -4,10 +4,19 @@ import io
 import time
 import uuid
 
-from flask import Blueprint, current_app, jsonify, request, send_file
+from flask import Blueprint, jsonify, request, send_file
 
-from ..errors import error_response
+from ..dependencies import (
+    get_layer_compositor,
+    get_session_repository,
+    get_session_service,
+    get_storage_service,
+)
+from ..error_codes import ErrorCodes
+from ..errors import InvalidRequestError, error_response
 from ..services.file_service import FileValidationError
+from ..validation import require_number
+from ..views import public_image
 
 layers_bp = Blueprint(
     "layers",
@@ -23,54 +32,50 @@ DATA_URL_PREFIX = "data:"
 
 
 def _session_service():
-    return current_app.config["IMAGE_SESSION_SERVICE"]
+    return get_session_service()
 
 
 def _validate_layers(payload, image_id):
     if not isinstance(payload, list):
-        return None, error_response("INVALID_LAYERS", "layers must be an array.", 400)
+        return None, error_response(ErrorCodes.INVALID_LAYERS, "layers must be an array.", 400)
     if len(payload) > MAX_LAYERS:
-        return None, error_response("INVALID_LAYERS", "Too many layers.", 400)
+        return None, error_response(ErrorCodes.INVALID_LAYERS, "Too many layers.", 400)
     try:
         import json
 
         if len(json.dumps(payload, separators=(",", ":"))) > MAX_LAYER_PAYLOAD_BYTES:
-            return None, error_response("INVALID_LAYERS", "Layer payload is too large.", 413)
+            return None, error_response(ErrorCodes.INVALID_LAYERS, "Layer payload is too large.", 413)
     except (TypeError, ValueError):
-        return None, error_response("INVALID_LAYERS", "Layer payload must be JSON serializable.", 400)
+        return None, error_response(ErrorCodes.INVALID_LAYERS, "Layer payload must be JSON serializable.", 400)
 
     clean = []
     for layer in payload:
         if not isinstance(layer, dict):
-            return None, error_response("INVALID_LAYERS", "Each layer must be an object.", 400)
+            return None, error_response(ErrorCodes.INVALID_LAYERS, "Each layer must be an object.", 400)
         if layer.get("type") not in ALLOWED_TYPES:
-            return None, error_response("INVALID_LAYERS", "Layer type is not supported.", 400)
+            return None, error_response(ErrorCodes.INVALID_LAYERS, "Layer type is not supported.", 400)
         if not isinstance(layer.get("id"), str) or not layer["id"].strip():
-            return None, error_response("INVALID_LAYERS", "Each layer needs an id.", 400)
-        if "opacity" in layer and (
-            isinstance(layer["opacity"], bool)
-            or not isinstance(layer["opacity"], (int, float))
-            or not 0 <= layer["opacity"] <= 1
-        ):
-            return None, error_response("INVALID_LAYERS", "Layer opacity must be a number from 0 to 1.", 400)
-        if "visible" in layer and not isinstance(layer["visible"], bool):
-            return None, error_response("INVALID_LAYERS", "Layer visibility must be boolean.", 400)
+            return None, error_response(ErrorCodes.INVALID_LAYERS, "Each layer needs an id.", 400)
+        try:
+            if "opacity" in layer:
+                require_number(layer["opacity"], low=0, high=1, name="Layer opacity")
+            if "visible" in layer and not isinstance(layer["visible"], bool):
+                raise InvalidRequestError("Layer visibility must be boolean.")
+            for coordinate in ("x", "y", "w", "h", "rotation"):
+                if coordinate in layer:
+                    require_number(layer[coordinate], name=f"Layer {coordinate}")
+        except InvalidRequestError as exc:
+            return None, error_response(ErrorCodes.INVALID_LAYERS, exc.message, 400)
         if layer.get("blend", "source-over") not in ALLOWED_BLEND_MODES:
-            return None, error_response("INVALID_LAYERS", "Layer blend mode is not supported.", 400)
-        for coordinate in ("x", "y", "w", "h", "rotation"):
-            if coordinate in layer and (
-                isinstance(layer[coordinate], bool)
-                or not isinstance(layer[coordinate], (int, float))
-            ):
-                return None, error_response("INVALID_LAYERS", f"Layer {coordinate} must be numeric.", 400)
+            return None, error_response(ErrorCodes.INVALID_LAYERS, "Layer blend mode is not supported.", 400)
         if "w" in layer and layer["w"] <= 0 or "h" in layer and layer["h"] <= 0:
-            return None, error_response("INVALID_LAYERS", "Layer dimensions must be positive.", 400)
+            return None, error_response(ErrorCodes.INVALID_LAYERS, "Layer dimensions must be positive.", 400)
         if layer["type"] == "image" and layer.get("asset_id"):
-            asset = current_app.config["IMAGE_SESSIONS"].get_asset_for_image(
+            asset = get_session_repository().get_asset_for_image(
                 layer["asset_id"], image_id
             )
             if asset is None:
-                return None, error_response("INVALID_LAYER_ASSET", "Layer image asset was not found for this image.", 400)
+                return None, error_response(ErrorCodes.INVALID_LAYER_ASSET, "Layer image asset was not found for this image.", 400)
         clean.append(dict(layer))
     return clean, None
 
@@ -108,11 +113,11 @@ def _store_data_url(image_id, layer, storage, repository):
 def get_layers():
     image_id = request.args.get("image_id", "")
     if not image_id.strip():
-        return error_response("INVALID_IMAGE_ID", "A valid image_id is required.", 400)
+        return error_response(ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400)
     try:
         layers = _session_service().get_layers(image_id)
     except FileNotFoundError:
-        return error_response("IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404)
+        return error_response(ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404)
     return jsonify(success=True, image_id=image_id, layers=layers)
 
 
@@ -121,48 +126,48 @@ def compose_layers():
     payload = request.get_json(silent=True) or {}
     image_id = payload.get("image_id")
     if not isinstance(image_id, str) or not image_id.strip():
-        return error_response("INVALID_IMAGE_ID", "A valid image_id is required.", 400)
+        return error_response(ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400)
     try:
-        result = current_app.config["LAYER_COMPOSITOR_SERVICE"].compose(image_id)
+        result = get_layer_compositor().compose(image_id)
     except FileNotFoundError:
-        return error_response("IMAGE_NOT_AVAILABLE", "The image or layer asset was not found.", 404)
+        return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, "The image or layer asset was not found.", 404)
     except (OSError, ValueError) as exc:
-        return error_response("COMPOSITE_FAILED", str(exc), 400)
-    return jsonify(success=True, image={key: value for key, value in result.items() if key != "path"})
+        return error_response(ErrorCodes.COMPOSITE_FAILED, str(exc), 400)
+    return jsonify(success=True, image=public_image(result))
 
 
 @layers_bp.put("")
 def save_layers():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
-        return error_response("INVALID_REQUEST", "A JSON request body is required.", 400)
+        return error_response(ErrorCodes.INVALID_REQUEST, "A JSON request body is required.", 400)
     image_id = payload.get("image_id")
     if not isinstance(image_id, str) or not image_id.strip():
-        return error_response("INVALID_IMAGE_ID", "A valid image_id is required.", 400)
+        return error_response(ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400)
     layers, error = _validate_layers(payload.get("layers"), image_id)
     if error is not None:
         return error
     service = _session_service()
     try:
         service.get_layers(image_id)
-        storage = current_app.config["FILE_STORAGE_SERVICE"]
-        repository = current_app.config["IMAGE_SESSIONS"]
+        storage = get_storage_service()
+        repository = get_session_repository()
         layers = [_store_data_url(image_id, layer, storage, repository) for layer in layers]
         saved = service.save_layers(image_id, layers)
     except FileNotFoundError:
-        return error_response("IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404)
+        return error_response(ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404)
     except ValueError as exc:
-        return error_response("INVALID_LAYER_ASSET", str(exc), 400)
+        return error_response(ErrorCodes.INVALID_LAYER_ASSET, str(exc), 400)
     return jsonify(success=True, image_id=image_id, layers=saved)
 
 
 @layers_bp.get("/assets/<asset_id>")
 def get_layer_asset(asset_id):
     image_id = request.args.get("image_id", "")
-    asset = current_app.config["IMAGE_SESSIONS"].get_asset_for_image(asset_id, image_id)
+    asset = get_session_repository().get_asset_for_image(asset_id, image_id)
     if asset is None:
-        return error_response("ASSET_NOT_FOUND", "Layer asset was not found.", 404)
-    path = current_app.config["FILE_STORAGE_SERVICE"].resolve_storage_dir(asset["storage_category"]) / asset["stored_filename"]
+        return error_response(ErrorCodes.ASSET_NOT_FOUND, "Layer asset was not found.", 404)
+    path = get_storage_service().resolve_storage_dir(asset["storage_category"]) / asset["stored_filename"]
     if not path.is_file():
-        return error_response("ASSET_NOT_FOUND", "Layer asset was not found.", 404)
+        return error_response(ErrorCodes.ASSET_NOT_FOUND, "Layer asset was not found.", 404)
     return send_file(path, mimetype=asset["mime_type"], conditional=True)

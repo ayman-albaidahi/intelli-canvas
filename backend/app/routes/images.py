@@ -1,20 +1,25 @@
-from flask import Blueprint, current_app, jsonify, request, send_file
+import sys
 
+from flask import Blueprint, jsonify, request, send_file
+
+from ..dependencies import (
+    get_layer_compositor,
+    get_session_repository,
+    get_session_service,
+    get_storage_service,
+)
+from ..error_codes import ErrorCodes
 from ..errors import error_response
-from ..services.file_service import FileStorageService, FileValidationError
+
+# Imported for the test monkeypatch seam: tests swap this module-level name to
+# inject an isolated storage root, and get_storage_service detects the change.
+from ..services.file_service import (  # noqa: F401
+    FileStorageService,
+    FileValidationError,
+)
 from ..services.image_io_service import ImageIOService
-from ..services.image_session_service import ImageSessionService
 from ..services.image_upload_service import ImageUploadService
-
-# Captured at import time so tests can swap the module-level name via
-# monkeypatch; the identity check in _get_storage_service detects the swap.
-_DEFAULT_FILE_STORAGE_SERVICE = FileStorageService
-
-
-def _get_storage_service():
-    if FileStorageService is not _DEFAULT_FILE_STORAGE_SERVICE:
-        return FileStorageService(**{})
-    return current_app.config["FILE_STORAGE_SERVICE"]
+from ..validation import require_int
 
 images_bp = Blueprint(
     "images",
@@ -22,35 +27,32 @@ images_bp = Blueprint(
     url_prefix="/api/images",
 )
 
-def _get_session_service() -> ImageSessionService:
-    return current_app.config["IMAGE_SESSION_SERVICE"]
-
 
 @images_bp.post("")
 def upload_image():
     uploaded_file = request.files.get("file")
     if uploaded_file is None:
-        return error_response("INVALID_REQUEST", "No file was uploaded.", 400)
+        return error_response(ErrorCodes.INVALID_REQUEST, "No file was uploaded.", 400)
 
     filename = uploaded_file.filename or ""
     if not filename or not filename.strip():
-        return error_response("INVALID_REQUEST", "Filename is required.", 400)
+        return error_response(ErrorCodes.INVALID_REQUEST, "Filename is required.", 400)
 
     if filename in {".", ".."} or "/" in filename or "\\" in filename:
         return error_response(
-            "INVALID_FILE", "Unsafe file path is not allowed.", 400
+            ErrorCodes.INVALID_FILE, "Unsafe file path is not allowed.", 400
         )
 
     try:
         public_image = ImageUploadService(
-            _get_session_service(), _get_storage_service()
+            get_session_service(), get_storage_service(sys.modules[__name__])
         ).upload(uploaded_file, filename)
         return jsonify(success=True, image=public_image)
     except FileValidationError as exc:
-        return error_response("INVALID_FILE", str(exc), 400)
+        return error_response(ErrorCodes.INVALID_FILE, str(exc), 400)
     except (OSError, TypeError, ValueError, KeyError):
         return error_response(
-            "UPLOAD_FAILED", "The image could not be uploaded.", 500
+            ErrorCodes.UPLOAD_FAILED, "The image could not be uploaded.", 500
         )
 
 
@@ -59,33 +61,33 @@ def convert_image():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
         return error_response(
-            "INVALID_REQUEST", "A JSON request body is required.", 400
+            ErrorCodes.INVALID_REQUEST, "A JSON request body is required.", 400
         )
 
     image_id = payload.get("image_id")
     target_format = payload.get("format")
     if not isinstance(image_id, str) or not image_id.strip():
         return error_response(
-            "INVALID_IMAGE_ID", "A valid image_id is required.", 400
+            ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
         )
     if not isinstance(target_format, str) or not target_format.strip():
         return error_response(
-            "INVALID_FORMAT", "A target format is required.", 400
+            ErrorCodes.INVALID_FORMAT, "A target format is required.", 400
         )
-    if image_id not in current_app.config["IMAGE_SESSIONS"]:
+    if image_id not in get_session_repository():
         return error_response(
-            "IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404
+            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
         )
 
     try:
         result = ImageIOService(
-            _get_session_service(), _get_storage_service()
+            get_session_service(), get_storage_service(sys.modules[__name__])
         ).convert(image_id, target_format)
     except (FileNotFoundError, FileValidationError) as exc:
-        return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+        return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
     except (OSError, ValueError):
         return error_response(
-            "CONVERSION_FAILED", "The image could not be converted.", 400
+            ErrorCodes.CONVERSION_FAILED, "The image could not be converted.", 400
         )
 
     return jsonify(
@@ -102,19 +104,19 @@ def convert_image():
 
 @images_bp.get("/<image_id>/content")
 def image_content(image_id: str):
-    session = _get_session_service().get_session(image_id)
+    session = get_session_service().get_session(image_id)
     if session is None:
         return error_response(
-            "IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404
+            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
         )
 
     filename = session.get("current_filename") or session.get("stored_filename")
     if not isinstance(filename, str) or not filename:
         return error_response(
-            "IMAGE_NOT_AVAILABLE", "Image is not available.", 404
+            ErrorCodes.IMAGE_NOT_AVAILABLE, "Image is not available.", 404
         )
 
-    storage_service = _get_storage_service()
+    storage_service = get_storage_service(sys.modules[__name__])
     directory = (
         storage_service.processed_dir
         if session.get("current_storage") == "processed"
@@ -125,11 +127,11 @@ def image_content(image_id: str):
         image_path.relative_to(directory)
     except ValueError:
         return error_response(
-            "IMAGE_NOT_AVAILABLE", "Image is not available.", 404
+            ErrorCodes.IMAGE_NOT_AVAILABLE, "Image is not available.", 404
         )
     if not image_path.is_file():
         return error_response(
-            "IMAGE_NOT_AVAILABLE", "Image is not available.", 404
+            ErrorCodes.IMAGE_NOT_AVAILABLE, "Image is not available.", 404
         )
 
     return send_file(image_path, mimetype=session.get("mime_type"))
@@ -140,45 +142,35 @@ def export_image():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
         return error_response(
-            "INVALID_REQUEST", "A JSON request body is required.", 400
+            ErrorCodes.INVALID_REQUEST, "A JSON request body is required.", 400
         )
 
     image_id = payload.get("image_id")
     target_format = payload.get("format")
     if not isinstance(image_id, str) or not image_id.strip():
         return error_response(
-            "INVALID_IMAGE_ID", "A valid image_id is required.", 400
+            ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
         )
     if not isinstance(target_format, str) or not target_format.strip():
         return error_response(
-            "INVALID_FORMAT", "A target format is required.", 400
+            ErrorCodes.INVALID_FORMAT, "A target format is required.", 400
         )
-    if image_id not in current_app.config["IMAGE_SESSIONS"]:
+    if image_id not in get_session_repository():
         return error_response(
-            "IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404
+            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
         )
 
     quality = payload.get("quality")
-    if quality is not None and (
-        isinstance(quality, bool) or not isinstance(quality, int) or not 1 <= quality <= 100
-    ):
-        return error_response(
-            "INVALID_QUALITY", "Quality must be an integer from 1 to 100.", 400
-        )
+    if quality is not None:
+        require_int(quality, low=1, high=100, name="Quality", code="INVALID_QUALITY")
     width = payload.get("width")
     height = payload.get("height")
     for dimension, value in (("width", width), ("height", height)):
-        if value is not None and (
-            isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 8000
-        ):
-            return error_response(
-                "INVALID_DIMENSIONS",
-                f"{dimension.capitalize()} must be an integer from 1 to 8000.",
-                400,
-            )
+        if value is not None:
+            require_int(value, low=1, high=8000, name=dimension.capitalize(), code="INVALID_DIMENSIONS")
     if width and height and width * height > 24_000_000:
         return error_response(
-            "INVALID_DIMENSIONS",
+            ErrorCodes.INVALID_DIMENSIONS,
             "The export area is too large (max 24 megapixels).",
             400,
         )
@@ -186,17 +178,17 @@ def export_image():
     try:
         composite_path = None
         if payload.get("composite_layers"):
-            composite_path = current_app.config["LAYER_COMPOSITOR_SERVICE"].compose(
+            composite_path = get_layer_compositor().compose(
                 image_id, persist=False
             )["path"]
         result = ImageIOService(
-            _get_session_service(), _get_storage_service()
+            get_session_service(), get_storage_service(sys.modules[__name__])
         ).convert(image_id, target_format, quality=quality, width=width, height=height, source_path=composite_path)
     except (FileNotFoundError, FileValidationError) as exc:
-        return error_response("IMAGE_NOT_AVAILABLE", str(exc), 404)
+        return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
     except (OSError, ValueError):
         return error_response(
-            "EXPORT_FAILED", "The image could not be exported.", 400
+            ErrorCodes.EXPORT_FAILED, "The image could not be exported.", 400
         )
 
     return send_file(

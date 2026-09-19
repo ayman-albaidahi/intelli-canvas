@@ -1,7 +1,9 @@
 import io
 
-from flask import Blueprint, current_app, jsonify, request, send_file
+from flask import Blueprint, jsonify, request, send_file
 
+from ..dependencies import get_session_service, get_storage_service
+from ..error_codes import ErrorCodes
 from ..errors import error_response
 from ..services.history_comparison_service import HistoryComparisonService
 
@@ -14,13 +16,13 @@ history_bp = Blueprint(
 
 
 def _session_service():
-    return current_app.config["IMAGE_SESSION_SERVICE"]
+    return get_session_service()
 
 
 def _comparison_service() -> HistoryComparisonService:
     return HistoryComparisonService(
-        current_app.config["IMAGE_SESSION_SERVICE"],
-        current_app.config["FILE_STORAGE_SERVICE"],
+        get_session_service(),
+        get_storage_service(),
     )
 
 
@@ -36,9 +38,9 @@ def _image_id():
         payload = {}
     image_id = payload.get("image_id")
     if not isinstance(image_id, str) or not image_id.strip():
-        return None, error_response("INVALID_IMAGE_ID", "A valid image_id is required.", 400)
+        return None, error_response(ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400)
     if _session_service().get_session(image_id) is None:
-        return None, error_response("IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404)
+        return None, error_response(ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404)
     return image_id, None
 
 
@@ -62,9 +64,9 @@ def _state(image_id: str):
 def get_history():
     image_id = request.args.get("image_id")
     if not image_id:
-        return error_response("INVALID_IMAGE_ID", "A valid image_id is required.", 400)
+        return error_response(ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400)
     if _session_service().get_session(image_id) is None:
-        return error_response("IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404)
+        return error_response(ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404)
     return _state(image_id)
 
 
@@ -77,7 +79,7 @@ def goto_history():
     try:
         _session_service().goto(image_id, index)
     except ValueError as exc:
-        return error_response("HISTORY_INDEX_INVALID", str(exc), 400)
+        return error_response(ErrorCodes.HISTORY_INDEX_INVALID, str(exc), 400)
     return _state(image_id)
 
 
@@ -89,7 +91,7 @@ def undo_history():
     try:
         _session_service().undo(image_id)
     except ValueError as exc:
-        return error_response("NOTHING_TO_UNDO", str(exc), 400)
+        return error_response(ErrorCodes.NOTHING_TO_UNDO, str(exc), 400)
     return _state(image_id)
 
 
@@ -101,7 +103,7 @@ def redo_history():
     try:
         _session_service().redo(image_id)
     except ValueError as exc:
-        return error_response("NOTHING_TO_REDO", str(exc), 400)
+        return error_response(ErrorCodes.NOTHING_TO_REDO, str(exc), 400)
     return _state(image_id)
 
 
@@ -118,11 +120,11 @@ def clear_history():
 def current_file():
     image_id = request.args.get("image_id")
     if not image_id:
-        return error_response("INVALID_IMAGE_ID", "A valid image_id is required.", 400)
+        return error_response(ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400)
     session = _session_service().get_session(image_id)
     if session is None:
-        return error_response("IMAGE_SESSION_NOT_FOUND", "Image session was not found.", 404)
-    storage = current_app.config["FILE_STORAGE_SERVICE"]
+        return error_response(ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404)
+    storage = get_storage_service()
     directory = storage.processed_dir if session.get("current_storage") == "processed" else storage.uploads_dir
     return jsonify(success=True, filename=session.get("current_filename"), directory=directory.name)
 
@@ -132,9 +134,9 @@ def history_content(image_id: str, index: int):
     try:
         path = _comparison_service().path_for(image_id, index)
     except FileNotFoundError as exc:
-        return error_response("HISTORY_IMAGE_NOT_FOUND", str(exc), 404)
+        return error_response(ErrorCodes.HISTORY_IMAGE_NOT_FOUND, str(exc), 404)
     except ValueError as exc:
-        return error_response("HISTORY_INDEX_INVALID", str(exc), 400)
+        return error_response(ErrorCodes.HISTORY_INDEX_INVALID, str(exc), 400)
     return send_file(path, max_age=3600)
 
 
@@ -146,9 +148,9 @@ def compare_history():
         to_index = _parse_index(request.args.get("to"))
         comparison = _comparison_service().compare(image_id, from_index, to_index)
     except (TypeError, ValueError) as exc:
-        return error_response("HISTORY_COMPARISON_INVALID", str(exc), 400)
+        return error_response(ErrorCodes.HISTORY_COMPARISON_INVALID, str(exc), 400)
     except FileNotFoundError as exc:
-        return error_response("IMAGE_SESSION_NOT_FOUND", str(exc), 404)
+        return error_response(ErrorCodes.IMAGE_SESSION_NOT_FOUND, str(exc), 404)
     comparison["from"]["url"] = f"/api/history/content/{image_id}/{from_index}"
     comparison["to"]["url"] = f"/api/history/content/{image_id}/{to_index}"
     return jsonify(success=True, comparison=comparison)
@@ -169,7 +171,7 @@ def diff_history():
             payload.get("threshold", 0),
         )
     except (TypeError, ValueError) as exc:
-        return error_response("HISTORY_DIFF_INVALID", str(exc), 400)
+        return error_response(ErrorCodes.HISTORY_DIFF_INVALID, str(exc), 400)
     except FileNotFoundError as exc:
-        return error_response("IMAGE_SESSION_NOT_FOUND", str(exc), 404)
+        return error_response(ErrorCodes.IMAGE_SESSION_NOT_FOUND, str(exc), 404)
     return send_file(io.BytesIO(data), mimetype="image/png")
