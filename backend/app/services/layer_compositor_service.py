@@ -7,6 +7,33 @@ from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 from .file_service import FileStorageService, FileValidationError
 
+# Candidate font paths across platforms (Linux distros, WSL, Windows).
+_FONT_CANDIDATES = (
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/dejavu/DejaVuSans.ttf",
+    "/usr/local/share/fonts/dejavu/DejaVuSans.ttf",
+    "C:/Windows/Fonts/arial.ttf",
+    "C:/Windows/Fonts/segoeui.ttf",
+)
+_font_path: Path | None = None
+_font_checked = False
+
+
+def _resolve_font(size: int) -> ImageFont.FreeTypeFont:
+    """Load a scalable TrueType font, falling back to Pillow's bitmap default."""
+    global _font_path, _font_checked
+    if not _font_checked:
+        _font_checked = True
+        _font_path = next(
+            (Path(p) for p in _FONT_CANDIDATES if Path(p).is_file()), None
+        )
+    if _font_path is not None:
+        try:
+            return ImageFont.truetype(str(_font_path), size)
+        except OSError:
+            pass
+    return ImageFont.load_default()
+
 
 class LayerCompositorService:
     """Deterministically renders persisted layers over the current base image."""
@@ -87,10 +114,7 @@ class LayerCompositorService:
         image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
         draw = ImageDraw.Draw(image)
         size = max(1, round(float(layer.get("fontSize", 26))))
-        try:
-            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", size)
-        except OSError:
-            font = ImageFont.load_default()
+        font = _resolve_font(size)
         draw.text((6, height / 2), str(layer.get("text", "")), fill=layer.get("color", "#000000"), font=font, anchor="lm")
         return image
 

@@ -1,6 +1,6 @@
 from flask import Blueprint, current_app, jsonify, request, send_file
 
-from ..api_utils import error_response
+from ..errors import error_response
 from ..services.pipeline_execution_service import PipelineExecutionService
 from ..services.pipeline_service import PipelineParamError, PipelineService
 

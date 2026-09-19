@@ -1,3 +1,5 @@
+import { escapeHtml } from './escape-html.js';
+
 export class BackgroundManager {
   constructor({ canvasManager, apiClient, objectManager, showToast }) {
     this.canvasManager = canvasManager;
@@ -127,6 +129,7 @@ export class BackgroundManager {
         this.canvasManager.setMaskOverlay(image);
         URL.revokeObjectURL(image.src);
       };
+      image.onerror = () => URL.revokeObjectURL(image.src);
       this.showToast('Mask preview — white keeps, black removes');
     } catch (error) {
       this.showToast(error.message);
@@ -176,6 +179,7 @@ export class BackgroundManager {
         this.canvasManager.setPreviewOverlay(image);
         URL.revokeObjectURL(image.src);
       };
+      image.onerror = () => URL.revokeObjectURL(image.src);
       this.showToast('Replacement preview — press Replace to apply');
     } catch (error) {
       this.showToast(error.message);
@@ -209,7 +213,6 @@ export class BackgroundManager {
     try {
       this.catalog = await this.apiClient.backgroundCatalog();
       if (!this.controls.library) return;
-      const escapeHtml = (value) => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       this.controls.library.innerHTML = '<option value="">— choose background —</option>'
         + this.catalog.map((item) => `<option value="${escapeHtml(item.name)}">${escapeHtml(item.label)}</option>`).join('');
       this.renderCatalog();
@@ -222,7 +225,6 @@ export class BackgroundManager {
     if (!this.controls.libraryGrid) return;
     const category = this.controls.category?.value || 'all';
     const catalog = (this.catalog || []).filter((item) => category === 'all' || item.category === category);
-    const escapeHtml = (value) => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     this.controls.libraryGrid.innerHTML = catalog.map((item) => `<button type="button" class="bg-thumb${this.controls.library.value === item.name ? ' is-selected' : ''}" data-bg-name="${escapeHtml(item.name)}" title="${escapeHtml(item.label)}"><img src="${escapeHtml(item.thumbnail_url)}" alt="" loading="lazy"><span>${escapeHtml(item.label)}</span></button>`).join('');
     this.controls.libraryGrid.querySelectorAll('[data-bg-name]').forEach((button) => button.addEventListener('click', () => {
       this.controls.library.value = button.dataset.bgName;

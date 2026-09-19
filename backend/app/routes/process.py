@@ -1,6 +1,6 @@
 from flask import Blueprint, current_app, jsonify, request
 
-from ..api_utils import error_response
+from ..errors import error_response
 from ..services.file_service import FileValidationError
 from ..services.process_service import ProcessService
 

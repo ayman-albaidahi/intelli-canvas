@@ -11,7 +11,7 @@ def test_root_editor_assets_resolve_under_editor_v2_base_path():
     assert b'<base href="/editor-v2/"' in page.data
     assert client.get("/editor-v2/css/tokens.css").status_code == 200
     assert client.get("/editor-v2/js/main.js").status_code == 200
-    assert client.get("/editor-v2/js/error-collector.js").status_code == 200
+    assert client.get("/editor-v2/js/canvas-manager.js").status_code == 200
 
 
 def test_export_and_object_manager_include_layer_compositor():
@@ -24,4 +24,4 @@ def test_export_and_object_manager_include_layer_compositor():
 
     assert export_manager.status_code == 200
     assert b"composite_layers" in api_client.data
-    assert b"renderExport" in object_manager.data
+    assert b"serializeLayers" in object_manager.data

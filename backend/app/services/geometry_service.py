@@ -67,7 +67,6 @@ class GeometryService:
             image_id, output_path.name, storage="processed",
             operation=label_Resize,
         )
-        session["mime_type"] = self._mime_type(output_path)
         return {
             "image_id": image_id,
             "width": output_width,
@@ -105,8 +104,7 @@ class GeometryService:
             image_id, output_path.name, storage="processed",
             operation=label_Rotate,
         )
-        session["mime_type"] = self._mime_type(output_path)
-        return self._transform_metadata(image_id, session, output_path, dimensions)
+        return self._transform_metadata(image_id, output_path, dimensions)
 
     def flip(self, image_id: str, direction: str) -> dict[str, Any]:
         if direction not in {"horizontal", "vertical"}:
@@ -137,8 +135,7 @@ class GeometryService:
             image_id, output_path.name, storage="processed",
             operation=label_Flip,
         )
-        session["mime_type"] = self._mime_type(output_path)
-        return self._transform_metadata(image_id, session, output_path, dimensions)
+        return self._transform_metadata(image_id, output_path, dimensions)
 
     def crop(
         self, image_id: str, x: int, y: int, width: int, height: int
@@ -167,8 +164,7 @@ class GeometryService:
         self.session_service.update_current_image(
             image_id, output_path.name, storage="processed", operation=label
         )
-        session["mime_type"] = self._mime_type(output_path)
-        return self._transform_metadata(image_id, session, output_path, dimensions)
+        return self._transform_metadata(image_id, output_path, dimensions)
 
     def _resolve_current_path(self, session: dict[str, Any]) -> Path:
         stored_filename = session.get("current_filename") or session.get(
@@ -221,7 +217,6 @@ class GeometryService:
     def _transform_metadata(
         self,
         image_id: str,
-        session: dict[str, Any],
         output_path: Path,
         dimensions: tuple[int, int],
     ) -> dict[str, Any]:
