@@ -8,6 +8,7 @@ from typing import Any
 
 from PIL import Image, ImageChops, ImageFilter, ImageOps
 
+from ..domain.results import OperationResult
 from .file_service import FileStorageService, FileValidationError
 from .image_io_service import ImageIOService
 from .image_session_service import ImageSessionService
@@ -133,16 +134,16 @@ class BackgroundService:
             width, height = image.size
         label = "Remove background" if operation == "remove-background" else "Replace background"
         self.session_service.update_current_image(image_id, output_path.name, "processed", operation=label)
-        return {
-            "image_id": image_id,
-            "format": "png",
-            "mime_type": "image/png",
-            "filename": output_path.name,
-            "width": width,
-            "height": height,
-            "operation": operation,
-            **extra,
-        }
+        return OperationResult(
+            image_id=image_id,
+            width=width,
+            height=height,
+            format="png",
+            mime_type="image/png",
+            path=output_path,
+            filename=output_path.name,
+            public_extras={"operation": operation, **extra},
+        )
 
     def _new_output_path(self, image_id: str, operation: str) -> Path:
         session = self.session_service.get_session(image_id)

@@ -5,6 +5,7 @@ from typing import Any
 
 from PIL import Image
 
+from ..domain.results import OperationResult
 from .file_service import FileStorageService, FileValidationError
 from .image_session_service import ImageSessionService
 
@@ -87,17 +88,16 @@ class ImageIOService:
         with Image.open(output_path) as result:
             width, height = result.size
 
-        return {
-            "image_id": image_id,
-            "format": (
+        return OperationResult(
+            image_id=image_id,
+            width=width,
+            height=height,
+            format=(
                 "jpeg" if pillow_format == "JPEG" else target_format.lower()
             ),
-            "mime_type": mime_type,
-            "path": output_path,
-            "filename": output_path.name,
-            "width": width,
-            "height": height,
-        }
+            mime_type=mime_type,
+            path=output_path,
+        )
 
     def _resolve_source(self, image_id: str) -> tuple[Path, dict[str, Any]]:
         session = self.session_service.get_session(image_id)

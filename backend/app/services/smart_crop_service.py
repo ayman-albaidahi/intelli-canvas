@@ -10,6 +10,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
+from ..domain.results import OperationResult
 from .file_service import FileStorageService, FileValidationError
 from .image_session_service import ImageSessionService
 
@@ -124,12 +125,15 @@ class SmartCropService:
                 "saliency_score": proposal["score"],
             },
         )
-        return {
-            **proposal,
-            "filename": output_path.name,
-            "format": "png",
-            "mime_type": "image/png",
-        }
+        return OperationResult(
+            image_id=image_id,
+            width=proposal["width"],
+            height=proposal["height"],
+            format="png",
+            mime_type="image/png",
+            path=output_path,
+            public_extras={**{k: v for k, v in proposal.items() if k not in ("width", "height")}, "filename": output_path.name},
+        )
 
     @staticmethod
     def parse_aspect_ratio(value: str) -> tuple[float, float] | None:

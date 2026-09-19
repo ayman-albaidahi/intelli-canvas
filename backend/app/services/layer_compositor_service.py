@@ -5,6 +5,7 @@ from typing import Any
 
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 
+from ..domain.results import OperationResult
 from .file_service import FileStorageService, FileValidationError
 
 # Candidate font paths across platforms (Linux distros, WSL, Windows).
@@ -58,16 +59,16 @@ class LayerCompositorService:
             width, height = canvas.size
             canvas.close()
         updated = self.session_service.update_current_image(image_id, output_path.name, "processed", "Composite layers") if persist else None
-        return {
-            "image_id": image_id,
-            "filename": output_path.name,
-            "path": output_path,
-            "format": "png",
-            "mime_type": "image/png",
-            "width": width,
-            "height": height,
-            "history_index": updated["history_index"] if updated else None,
-        }
+        return OperationResult(
+            image_id=image_id,
+            width=width,
+            height=height,
+            format="png",
+            mime_type="image/png",
+            path=output_path,
+            filename=output_path.name,
+            public_extras={"history_index": updated["history_index"] if updated else None},
+        )
 
     def _source_path(self, session: dict[str, Any]) -> Path:
         filename = session.get("current_filename") or session.get("stored_filename")

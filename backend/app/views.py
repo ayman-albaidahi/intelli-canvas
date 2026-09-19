@@ -45,10 +45,12 @@ def public_view(result: dict[str, Any], *, internal: frozenset[str] = INTERNAL_K
 def public_image(result: Any) -> dict[str, Any]:
     """Shape a service image result for an API response.
 
-    Accepts a mapping or any object exposing ``__dict__``; unknown shapes pass
-    through untouched so callers that return a plain ``dict`` of extra fields
-    still work.
+    An :class:`~backend.app.domain.results.OperationResult` serializes itself
+    through its own allowlist, which never contains the on-disk ``path``.
+    Legacy plain dicts still go through the key filter.
     """
+    if hasattr(result, "to_public_dict"):
+        return result.to_public_dict()
     if isinstance(result, dict):
         return public_view(result)
     return result

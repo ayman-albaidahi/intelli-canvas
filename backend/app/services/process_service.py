@@ -6,6 +6,7 @@ from typing import Any
 
 from PIL import Image
 
+from ..domain.results import OperationResult
 from .file_service import FileStorageService
 from .image_io_service import ImageIOService
 from .image_session_service import ImageSessionService
@@ -197,17 +198,16 @@ class ProcessService:
         self.session_service.update_current_image(
             image_id, output_path.name, "processed", operation=history_label, parameters=metadata
         )
-        return {
-            "image_id": image_id,
-            "format": "png",
-            "mime_type": "image/png",
-            "filename": output_path.name,
-            "path": output_path,
-            "width": width,
-            "height": height,
-            "operation": operation,
-            **metadata,
-        }
+        return OperationResult(
+            image_id=image_id,
+            width=width,
+            height=height,
+            format="png",
+            mime_type="image/png",
+            path=output_path,
+            filename=output_path.name,
+            public_extras={"operation": operation, **metadata},
+        )
 
     def _new_output_path(self, image_id: str, operation: str, extension: str) -> Path:
         """Derive the output name from the session's original upload stem.

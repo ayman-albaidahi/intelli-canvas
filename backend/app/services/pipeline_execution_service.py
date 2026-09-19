@@ -7,6 +7,7 @@ from typing import Any
 
 from PIL import Image
 
+from ..domain.results import OperationResult
 from .file_service import FileStorageService
 from .image_session_service import ImageSessionService
 from .pipeline_service import PipelineService
@@ -58,19 +59,21 @@ class PipelineExecutionService:
             )
         with Image.open(cache_path) as result:
             width, height = result.size
-        return {
-            "image_id": image_id,
-            "filename": cache_path.name,
-            "path": cache_path,
-            "format": "png",
-            "mime_type": "image/png",
-            "width": width,
-            "height": height,
-            "pipeline_hash": cache_hash,
-            "cache_hit": cache_hit,
-            "source_history_index": 0,
-            "persisted": persist,
-        }
+        return OperationResult(
+            image_id=image_id,
+            width=width,
+            height=height,
+            format="png",
+            mime_type="image/png",
+            path=cache_path,
+            filename=cache_path.name,
+            public_extras={
+                "pipeline_hash": cache_hash,
+                "cache_hit": cache_hit,
+                "source_history_index": 0,
+                "persisted": persist,
+            },
+        )
 
     @staticmethod
     def cache_hash(source_path: Path, nodes: list[dict[str, Any]]) -> str:
