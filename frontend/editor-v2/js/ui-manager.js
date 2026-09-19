@@ -3,7 +3,7 @@ import { appState, setState } from './app-state.js';
 const toast = document.querySelector('#toast');
 let toastTimer;
 
-const READY_PANELS = new Set(['adjustments', 'filters']);
+const READY_PANELS = new Set(['adjustments', 'filters', 'background', 'smart-crop']);
 
 export function initUI() {
   document.querySelectorAll('[data-tool]').forEach((button) => {
@@ -35,6 +35,9 @@ export function initUI() {
 
   document.querySelector('[data-action="new"]')?.addEventListener('click', () => showToast('New project workspace is ready'));
   document.querySelector('[data-action="add-layer"]')?.addEventListener('click', () => showToast('Layer creation will be enabled in the layers stage'));
+  document.querySelectorAll('#properties-panel details.panel-accordion').forEach((section) => {
+    section.addEventListener('toggle', () => { if (section.open) closeOtherAccordions(section); });
+  });
 }
 
 function markNotReady(selector, name) {
@@ -49,6 +52,7 @@ function focusPanel(panel) {
   switchInspector('properties');
   const section = document.querySelector(`#${panel}-accordion`);
   if (!section) return;
+  closeOtherAccordions(section);
   section.open = true;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   section.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' });
@@ -57,9 +61,20 @@ function focusPanel(panel) {
   section.classList.add('is-flash');
 }
 
+function closeOtherAccordions(activeSection) {
+  document.querySelectorAll('#properties-panel details.panel-accordion').forEach((section) => {
+    if (section !== activeSection) section.open = false;
+  });
+}
+
+
 export function switchInspector(name) {
   setState({ activeInspector: name });
-  document.querySelectorAll('[data-inspector]').forEach((tab) => tab.classList.toggle('is-active', tab.dataset.inspector === name));
+  document.querySelectorAll('[data-inspector]').forEach((tab) => {
+    const active = tab.dataset.inspector === name;
+    tab.classList.toggle('is-active', active);
+    tab.setAttribute('aria-selected', String(active));
+  });
   document.querySelector('#properties-panel').hidden = name !== 'properties';
   document.querySelector('#layers-panel').hidden = name !== 'layers';
   const analysisPanel = document.querySelector('#analysis-panel');
