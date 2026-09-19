@@ -17,7 +17,6 @@ from flask import current_app
 from .services.file_service import FileStorageService
 from .services.image_session_service import ImageSessionService
 from .services.layer_compositor_service import LayerCompositorService
-from .services.operation_service import NodeService
 
 # Captured at import time so tests can swap the module-level name via
 # monkeypatch; the identity check in get_storage_service detects the swap.
@@ -47,7 +46,3 @@ def get_session_repository():
 
 def get_layer_compositor() -> LayerCompositorService:
     return current_app.config["LAYER_COMPOSITOR_SERVICE"]
-
-
-def get_node_service() -> NodeService:
-    return current_app.config["NODE_SERVICE"]

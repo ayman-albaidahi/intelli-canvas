@@ -8,24 +8,10 @@ from typing import Any
 from PIL import Image
 
 from ..domain.results import OperationResult
+from ..operations.registry import OPERATIONS
 from .file_service import FileStorageService
 from .image_session_service import ImageSessionService
 from .pipeline_service import PipelineService
-from .process_operations import (
-    apply_blur,
-    apply_brightness,
-    apply_contrast,
-    apply_gamma,
-    apply_grayscale,
-    apply_laplacian,
-    apply_median_filter,
-    apply_morphology,
-    apply_negative,
-    apply_saturation,
-    apply_sharpen,
-    apply_sobel,
-    apply_threshold,
-)
 from .smart_crop_service import SmartCropService
 
 
@@ -118,21 +104,9 @@ class PipelineExecutionService:
 
     @staticmethod
     def _apply(image: Image.Image, operation: str, params: dict[str, Any]) -> Image.Image:
-        if operation == "grayscale": return apply_grayscale(image)
-        if operation == "negative": return apply_negative(image)
-        if operation == "brightness": return apply_brightness(image, int(params.get("value", 100)))
-        if operation == "contrast": return apply_contrast(image, int(params.get("value", 100)))
-        if operation == "saturation": return apply_saturation(image, int(params.get("value", 100)))
-        if operation == "gamma": return apply_gamma(image, float(params.get("value", 1)))
-        if operation == "blur": return apply_blur(image, int(params.get("value", 2)))
-        if operation == "sharpen": return apply_sharpen(image, int(params.get("value", 1)))
-        if operation == "threshold": return apply_threshold(image, int(params.get("value", 128)))
-        if operation == "sobel": return apply_sobel(image, int(params.get("ksize", 3)))
-        if operation == "laplacian": return apply_laplacian(image)
-        if operation == "median-filter": return apply_median_filter(image, int(params.get("ksize", 3)))
-        if operation == "morphology": return apply_morphology(image, str(params.get("operation", "open")), int(params.get("ksize", 3)))
         if operation == "smart-crop":
+            # Not a pixel transform: needs the saliency box, so it stays bespoke.
             ratio = SmartCropService.parse_aspect_ratio(params.get("aspect_ratio", "original"))
             box, _score = SmartCropService._find_box(image, ratio)
             return image.crop((box[0], box[1], box[0] + box[2], box[1] + box[3]))
-        raise ValueError("Pipeline operation is not supported.")
+        return OPERATIONS[operation].run(image, params)

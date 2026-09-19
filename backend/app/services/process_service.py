@@ -7,26 +7,11 @@ from typing import Any
 from PIL import Image
 
 from ..domain.results import OperationResult
+from ..operations.registry import operation_label, spec
 from .file_service import FileStorageService
 from .image_io_service import ImageIOService
 from .image_session_service import ImageSessionService
-from .process_operations import (
-    apply_blur,
-    apply_brightness,
-    apply_chain,
-    apply_contrast,
-    apply_gamma,
-    apply_grayscale,
-    apply_laplacian,
-    apply_median_filter,
-    apply_morphology,
-    apply_negative,
-    apply_saturation,
-    apply_sharpen,
-    apply_sobel,
-    apply_threshold,
-    compute_histogram,
-)
+from .process_operations import apply_chain, compute_histogram
 
 
 class ProcessService:
@@ -41,14 +26,6 @@ class ProcessService:
         self.storage_service = storage_service or FileStorageService()
         self.image_io = ImageIOService(session_service, self.storage_service)
 
-    def negative(self, image_id: str) -> dict[str, Any]:
-        return self._transform(
-            image_id,
-            "negative",
-            "Negative",
-            apply_negative,
-        )
-
     def adjustments(self, image_id: str, values: dict[str, Any]) -> dict[str, Any]:
         """Apply every requested adjustment in one pass, writing one file."""
         if not values:
@@ -58,55 +35,7 @@ class ProcessService:
             "adjustments",
             "Adjustments",
             lambda source: apply_chain(source, values),
-            values={key: value for key, value in values.items()},
-        )
-
-    def grayscale(self, image_id: str) -> dict[str, Any]:
-        return self._transform(image_id, "grayscale", "Grayscale", apply_grayscale)
-
-    def brightness(self, image_id: str, value: int) -> dict[str, Any]:
-        return self._transform(
-            image_id,
-            "brightness",
-            f"Brightness {value}%",
-            lambda source: apply_brightness(source, value),
-            value=value,
-        )
-
-    def contrast(self, image_id: str, value: int) -> dict[str, Any]:
-        return self._transform(
-            image_id,
-            "contrast",
-            f"Contrast {value}%",
-            lambda source: apply_contrast(source, value),
-            value=value,
-        )
-
-    def blur(self, image_id: str, value: int) -> dict[str, Any]:
-        return self._transform(
-            image_id,
-            "blur",
-            f"Blur {value}px",
-            lambda source: apply_blur(source, value),
-            value=value,
-        )
-
-    def sharpen(self, image_id: str, value: int) -> dict[str, Any]:
-        return self._transform(
-            image_id,
-            "sharpen",
-            f"Sharpen {value}",
-            lambda source: apply_sharpen(source, value),
-            value=value,
-        )
-
-    def saturation(self, image_id: str, value: int) -> dict[str, Any]:
-        return self._transform(
-            image_id,
-            "saturation",
-            f"Saturation {value}%",
-            lambda source: apply_saturation(source, value),
-            value=value,
+            history_parameters={"values": {key: value for key, value in values.items()}},
         )
 
     def histogram(self, image_id: str) -> dict[str, list[int]]:
@@ -115,60 +44,21 @@ class ProcessService:
         with Image.open(source_path) as source:
             return compute_histogram(source)
 
-    def sobel(self, image_id: str, ksize: int = 3) -> dict[str, Any]:
-        return self._transform(
-            image_id,
-            "sobel",
-            f"Sobel edges ({ksize})",
-            lambda source: apply_sobel(source, ksize),
-            ksize=ksize,
-        )
+    def run_op(self, image_id: str, slug: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Dispatch a registered operation by its slug.
 
-    def laplacian(self, image_id: str) -> dict[str, Any]:
+        Single entry point for the REST routes, replacing one wrapper method
+        per operation. ``params`` are validated by the registry spec, so the
+        direct API and the pipeline report identical error codes.
+        """
+        operation = spec(slug)
+        clean = operation.validate(params or {})
         return self._transform(
             image_id,
-            "laplacian",
-            "Laplacian edges",
-            apply_laplacian,
-        )
-
-    def median_filter(self, image_id: str, ksize: int = 3) -> dict[str, Any]:
-        return self._transform(
-            image_id,
-            "median-filter",
-            f"Median filter ({ksize})",
-            lambda source: apply_median_filter(source, ksize),
-            ksize=ksize,
-        )
-
-    def morphology(
-        self, image_id: str, operation: str, ksize: int = 3
-    ) -> dict[str, Any]:
-        return self._transform(
-            image_id,
-            "morphology",
-            f"Morphology {operation} ({ksize})",
-            lambda source: apply_morphology(source, operation, ksize),
-            morphology_operation=operation,
-            ksize=ksize,
-        )
-
-    def gamma(self, image_id: str, value: float) -> dict[str, Any]:
-        return self._transform(
-            image_id,
-            "gamma",
-            f"Gamma {value:g}",
-            lambda source: apply_gamma(source, value),
-            value=value,
-        )
-
-    def threshold(self, image_id: str, value: int) -> dict[str, Any]:
-        return self._transform(
-            image_id,
-            "threshold",
-            f"Threshold {value}",
-            lambda source: apply_threshold(source, value),
-            value=value,
+            slug,
+            operation_label(slug, clean),
+            lambda source: operation.run(source, clean),
+            history_parameters=clean,
         )
 
     def _transform(
@@ -177,8 +67,9 @@ class ProcessService:
         operation: str,
         history_label: str,
         transform: Callable[[Image.Image], Image.Image],
-        **metadata: Any,
+        history_parameters: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        history_parameters = history_parameters or {}
         source_path, _ = self.image_io._resolve_source(image_id)
         output_path = self._new_output_path(image_id, operation, ".png")
         try:
@@ -196,7 +87,7 @@ class ProcessService:
         with Image.open(output_path) as image:
             width, height = image.size
         self.session_service.update_current_image(
-            image_id, output_path.name, "processed", operation=history_label, parameters=metadata
+            image_id, output_path.name, "processed", operation=history_label, parameters=history_parameters
         )
         return OperationResult(
             image_id=image_id,
@@ -206,7 +97,9 @@ class ProcessService:
             mime_type="image/png",
             path=output_path,
             filename=output_path.name,
-            public_extras={"operation": operation, **metadata},
+            # ``operation`` always identifies the endpoint; a parameter of the
+            # same name (morphology's sub-operation) must not overwrite it.
+            public_extras={**history_parameters, "operation": operation},
         )
 
     def _new_output_path(self, image_id: str, operation: str, extension: str) -> Path:
