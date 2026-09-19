@@ -118,10 +118,6 @@ def suggestion_from_finding(
     return None
 
 
-def low_target() -> float:
-    return 110.0
-
-
 def build_suggestions(
     findings: list[dict[str, Any]], metrics: dict[str, Any]
 ) -> list[dict[str, Any]]:
