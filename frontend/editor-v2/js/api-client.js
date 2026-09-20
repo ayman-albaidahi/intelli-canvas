@@ -323,4 +323,13 @@ export class ApiClient {
     await request(`${this.baseUrl}/suggestions/dismiss`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, type }) });
     return true;
   }
+
+  // Capability discovery is static: it describes the running backend, not a
+  // specific image, so it needs no imageId and is callable before upload. The
+  // editor uses it to disable tools the backend does not support instead of
+  // letting them fail with a 404 after a click.
+  static async capabilities(baseUrl = API_BASE) {
+    const payload = await request(`${baseUrl.replace(/\/$/, '')}/capabilities`);
+    return payload;
+  }
 }

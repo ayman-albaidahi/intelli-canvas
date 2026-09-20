@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from PIL import Image
@@ -45,6 +45,10 @@ class OperationSpec:
     validate: Callable[[dict[str, Any]], dict[str, Any]]
     run: Callable[[Image.Image, dict[str, Any]], Image.Image]
     produces_image: bool = True
+    # Declared parameter contract, surfaced by GET /api/capabilities. Keeping it
+    # next to ``validate`` is what makes the endpoint trustworthy: the bounds a
+    # client reads here are the bounds the validator enforces.
+    param_schema: dict[str, Any] = field(default_factory=dict)
 
 
 def _number(
@@ -206,6 +210,33 @@ def _no_params(params: dict[str, Any]) -> dict[str, Any]:
     return {}
 
 
+def _int_range(low: int, high: int, default: int, code: str) -> dict[str, Any]:
+    """Schema fragment for an integer parameter with an inclusive range."""
+    return {
+        "value": {
+            "type": "integer",
+            "low": low,
+            "high": high,
+            "default": default,
+            "code": code,
+        }
+    }
+
+
+def _odd_ksize_schema(low: int, high: int, code: str) -> dict[str, Any]:
+    """Schema fragment for an odd-integer kernel-size parameter."""
+    return {
+        "ksize": {
+            "type": "integer",
+            "low": low,
+            "high": high,
+            "odd": True,
+            "default": 3,
+            "code": code,
+        }
+    }
+
+
 OPERATIONS: dict[str, OperationSpec] = {
     "grayscale": OperationSpec(
         slug="grayscale",
@@ -224,48 +255,64 @@ OPERATIONS: dict[str, OperationSpec] = {
         label="Brightness",
         validate=_brightness,
         run=lambda image, params: apply_brightness(image, params["value"]),
+        param_schema=_int_range(0, 200, 100, "INVALID_BRIGHTNESS"),
     ),
     "contrast": OperationSpec(
         slug="contrast",
         label="Contrast",
         validate=_contrast,
         run=lambda image, params: apply_contrast(image, params["value"]),
+        param_schema=_int_range(0, 200, 100, "INVALID_CONTRAST"),
     ),
     "saturation": OperationSpec(
         slug="saturation",
         label="Saturation",
         validate=_saturation,
         run=lambda image, params: apply_saturation(image, params["value"]),
+        param_schema=_int_range(0, 200, 100, "INVALID_SATURATION"),
     ),
     "blur": OperationSpec(
         slug="blur",
         label="Blur",
         validate=_blur,
         run=lambda image, params: apply_blur(image, params["value"]),
+        param_schema=_int_range(0, 20, 0, "INVALID_BLUR"),
     ),
     "sharpen": OperationSpec(
         slug="sharpen",
         label="Sharpen",
         validate=_sharpen,
         run=lambda image, params: apply_sharpen(image, params["value"]),
+        param_schema=_int_range(0, 5, 0, "INVALID_SHARPEN"),
     ),
     "gamma": OperationSpec(
         slug="gamma",
         label="Gamma",
         validate=_gamma,
         run=lambda image, params: apply_gamma(image, params["value"]),
+        param_schema={
+            "value": {
+                "type": "number",
+                "low": 0.1,
+                "high": 5.0,
+                "default": 1.0,
+                "code": "INVALID_GAMMA",
+            }
+        },
     ),
     "threshold": OperationSpec(
         slug="threshold",
         label="Threshold",
         validate=_threshold,
         run=lambda image, params: apply_threshold(image, params["value"]),
+        param_schema=_int_range(0, 255, 128, "INVALID_THRESHOLD"),
     ),
     "sobel": OperationSpec(
         slug="sobel",
         label="Sobel edges",
         validate=_sobel,
         run=lambda image, params: apply_sobel(image, params["ksize"]),
+        param_schema=_odd_ksize_schema(1, 7, "INVALID_SOBEL_KSIZE"),
     ),
     "laplacian": OperationSpec(
         slug="laplacian",
@@ -278,6 +325,7 @@ OPERATIONS: dict[str, OperationSpec] = {
         label="Median filter",
         validate=_median_filter,
         run=lambda image, params: apply_median_filter(image, params["ksize"]),
+        param_schema=_odd_ksize_schema(1, 15, "INVALID_MEDIAN_KSIZE"),
     ),
     "morphology": OperationSpec(
         slug="morphology",
@@ -286,6 +334,15 @@ OPERATIONS: dict[str, OperationSpec] = {
         run=lambda image, params: apply_morphology(
             image, params["operation"], params["ksize"]
         ),
+        param_schema={
+            "operation": {
+                "type": "choice",
+                "choices": ["erode", "dilate", "open", "close"],
+                "required": True,
+                "code": "INVALID_MORPHOLOGY_OPERATION",
+            },
+            **_odd_ksize_schema(1, 15, "INVALID_MORPHOLOGY_KSIZE"),
+        },
     ),
     # Read-only analysis: answers with data, never writes a new image.
     "histogram": OperationSpec(
