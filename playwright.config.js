@@ -38,9 +38,9 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        // Fall back to a system Chrome when the Playwright-hosted browser is
-        // unavailable (a slow network can make its ~200 MiB download
-        // impractical). CI installs the hosted browser and sets PLAYWRIGHT_BROWSERS_PATH.
+        // The Playwright-hosted headless shell is blocked by Application
+        // Control policy on some locked-down machines (WinError 4551), so
+        // fall back to an installed Chrome. CI installs the hosted browser.
         channel: 'chrome',
       },
     },
