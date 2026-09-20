@@ -3,9 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:frontend": "vitest run"
+    "test:frontend": "vitest run",
+    "test:browser": "playwright test",
+    "test:browser:ui": "playwright test --ui"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "jsdom": "^29.1.1",
     "vitest": "^2.1.9"
   }

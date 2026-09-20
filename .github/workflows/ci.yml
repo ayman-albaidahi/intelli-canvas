@@ -45,3 +45,46 @@ jobs:
         run: find frontend/editor-v2/js -maxdepth 1 -name '*.js' -print0 | xargs -0 -n1 node --check
       - name: Run Vitest
         run: npx vitest run
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements-dev.txt
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Start the editor server
+        run: python backend/run.py &
+      - name: Wait for the server to accept requests
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:5000/api/health > /dev/null; then
+              echo "Server is up"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server did not start in time" >&2
+          exit 1
+      - name: Run browser smoke tests
+        run: npx playwright test
+      - name: Upload test artifacts on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-test-results
+          path: test-results/browser
+          retention-days: 7

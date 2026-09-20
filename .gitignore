@@ -229,3 +229,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Playwright browser test artifacts (screenshots, traces, fixtures)
+test-results/
+playwright-report/
