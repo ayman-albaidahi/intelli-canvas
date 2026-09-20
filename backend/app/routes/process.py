@@ -24,19 +24,47 @@ def _process_service() -> ProcessService:
 def _image_id_from_payload():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
-        return None, error_response(
-            ErrorCodes.INVALID_REQUEST, "A JSON request body is required.", 400
+        return (
+            None,
+            None,
+            error_response(
+                ErrorCodes.INVALID_REQUEST, "A JSON request body is required.", 400
+            ),
         )
     image_id = payload.get("image_id")
     if not isinstance(image_id, str) or not image_id.strip():
-        return None, error_response(
-            ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
+        return (
+            None,
+            None,
+            error_response(
+                ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
+            ),
         )
-    if get_session_service().get_session(image_id) is None:
-        return None, error_response(
-            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
+    session = get_session_service().get_session(image_id)
+    if session is None:
+        return (
+            None,
+            None,
+            error_response(
+                ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
+            ),
         )
-    return image_id, None
+    # The history index identifies the exact image the client rendered. A
+    # request quoting an older index was queued against a previous state, so
+    # applying it now would silently clobber a newer result.
+    supplied = payload.get("source_revision")
+    expected = session.get("history_index", 0)
+    if supplied is not None and supplied != expected:
+        return (
+            None,
+            None,
+            error_response(
+                ErrorCodes.STALE_IMAGE_REVISION,
+                "The image changed since this request started. Reload it and try again.",
+                409,
+            ),
+        )
+    return image_id, expected, None
 
 
 def _run_registered(slug: str):
@@ -45,7 +73,7 @@ def _run_registered(slug: str):
     Validation runs through the registry spec, so the direct API and the
     pipeline report identical codes for the same bad parameter.
     """
-    image_id, error = _image_id_from_payload()
+    image_id, _revision, error = _image_id_from_payload()
     if error:
         return error
     payload = request.get_json(silent=True) or {}
@@ -94,7 +122,7 @@ _register_routes()
 
 @process_bp.post("/adjustments")
 def apply_adjustments():
-    image_id, error = _image_id_from_payload()
+    image_id, _revision, error = _image_id_from_payload()
     if error:
         return error
     payload = require_dict(request.get_json(silent=True), name="request body")
@@ -154,7 +182,7 @@ def apply_adjustments():
 
 @process_bp.post("/histogram")
 def image_histogram():
-    image_id, error = _image_id_from_payload()
+    image_id, _revision, error = _image_id_from_payload()
     if error:
         return error
     try:

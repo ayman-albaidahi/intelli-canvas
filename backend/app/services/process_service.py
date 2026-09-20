@@ -90,7 +90,7 @@ class ProcessService:
 
         with Image.open(output_path) as image:
             width, height = image.size
-        self.session_service.update_current_image(
+        session = self.session_service.update_current_image(
             image_id,
             output_path.name,
             "processed",
@@ -107,7 +107,13 @@ class ProcessService:
             filename=output_path.name,
             # ``operation`` always identifies the endpoint; a parameter of the
             # same name (morphology's sub-operation) must not overwrite it.
-            public_extras={**history_parameters, "operation": operation},
+            # ``revision`` is the new history index so clients can quote it
+            # back as ``source_revision`` on the next request.
+            public_extras={
+                **history_parameters,
+                "operation": operation,
+                "revision": session.get("history_index", 0),
+            },
         )
 
     def _new_output_path(self, image_id: str, operation: str, extension: str) -> Path:

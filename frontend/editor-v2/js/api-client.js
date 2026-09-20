@@ -8,6 +8,7 @@ function friendlyMessage(payload, status) {
   const code = payload.error?.code;
   if (code === 'IMAGE_SESSION_NOT_FOUND') return 'Your editing session expired — upload the image again.';
   if (code === 'IMAGE_NOT_AVAILABLE') return 'The processed image is no longer available — try the operation again.';
+  if (code === 'STALE_IMAGE_REVISION') return 'The image changed while you were editing — the latest version is shown. Try again.';
   if (code === 'PIPELINE_EXECUTION_FAILED') return 'The pipeline could not be executed. Check its parameters and try again.';
   if (code === 'INVALID_PIPELINE') return 'The pipeline contains an unsupported operation or invalid parameter.';
   return payload.error?.message || `Request failed (${status}). Make sure the app is running.`;
@@ -33,12 +34,13 @@ async function request(url, options = {}) {
 }
 
 export class ApiClient {
-  constructor(baseUrl = API_BASE) { this.baseUrl = baseUrl.replace(/\/$/, ''); this.imageId = null; }
+  constructor(baseUrl = API_BASE) { this.baseUrl = baseUrl.replace(/\/$/, ''); this.imageId = null; this.revision = null; }
 
   async upload(file) {
     const body = new FormData(); body.append('file', file);
     const payload = await request(`${this.baseUrl}/images`, { method: 'POST', body });
     this.imageId = payload.image.image_id;
+    this.revision = 0;
     return payload.image;
   }
 
@@ -85,8 +87,21 @@ export class ApiClient {
 
   async process(operation, data = {}) {
     if (!this.imageId) throw new Error('Upload an image before processing it.');
-    const payload = await request(`${this.baseUrl}/process/${operation}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, ...data }) });
+    const payload = await request(`${this.baseUrl}/process/${operation}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      // Quote the revision the backend last handed back so a request queued
+      // against an older image is rejected instead of clobbering a newer one.
+      body: JSON.stringify({ image_id: this.imageId, source_revision: this.revision, ...data }),
+    });
+    this.syncRevision(payload.image);
     return payload.image;
+  }
+
+  // The backend returns ``revision`` (the new history index) on every mutating
+  // result. Tracking it here means callers cannot forget to pass it on.
+  syncRevision(image) {
+    if (image && typeof image.revision === 'number') this.revision = image.revision;
   }
 
   async histogram() {

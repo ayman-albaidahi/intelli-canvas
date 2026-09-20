@@ -163,6 +163,9 @@ export class CanvasManager {
         this.flipY = 1;
         this.crop = { x: 0, y: 0, width: 1, height: 1 };
         this.documentSize = { width: image.naturalWidth || metadata.width, height: image.naturalHeight || metadata.height };
+        // Remember which server revision the canvas now shows so a stale
+        // fetch that lands after a newer one cannot roll the view backwards.
+        this.revision = typeof metadata.revision === 'number' ? metadata.revision : this.revision;
         setState({ hasImage: true });
         this.fit();
         resolve(image);

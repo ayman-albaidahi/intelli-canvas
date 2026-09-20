@@ -28,6 +28,7 @@ class ErrorCodes(Enum):
     # --- Image lifecycle ---------------------------------------------------
     IMAGE_SESSION_NOT_FOUND = "IMAGE_SESSION_NOT_FOUND"
     IMAGE_NOT_AVAILABLE = "IMAGE_NOT_AVAILABLE"
+    STALE_IMAGE_REVISION = "STALE_IMAGE_REVISION"
     INVALID_FILE = "INVALID_FILE"
     INVALID_FORMAT = "INVALID_FORMAT"
     INVALID_QUALITY = "INVALID_QUALITY"
