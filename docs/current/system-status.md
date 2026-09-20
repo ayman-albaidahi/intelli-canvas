@@ -1,8 +1,9 @@
 # IntelliCanvas — Current Implementation Status
 
-**Last reviewed:** 2026-09-15  
+**Last reviewed:** 2026-09-20
 **Reference branch:** `main`
-**Reference commit:** `9a4337513635ce5e0652d200ed1951277446f4b9`
+**Reference commit:** `0ec88d3` (includes PR #98 reality sync)
+**Companion roadmap:** `docs/v0.9.1-development-roadmap.md` (supersedes `docs/v0.9-pr-roadmap.md`, which predates the restructuring)
 
 ## Purpose
 
@@ -18,8 +19,29 @@ This document records the current implementation state. It is a current-state co
 | `compileall` | Passed |
 | Architecture boundary tests | 6 passed (`tests/test_architecture.py`) |
 | JavaScript syntax checks | Passed for editor modules |
-| Vitest | 3 passed |
-| OpenCV/NumPy import | Passed (`cv2` 5.0.0, NumPy 2.5.3) |
+| Vitest | 3 passed (single suite; 13 managers remain untested — top v0.9.1 priority) |
+| OpenCV/NumPy import | Passed (`cv2` 5.0.0, NumPy 2.4.6) |
+| CI on `main` | `.github/workflows/ci.yml` runs compileall, pytest, `git diff --check`, `ruff check`, `ruff format --check`, `pip-audit --strict` (backend); `npm ci`, `node --check`, `npx vitest run` (frontend) |
+
+## Backend restructuring (2026-09-19 → 2026-09-20)
+
+A four-phase restructuring landed on `main` (PRs #87–#97). It changed the internal
+architecture without altering the public API contract:
+
+- **Cross-cutting layer** — `validation.py` (typed `require_*` validators with per-field
+  `code=`), `error_codes.py` (single `ErrorCodes` enum, **61 members**, zero raw error
+  strings in routes), `views.py` (allowlist-based response filter), `dependencies.py`
+  (one access point for storage/session collaborators).
+- **Domain model** — frozen `OperationResult` dataclass. Serialization is an allowlist,
+  so the absolute storage `path` is structurally absent from every response rather than
+  filtered per-endpoint.
+- **Unified operation registry** — `backend/app/operations/registry.py`. Each of the
+  **14** image operations is defined exactly once as an `OperationSpec`; both the
+  pipeline executor and the REST routes dispatch through it, so a contract cannot drift
+  between entry points and adding an operation is additive.
+- **Boundary tests** — `tests/test_architecture.py` fails the build if a service couples
+  to Flask's request handling, a route imports a repository, the service graph cycles, or
+  a registered operation lacks a route.
 
 ## Official local entry points
 
@@ -29,6 +51,8 @@ The supported development commands are run from the repository root:
 python -m pip install -r backend/requirements-dev.txt
 pytest -q
 ruff check backend tests
+ruff format --check backend tests
+python -m compileall -q backend
 python backend/run.py
 ```
 
@@ -83,9 +107,9 @@ Processing and transformation use Flask, Pillow, OpenCV, and NumPy at runtime. S
 
 The architecture and requirements documents describe a broader roadmap that includes multiple-selection and grouping enhancements, per-layer filters, histogram stretching/equalization, general-purpose AI segmentation, and future intelligent assistance. Advanced layer features such as clipping masks, adjustment layers, and per-layer pixel operations are deferred until the layer model and pipeline model evolve together.
 
-Smart Crop is implemented in v0.8.3, including Pipeline-node integration. Explain Operation is implemented in v0.8.2. Browser-level E2E coverage, capability discovery, ownership/authentication, and final production hardening remain v0.9 or later work.
+Smart Crop is implemented in v0.8.3, including Pipeline-node integration. Explain Operation is implemented in v0.8.2.
 
-The legacy frontend files outside `frontend/editor-v2/` were removed after repository-wide reference checks found no operational dependency on them. Historical documents may still mention former paths because they preserve development history; those references are not runtime entry points.
+The v0.9 roadmap has been superseded by `docs/v0.9.1-development-roadmap.md`. What the old roadmap called "v0.9 Polish & Testing" is now partially complete — API error contracts are unified and the backend quality gate is in place — so the remaining v0.9.1 work is, in order: **browser E2E coverage (zero today), frontend manager tests (13 managers, 1 test), API capability discovery, and image revision protection.** These gate the product features (Auto Enhance, Presets, Profiles, Quality Gates, Batch). Ownership/authentication and final production hardening remain later work.
 
 The v0.9 roadmap has been superseded by `docs/v0.9.1-development-roadmap.md`. What the old roadmap called "v0.9 Polish & Testing" is now partially complete — API error contracts are unified, the backend quality gate is in place, and API capability discovery is implemented (`GET /api/capabilities`) — so the remaining v0.9.1 work is, in order: **browser E2E coverage (zero today), frontend manager tests (13 managers, 1 test), and image revision protection.** These gate the product features (Auto Enhance, Presets, Profiles, Quality Gates, Batch). Ownership/authentication and final production hardening remain later work.
 
