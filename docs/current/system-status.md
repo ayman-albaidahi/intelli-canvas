@@ -2,7 +2,7 @@
 
 **Last reviewed:** 2026-09-20
 **Reference branch:** `main`
-**Reference commit:** `0ec88d3` (includes PR #98 reality sync)
+**Reference commit:** `94114d1` (includes PRs #98 reality sync and #99 capability discovery)
 **Companion roadmap:** `docs/v0.9.1-development-roadmap.md` (supersedes `docs/v0.9-pr-roadmap.md`, which predates the restructuring)
 
 ## Purpose
@@ -19,7 +19,7 @@ This document records the current implementation state. It is a current-state co
 | `compileall` | Passed |
 | Architecture boundary tests | 6 passed (`tests/test_architecture.py`) |
 | JavaScript syntax checks | Passed for editor modules |
-| Vitest | 3 passed (single suite; 13 managers remain untested — top v0.9.1 priority) |
+| Vitest | 46 passed (4 suites: transform-logic, api-client, history-manager, adjustments-manager) |
 | OpenCV/NumPy import | Passed (`cv2` 5.0.0, NumPy 2.4.6) |
 | CI on `main` | `.github/workflows/ci.yml` runs compileall, pytest, `git diff --check`, `ruff check`, `ruff format --check`, `pip-audit --strict` (backend); `npm ci`, `node --check`, `npx vitest run` (frontend) |
 
@@ -109,9 +109,7 @@ The architecture and requirements documents describe a broader roadmap that incl
 
 Smart Crop is implemented in v0.8.3, including Pipeline-node integration. Explain Operation is implemented in v0.8.2.
 
-The v0.9 roadmap has been superseded by `docs/v0.9.1-development-roadmap.md`. What the old roadmap called "v0.9 Polish & Testing" is now partially complete — API error contracts are unified and the backend quality gate is in place — so the remaining v0.9.1 work is, in order: **browser E2E coverage (zero today), frontend manager tests (13 managers, 1 test), API capability discovery, and image revision protection.** These gate the product features (Auto Enhance, Presets, Profiles, Quality Gates, Batch). Ownership/authentication and final production hardening remain later work.
-
-The v0.9 roadmap has been superseded by `docs/v0.9.1-development-roadmap.md`. What the old roadmap called "v0.9 Polish & Testing" is now partially complete — API error contracts are unified, the backend quality gate is in place, and API capability discovery is implemented (`GET /api/capabilities`) — so the remaining v0.9.1 work is, in order: **browser E2E coverage (zero today), frontend manager tests (13 managers, 1 test), and image revision protection.** These gate the product features (Auto Enhance, Presets, Profiles, Quality Gates, Batch). Ownership/authentication and final production hardening remain later work.
+The v0.9 roadmap has been superseded by `docs/v0.9.1-development-roadmap.md`. What the old roadmap called "v0.9 Polish & Testing" is now partially complete — API error contracts are unified, the backend quality gate is in place, and API capability discovery is implemented (`GET /api/capabilities`) — so the remaining v0.9.1 work is, in order: **browser E2E coverage (zero today), frontend manager tests (4 of 13 managers now covered: api-client, history-manager, adjustments-manager, transform-logic; pipeline-manager and the tool managers remain), and image revision protection.** These gate the product features (Auto Enhance, Presets, Profiles, Quality Gates, Batch). Ownership/authentication and final production hardening remain later work.
 
 ## Change-control rule
 
