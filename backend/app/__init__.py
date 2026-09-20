@@ -8,6 +8,7 @@ from .errors import register_error_handlers
 from .routes import (
     analysis_bp,
     background_bp,
+    capabilities_bp,
     explain_bp,
     health_bp,
     history_bp,
@@ -47,6 +48,7 @@ def create_app(database_path: str | None = None) -> Flask:
     register_error_handlers(app)
 
     app.register_blueprint(health_bp)
+    app.register_blueprint(capabilities_bp)
     app.register_blueprint(images_bp)
     app.register_blueprint(transform_bp)
     app.register_blueprint(suggestions_bp)

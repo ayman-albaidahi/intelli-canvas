@@ -12,8 +12,11 @@ This document records the current implementation state. It is a current-state co
 
 | Check | Result |
 |---|---:|
-| Automated Python tests | 247 passed after Smart Crop Pipeline integration |
-| Ruff | Passed |
+| Automated Python tests | 276 passed |
+| Ruff (`ruff check backend tests`) | Passed |
+| Ruff format (`ruff format --check`) | 84 files already formatted |
+| `compileall` | Passed |
+| Architecture boundary tests | 6 passed (`tests/test_architecture.py`) |
 | JavaScript syntax checks | Passed for editor modules |
 | Vitest | 3 passed |
 | OpenCV/NumPy import | Passed (`cv2` 5.0.0, NumPy 2.5.3) |
@@ -74,6 +77,7 @@ Processing and transformation use Flask, Pillow, OpenCV, and NumPy at runtime. S
 | POST | `/api/explain-operation` | Explains an operation, parameters, optional finding, and optional suggestion source. |
 | POST | `/api/transform/smart-crop/preview` | Returns a non-persistent PNG crop proposal with saliency metadata in response headers. |
 | POST | `/api/transform/smart-crop/apply` | Applies the saliency-based crop in Python and records one History operation. |
+| GET | `/api/capabilities` | Reports the API version, every registered operation, and each operation's parameter contract (type, inclusive bounds, default, error code). Derived from the operation registry, so a new operation appears automatically. Read-only; no image session required. |
 
 ## Known non-current or deferred capabilities
 
@@ -82,6 +86,8 @@ The architecture and requirements documents describe a broader roadmap that incl
 Smart Crop is implemented in v0.8.3, including Pipeline-node integration. Explain Operation is implemented in v0.8.2. Browser-level E2E coverage, capability discovery, ownership/authentication, and final production hardening remain v0.9 or later work.
 
 The legacy frontend files outside `frontend/editor-v2/` were removed after repository-wide reference checks found no operational dependency on them. Historical documents may still mention former paths because they preserve development history; those references are not runtime entry points.
+
+The v0.9 roadmap has been superseded by `docs/v0.9.1-development-roadmap.md`. What the old roadmap called "v0.9 Polish & Testing" is now partially complete — API error contracts are unified, the backend quality gate is in place, and API capability discovery is implemented (`GET /api/capabilities`) — so the remaining v0.9.1 work is, in order: **browser E2E coverage (zero today), frontend manager tests (13 managers, 1 test), and image revision protection.** These gate the product features (Auto Enhance, Presets, Profiles, Quality Gates, Batch). Ownership/authentication and final production hardening remain later work.
 
 ## Change-control rule
 
