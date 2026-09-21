@@ -19,16 +19,44 @@ const READY_PANELS = new Set(['adjustments', 'filters', 'background', 'smart-cro
 export function initUI() {
   document.querySelectorAll('[data-tool]').forEach((button) => {
     button.addEventListener('click', () => {
-      document.querySelectorAll('[data-tool]').forEach((item) => item.classList.remove('is-active'));
+      document.querySelectorAll('[data-tool]').forEach((item) => {
+        item.classList.remove('is-active');
+        // aria-pressed mirrors the class so the selected tool is announced on
+        // first load and after every switch, not only when it was clicked.
+        item.setAttribute('aria-pressed', 'false');
+      });
       button.classList.add('is-active');
+      button.setAttribute('aria-pressed', 'true');
       setState({ activeTool: button.dataset.tool });
       showToast(`${button.dataset.tool[0].toUpperCase()}${button.dataset.tool.slice(1)} tool selected`);
     });
   });
 
-  document.querySelectorAll('[data-inspector]').forEach((tab) => {
+  const tabs = Array.from(document.querySelectorAll('[data-inspector]'));
+  tabs.forEach((tab) => {
     tab.addEventListener('click', () => switchInspector(tab.dataset.inspector));
   });
+
+  // A tablist is only operable from the keyboard if the arrows move between
+  // tabs and Home/End jump to the ends. All tabs stay in the tab order here
+  // rather than using roving tabindex, because the drawer pattern relies on
+  // every tab being a reachable focus target on mobile.
+  const tablist = document.querySelector('.inspector-tabs');
+  if (tablist && tabs.length) {
+    tablist.addEventListener('keydown', (event) => {
+      const current = tabs.indexOf(document.activeElement);
+      if (current === -1) return;
+      let next = null;
+      if (event.key === 'ArrowRight') next = (current + 1) % tabs.length;
+      else if (event.key === 'ArrowLeft') next = (current - 1 + tabs.length) % tabs.length;
+      else if (event.key === 'Home') next = 0;
+      else if (event.key === 'End') next = tabs.length - 1;
+      if (next === null) return;
+      event.preventDefault();
+      tabs[next].focus();
+      switchInspector(tabs[next].dataset.inspector);
+    });
+  }
 
   document.querySelectorAll('[data-panel]').forEach((button) => {
     const panel = button.dataset.panel;

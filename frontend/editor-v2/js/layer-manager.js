@@ -54,7 +54,7 @@ export class LayerManager {
       <span class="layer-name" title="Double-click to rename">${escapeHtml(object.name)}</span>
       <span class="layer-type">${TYPE_LABEL[object.type]}${object.locked ? ' · 🔒' : ''}</span>
       <button class="layer-lock" title="Lock / unlock">${object.locked ? '🔒' : '🔓'}</button>
-      <button class="layer-more" title="More actions">⋯</button>`;
+      <button class="layer-more" title="More actions" aria-haspopup="true" aria-expanded="false">⋯</button>`;
     row.addEventListener('click', (event) => {
       if (event.target.closest('.layer-vis')) { this.objects.toggleVisibility(object.id); return; }
       if (event.target.closest('.layer-lock')) { this.objects.toggleLock(object.id); return; }
@@ -109,21 +109,45 @@ export class LayerManager {
       <button data-menu="back">Send to back</button>
       <button data-menu="delete" class="danger">Delete</button>`;
     this.menu.hidden = false;
+    this.menu.setAttribute('role', 'menu');
+    anchor.setAttribute('aria-expanded', 'true');
     const rect = anchor.getBoundingClientRect();
     this.menu.style.top = `${Math.min(rect.bottom + 4, innerHeight - this.menu.offsetHeight - 8)}px`;
     this.menu.style.left = `${Math.max(8, rect.right - this.menu.offsetWidth)}px`;
     this.menu.dataset.id = id;
   }
 
+  closeMenu() {
+    this.menu.hidden = true;
+    const trigger = document.querySelector('.layer-row.is-selected .layer-more');
+    if (trigger) trigger.setAttribute('aria-expanded', 'false');
+  }
+
   bindMenu() {
     document.addEventListener('click', (event) => {
-      if (!this.menu.hidden && !event.target.closest('#layer-menu') && !event.target.closest('.layer-more')) this.menu.hidden = true;
+      if (!this.menu.hidden && !event.target.closest('#layer-menu') && !event.target.closest('.layer-more')) this.closeMenu();
+    });
+    document.addEventListener('keydown', (event) => {
+      // Escape dismisses the menu and returns focus to its trigger; without it
+      // a keyboard user has to click elsewhere to get rid of it.
+      if (event.key === 'Escape' && !this.menu.hidden) {
+        this.closeMenu();
+        document.activeElement.blur();
+      }
+    });
+    this.menu.addEventListener('keydown', (event) => {
+      // Arrow keys move through the menu items.
+      const items = Array.from(this.menu.querySelectorAll('[data-menu]'));
+      if (!items.length) return;
+      const i = items.indexOf(document.activeElement);
+      if (event.key === 'ArrowDown') { event.preventDefault(); items[(i + 1) % items.length].focus(); }
+      else if (event.key === 'ArrowUp') { event.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
     });
     this.menu.addEventListener('click', (event) => {
       const action = event.target.dataset.menu;
       if (!action) return;
       const id = this.menu.dataset.id;
-      this.menu.hidden = true;
+      this.closeMenu();
       if (action === 'duplicate') this.objects.duplicate(id);
       if (action === 'rename') { const row = this.list.querySelector(`[data-id="${id}"]`); if (row) this.startRename(row, id); }
       if (action === 'front') { this.objects.bringToFront(id); this.showToast('Brought to front'); }
