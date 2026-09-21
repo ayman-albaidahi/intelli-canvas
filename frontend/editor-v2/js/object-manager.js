@@ -1,5 +1,5 @@
 import { appState } from './app-state.js';
-import { openDialog, closeDialog } from './ui-manager.js';
+import { openDialog, closeDialog, confirmDialog } from './ui-manager.js';
 
 const HANDLE_SIZE = 9;
 const MIN_SIZE = 8;
@@ -153,9 +153,18 @@ export class ObjectManager {
     this.showToast(`${source.name} duplicated`);
   }
 
-  deleteSelected() {
+  async deleteSelected() {
     const selected = this.selected;
     if (!selected || selected.locked) return;
+    // Deleting a layer is not undoable — history only tracks Python
+    // operations — so the user gets a confirm dialog instead of an instant,
+    // silent removal.
+    const confirmed = await confirmDialog({
+      title: `Delete ${selected.name}?`,
+      body: 'This layer cannot be recovered. Undo does not cover canvas objects.',
+      confirmLabel: 'Delete',
+    });
+    if (!confirmed) return;
     this.objects = this.objects.filter((o) => o.id !== selected.id);
     this.selectedId = null;
     this.changed();

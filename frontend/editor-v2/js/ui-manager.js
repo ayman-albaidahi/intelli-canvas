@@ -60,7 +60,21 @@ export function initUI() {
 
   document.querySelectorAll('[data-panel]').forEach((button) => {
     const panel = button.dataset.panel;
-    if (READY_PANELS.has(panel)) {
+    if (panel === 'shortcuts') {
+      document.querySelector('#shortcuts-cancel')?.addEventListener('click', () => {
+    closeDialog(document.querySelector('#shortcuts-dialog'));
+  });
+  document.querySelector('#shortcuts-cancel-secondary')?.addEventListener('click', () => {
+    closeDialog(document.querySelector('#shortcuts-dialog'));
+  });
+
+  // The keyboard help used to mark itself aria-disabled and toast on
+      // click, which is a discoverability affordance that does nothing.
+      button.addEventListener('click', () => {
+        const dialog = document.querySelector('#shortcuts-dialog');
+        openDialog(dialog, { focus: '#shortcuts-cancel-secondary' });
+      });
+    } else if (READY_PANELS.has(panel)) {
       button.addEventListener('click', () => focusPanel(panel));
     } else if (panel === 'history' || panel === 'analysis' || panel === 'pipeline') {
       button.addEventListener('click', () => switchInspector(panel));
@@ -177,6 +191,36 @@ export function switchInspector(name) {
 // Managers that already implement this inline (adjustments, filters,
 // smart-crop, export, pipeline) keep working; this is for the operations that
 // had a busy guard but no visible feedback.
+export function confirmDialog({ title = 'Are you sure?', body = 'This cannot be undone.', confirmLabel = 'Confirm' } = {}) {
+  return new Promise((resolve) => {
+    const dialog = document.querySelector('#confirm-dialog');
+    if (!dialog) { resolve(false); return; }
+    const heading = dialog.querySelector('#confirm-dialog-heading');
+    const bodyEl = dialog.querySelector('#confirm-dialog-body');
+    const accept = dialog.querySelector('#confirm-accept');
+    heading.textContent = title;
+    bodyEl.textContent = body;
+    accept.textContent = confirmLabel;
+
+    // The handlers are removed on every resolution so a later confirm cannot
+    // fire a stale callback from an earlier one.
+    const done = (result) => {
+      accept.removeEventListener('click', onAccept);
+      document.querySelector('#confirm-cancel')?.removeEventListener('click', onCancel);
+      document.querySelector('#confirm-cancel-secondary')?.removeEventListener('click', onCancel);
+      closeDialog(dialog);
+      resolve(result);
+    };
+    const onAccept = () => done(true);
+    const onCancel = () => done(false);
+
+    accept.addEventListener('click', onAccept);
+    document.querySelector('#confirm-cancel')?.addEventListener('click', onCancel);
+    document.querySelector('#confirm-cancel-secondary')?.addEventListener('click', onCancel);
+    openDialog(dialog, { focus: '#confirm-accept' });
+  });
+}
+
 export async function withBusy(button, message, fn, options = {}) {
   const { label = null, status = null } = options;
   if (!button) return fn();
