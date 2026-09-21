@@ -38,6 +38,7 @@ details.panel-accordion>summary{cursor:pointer;list-style:none;user-select:none}
 details.panel-accordion>summary::-webkit-details-marker{display:none}
 details.panel-accordion>summary::after{content:"›";float:right;color:var(--muted-2);transition:transform .18s var(--ease)}
 details.panel-accordion[open]>summary::after{transform:rotate(90deg)}
+details.panel-accordion:not([open]) .accordion-body{display:none}
 details.panel-accordion .accordion-body{padding-top:13px}
 details.panel-accordion.is-flash .accordion-body{animation:ic-flash 1.1s var(--ease)}
 @keyframes ic-flash{0%{background:var(--accent-wash);box-shadow:0 0 0 6px var(--accent-wash)}100%{background:transparent;box-shadow:none}}
