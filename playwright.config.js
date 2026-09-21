@@ -1,47 +1,61 @@
 // Playwright configuration for IntelliCanvas browser tests.
 //
-// Browser tests are the project's weakest layer: the backend has 276 tests and
-// the frontend has one Vitest suite, while the editor's core workflow — upload,
-// adjust, apply, undo, export — had no end-to-end coverage at all. These tests
-// cover that gap.
+// Browser tests currently cover the core smoke workflow only:
+// upload, adjust, apply, undo, and export.
 //
-// The server is expected to already be running (see the pytest fixture that
-// boots it, or start it manually). CI starts it in a separate step.
+// The server is managed by webServer. CI must not start Flask separately.
+// Playwright-managed Chromium is the default. Use system Chrome locally
+// only with PLAYWRIGHT_USE_SYSTEM_CHROME=1.
 
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from "@playwright/test";
+
+const useSystemChrome =
+  process.env.PLAYWRIGHT_USE_SYSTEM_CHROME === "1" && !process.env.CI;
 
 export default defineConfig({
-  testDir: './tests/browser',
-  outputDir: './test-results/browser',
+  testDir: "./tests/browser",
+  outputDir: "./test-results/browser",
+
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1,
-  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
+
+  reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
+
   timeout: 30_000,
-  expect: { timeout: 10_000 },
+
+  expect: {
+    timeout: 10_000,
+  },
+
+  webServer: {
+    command: "python backend/run.py",
+    url: "http://127.0.0.1:5000/api/health",
+    timeout: 60_000,
+    reuseExistingServer: !process.env.CI,
+  },
 
   use: {
-    baseURL: 'http://127.0.0.1:5000',
-    trace: 'retain-on-failure',
-    screenshot: 'only-on-failure',
-    // Video capture needs the hosted ffmpeg binary; screenshots and traces are
-    // enough to diagnose a failure and avoid a second large download.
-    video: 'off',
-    // Editor assets are served with no-cache headers during development; the
-    // browser must never serve a stale editor.html between test runs.
+    baseURL: "http://127.0.0.1:5000",
+    trace: "retain-on-failure",
+    screenshot: "only-on-failure",
+    video: "off",
     actionTimeout: 10_000,
   },
 
   projects: [
     {
-      name: 'chromium',
+      name: "chromium",
+
       use: {
-        ...devices['Desktop Chrome'],
-        // The Playwright-hosted headless shell is blocked by Application
-        // Control policy on some locked-down machines (WinError 4551), so
-        // fall back to an installed Chrome. CI installs the hosted browser.
-        channel: 'chrome',
+        ...devices["Desktop Chrome"],
+
+        ...(useSystemChrome
+          ? {
+              channel: "chrome",
+            }
+          : {}),
       },
     },
   ],

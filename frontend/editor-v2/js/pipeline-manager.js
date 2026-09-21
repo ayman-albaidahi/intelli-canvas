@@ -108,11 +108,15 @@ export class PipelineManager {
       const image = await this.apiClient.applyPipeline(this.pipeline.nodes);
       this.canvasManager.setPreviewOverlay(null);
       await this.canvasManager.loadFromUrl(this.apiClient.contentUrl(image.image_id), image);
-      document.dispatchEvent(new CustomEvent('ic-operation'));
       this.setStatus(`Applied pipeline · cache ${image.cache_hit ? 'hit' : 'generated'}`, false);
       this.showToast('Pipeline applied as one History entry');
       return this.pipeline;
     });
+    // Dispatched after `run` clears the busy flag, not from inside it:
+    // HistoryManager.refresh() returns immediately while any manager is
+    // mid-operation, so firing earlier leaves the history list stale after
+    // every pipeline apply.
+    document.dispatchEvent(new CustomEvent('ic-operation'));
   }
 
   async update(nodeId, changes) {

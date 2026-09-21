@@ -162,7 +162,6 @@ export class AdjustmentsManager {
       this.lastApplied = { ...NEUTRAL_SLIDERS, grayscale: false, negative: false, ...payload };
       this.lastSubmitted = payload;
       this.resetAll();
-      document.dispatchEvent(new CustomEvent('ic-operation'));
       this.statusMessage.textContent = 'Adjustments applied';
       this.showToast('Adjustments applied');
     } catch (error) {
@@ -176,5 +175,9 @@ export class AdjustmentsManager {
       this.updateSummary();
       this.updateAppliedLine();
     }
+    // After the busy flag clears: HistoryManager.refresh() bails out while any
+    // manager is mid-operation, so an earlier dispatch is silently dropped and
+    // the history list never reflects the applied adjustments.
+    document.dispatchEvent(new CustomEvent('ic-operation'));
   }
 }

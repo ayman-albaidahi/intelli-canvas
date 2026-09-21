@@ -126,3 +126,101 @@ def test_rejected_request_does_not_advance_history():
     retry = _process(client, image_id, 140, source_revision=revision)
     assert retry.status_code == 200
     assert retry.get_json()["image"]["revision"] == revision + 1
+
+
+# --- Race conditions -----------------------------------------------------
+# The guard's reason for existing: a user fires two operations from the same
+# rendered state (a double-click, or a slow request still in flight when the
+# second click lands). Exactly one may win, and the loser must be told its
+# revision is stale rather than silently overwriting the winner.
+
+
+def test_duplicate_submit_from_the_same_revision_loses_once():
+    client = create_app().test_client()
+    image_id = _upload(client)
+
+    # Both requests quote revision 0, the state the client actually rendered.
+    winner = _process(client, image_id, 130, source_revision=0)
+    loser = _process(client, image_id, 140, source_revision=0)
+
+    assert winner.status_code == 200
+    assert loser.status_code == 409
+    assert loser.get_json()["error"]["code"] == "STALE_IMAGE_REVISION"
+
+    # The winner's value is the one that survives; history grew by exactly one.
+    history = client.get(f"/api/history?image_id={image_id}").get_json()["image"]
+    assert history["total"] == 2
+    assert history["entries"][-1]["parameters"]["value"] == 130
+
+
+def test_out_of_order_arrival_cannot_clobber_the_newer_result():
+    """The network reordering case: the second response lands first."""
+    client = create_app().test_client()
+    image_id = _upload(client)
+
+    first = _process(client, image_id, 130, source_revision=0)
+    assert first.status_code == 200
+    newest_revision = first.get_json()["image"]["revision"]
+
+    # A request that the client fired against revision 0 but which arrives
+    # after the first one already advanced the session.
+    late = _process(client, image_id, 140, source_revision=0)
+
+    assert late.status_code == 409
+    assert (
+        client.get(f"/api/history?image_id={image_id}").get_json()["image"]["index"]
+        == newest_revision
+    )
+
+
+# --- Undo / redo rebasing -------------------------------------------------
+# Undo moves the history pointer without appending, which lowers the revision a
+# client must quote. The guard has to follow the pointer, not the high-water
+# mark, or undoing then editing would be rejected as stale.
+
+
+def _undo(client, image_id):
+    return client.post("/api/history/undo", json={"image_id": image_id})
+
+
+def _redo(client, image_id):
+    return client.post("/api/history/redo", json={"image_id": image_id})
+
+
+def test_undo_lowers_the_revision_a_client_must_quote():
+    client = create_app().test_client()
+    image_id = _upload(client)
+
+    first = _process(client, image_id, 130, source_revision=0)
+    second = _process(
+        client, image_id, 140, source_revision=first.get_json()["image"]["revision"]
+    )
+    second_revision = second.get_json()["image"]["revision"]
+
+    assert _undo(client, image_id).status_code == 200
+    after_undo = client.get(f"/api/history?image_id={image_id}").get_json()["image"]
+    assert after_undo["index"] == second_revision - 1
+
+    # Quoting the pre-undo revision is now stale; quoting the undone state is
+    # accepted and continues from there.
+    stale = _process(client, image_id, 150, source_revision=second_revision)
+    assert stale.status_code == 409
+
+    fresh = _process(client, image_id, 150, source_revision=after_undo["index"])
+    assert fresh.status_code == 200
+
+
+def test_redo_restores_the_revision_a_client_must_quote():
+    client = create_app().test_client()
+    image_id = _upload(client)
+
+    _process(client, image_id, 130, source_revision=0)
+    _process(client, image_id, 140, source_revision=1)
+    assert _undo(client, image_id).status_code == 200
+    assert _redo(client, image_id).status_code == 200
+
+    index = client.get(f"/api/history?image_id={image_id}").get_json()["image"]["index"]
+    assert index == 2
+
+    # The redo put the pointer back, so the undone revision is current again.
+    assert _process(client, image_id, 150, source_revision=index).status_code == 200

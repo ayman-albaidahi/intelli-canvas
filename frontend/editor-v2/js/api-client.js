@@ -100,8 +100,18 @@ export class ApiClient {
 
   // The backend returns ``revision`` (the new history index) on every mutating
   // result. Tracking it here means callers cannot forget to pass it on.
+  // A response carrying a revision older than the one already held is a late
+  // reply to an earlier request (the network reordered two mutating calls, or
+  // a double-click fired twice). Adopting it would make the next request quote
+  // a stale revision and desync the client, so it is ignored. Undo and redo do
+  // not route through here, so a legitimate pointer move downwards is never
+  // blocked by this guard.
   syncRevision(image) {
-    if (image && typeof image.revision === 'number') this.revision = image.revision;
+    if (image && typeof image.revision === 'number') {
+      if (this.revision === null || image.revision >= this.revision) {
+        this.revision = image.revision;
+      }
+    }
   }
 
   async histogram() {

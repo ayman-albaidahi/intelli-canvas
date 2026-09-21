@@ -151,4 +151,22 @@ describe('ApiClient — revision tracking', () => {
     await c.process('brightness', { value: 130 });
     expect(c.revision).toBe(4);
   });
+
+  it('ignores a response carrying an older revision', async () => {
+    // The network-reordering case: the response to the first mutating call
+    // lands after the second one already advanced the client. Adopting the
+    // stale number would make the very next request quote a stale revision.
+    jsonOnce({ success: true, image: { image_id: 'abc-123', revision: 1 } });
+    const c = client();
+    c.imageId = 'abc-123';
+    c.revision = 3;
+    await c.process('brightness', { value: 130 });
+    expect(c.revision).toBe(3);
+  });
+
+  it('accepts the first revision when none is tracked yet', () => {
+    const c = client();
+    c.syncRevision({ image_id: 'abc-123', revision: 2 });
+    expect(c.revision).toBe(2);
+  });
 });

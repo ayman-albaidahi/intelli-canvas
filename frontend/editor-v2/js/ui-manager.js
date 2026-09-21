@@ -3,6 +3,17 @@ import { appState, setState } from './app-state.js';
 const toast = document.querySelector('#toast');
 let toastTimer;
 
+const inspector = document.querySelector('#inspector');
+const inspectorScrim = document.querySelector('#inspector-scrim');
+const inspectorToggle = document.querySelector('[data-action="inspector-toggle"]');
+// jsdom has no matchMedia; the optional chain keeps the module importable in
+// unit tests, where the drawer simply reports "not mobile".
+const mobileQuery = () =>
+  typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia('(max-width: 900px)')
+    : null;
+const isMobile = () => mobileQuery()?.matches ?? false;
+
 const READY_PANELS = new Set(['adjustments', 'filters', 'background', 'smart-crop']);
 
 export function initUI() {
@@ -38,6 +49,48 @@ export function initUI() {
   document.querySelectorAll('#properties-panel details.panel-accordion').forEach((section) => {
     section.addEventListener('toggle', () => { if (section.open) closeOtherAccordions(section); });
   });
+
+  // Mobile drawer: the toggle, the scrim tap, and Escape all close it. The
+  // drawer is desktop-only chrome, so nothing here runs above 900px.
+  inspectorToggle?.addEventListener('click', () => toggleInspectorDrawer());
+  inspectorScrim?.addEventListener('click', () => closeInspectorDrawer());
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && inspector?.classList.contains('is-open')) {
+      event.preventDefault();
+      closeInspectorDrawer();
+    }
+  });
+  // Returning to a desktop width must not leave the drawer pinned over the
+  // rail, and the toggle must not report stale state.
+  mobileQuery()?.addEventListener('change', (event) => {
+    if (!event.matches) closeInspectorDrawer();
+  });
+}
+
+export function openInspectorDrawer() {
+  if (!inspector) return;
+  inspector.classList.add('is-open');
+  inspectorScrim?.removeAttribute('hidden');
+  inspectorToggle?.setAttribute('aria-expanded', 'true');
+  // Land keyboard and screen-reader users inside the drawer rather than leaving
+  // focus on the button that opened it.
+  const firstTab = inspector.querySelector('[data-inspector]');
+  firstTab?.focus({ preventScroll: true });
+}
+
+export function closeInspectorDrawer() {
+  if (!inspector) return;
+  inspector.classList.remove('is-open');
+  inspectorScrim?.setAttribute('hidden', '');
+  inspectorToggle?.setAttribute('aria-expanded', 'false');
+  // visibility:hidden makes the drawer unfocusable; move focus back out to the
+  // toggle so it does not land on whatever the browser picks.
+  if (inspector.contains(document.activeElement)) inspectorToggle?.focus();
+}
+
+export function toggleInspectorDrawer() {
+  if (inspector?.classList.contains('is-open')) closeInspectorDrawer();
+  else openInspectorDrawer();
 }
 
 function markNotReady(selector, name) {
@@ -83,6 +136,9 @@ export function switchInspector(name) {
   if (historyPanel) historyPanel.hidden = name !== 'history';
   const pipelinePanel = document.querySelector('#pipeline-panel');
   if (pipelinePanel) pipelinePanel.hidden = name !== 'pipeline';
+  // On mobile the panels live in the drawer, so switching to one must also
+  // reveal it — otherwise the tap changes hidden state behind nothing.
+  if (isMobile()) openInspectorDrawer();
 }
 
 export function showToast(message) {

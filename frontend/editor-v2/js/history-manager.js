@@ -42,10 +42,12 @@ export class HistoryManager {
     if (this.busy || !this.apiClient.imageId) return;
     this.busy = true;
     try {
+      // undoHistory/redoHistory already unwrap the envelope and return the
+      // state directly, so the render call takes it as-is.
       const state = action === 'undo'
         ? await this.apiClient.undoHistory(this.apiClient.imageId)
         : await this.apiClient.redoHistory(this.apiClient.imageId);
-      this.render(state.image);
+      this.render(state);
       await this.reloadCanvas();
       this.showToast(action === 'undo' ? 'Stepped back in history' : 'Stepped forward in history');
     } catch (error) {
@@ -60,9 +62,9 @@ export class HistoryManager {
     this.busy = true;
     try {
       const state = await this.apiClient.gotoHistory(this.apiClient.imageId, index);
-      this.render(state.image);
+      this.render(state);
       await this.reloadCanvas();
-      this.showToast('Jumped to ' + this.entryLabel(state.image.entries[index]));
+      this.showToast('Jumped to ' + this.entryLabel(state.entries[index]));
     } catch (error) {
       this.showToast(error.message);
     } finally {
@@ -75,7 +77,7 @@ export class HistoryManager {
     this.busy = true;
     try {
       const state = await this.apiClient.clearHistory(this.apiClient.imageId);
-      this.render(state.image);
+      this.render(state);
       this.clearComparison();
       this.showToast('History cleared — current state kept');
     } catch (error) {
@@ -170,8 +172,11 @@ export class HistoryManager {
   async refresh() {
     if (!this.apiClient.imageId || this.busy) return;
     try {
+      // history() already unwraps the envelope, so it returns the state
+      // directly — reaching for .image again yields undefined and render()
+      // throws before painting a single row.
       const state = await this.apiClient.history(this.apiClient.imageId);
-      this.render(state.image);
+      this.render(state);
     } catch {
       /* session may be gone; panel simply stays empty */
     }

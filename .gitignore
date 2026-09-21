@@ -233,3 +233,6 @@ __marimo__/
 # Playwright browser test artifacts (screenshots, traces, fixtures)
 test-results/
 playwright-report/
+
+# Agent session working files (plans, scratch)
+.zcode/
