@@ -66,7 +66,6 @@ export class SmartCropManager {
       const image = await this.apiClient.smartCropApply(this.ratio());
       await this.canvasManager.loadFromUrl(this.apiClient.contentUrl(image.image_id), image);
       document.querySelector('#canvas-size').textContent = `${image.width} × ${image.height}`;
-      document.dispatchEvent(new CustomEvent('ic-operation'));
       this.setStatus('Smart Crop applied and added to History');
       this.showToast('Smart Crop applied');
       this.resetPreviewOnly();
@@ -77,6 +76,10 @@ export class SmartCropManager {
       this.busy = false;
       this.syncControls();
     }
+    // After the busy flag clears: HistoryManager.refresh() bails out while any
+    // manager is mid-operation, so an earlier dispatch is silently dropped and
+    // the history list never reflects the crop.
+    document.dispatchEvent(new CustomEvent('ic-operation'));
   }
 
   resetPreviewOnly() {

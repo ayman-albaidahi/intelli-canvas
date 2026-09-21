@@ -66,20 +66,7 @@ jobs:
         run: npm ci
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
-      - name: Start the editor server
-        run: python backend/run.py &
-      - name: Wait for the server to accept requests
-        run: |
-          for attempt in $(seq 1 30); do
-            if curl -sf http://127.0.0.1:5000/api/health > /dev/null; then
-              echo "Server is up"
-              exit 0
-            fi
-            sleep 1
-          done
-          echo "Server did not start in time" >&2
-          exit 1
-      - name: Run browser smoke tests
+      - name: Run browser tests
         run: npx playwright test
       - name: Upload test artifacts on failure
         uses: actions/upload-artifact@v4

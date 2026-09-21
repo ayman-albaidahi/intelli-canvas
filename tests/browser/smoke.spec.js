@@ -9,72 +9,7 @@
 // so a CSS refactor cannot turn this into a false failure.
 
 import { test, expect } from '@playwright/test';
-import { writeFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
-import zlib from 'node:zlib';
-
-// A small solid-colour PNG is enough to exercise the whole pipeline; using a
-// generated fixture keeps the test independent of any committed binary.
-// It is encoded by hand rather than copied as a base64 blob because a stale
-// or truncated blob silently fails server-side validation ("INVALID_FILE")
-// and the test then waits forever for an upload that never lands.
-function makePngPath(testInfo) {
-  const dir = join(testInfo.project.outputDir, 'fixtures');
-  mkdirSync(dir, { recursive: true });
-  const path = join(dir, 'smoke.png');
-  writeFileSync(path, encodePng(32, 32, [180, 120, 90]));
-  return path;
-}
-
-// Minimal, correct PNG: one IDAT chunk over raw scanlines, CRC included.
-function encodePng(width, height, rgb) {
-  const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-  const ihdr = chunk(0x49484452, Buffer.concat([
-    int32(width), int32(height), Buffer.from([8, 2, 0, 0, 0]), // 8-bit truecolour
-  ]));
-  // Each scanline starts with a filter-type byte (0 = none).
-  const row = Buffer.alloc(1 + width * 3);
-  for (let i = 0; i < width; i++) {
-    row[1 + i * 3] = rgb[0];
-    row[1 + i * 3 + 1] = rgb[1];
-    row[1 + i * 3 + 2] = rgb[2];
-  }
-  const idat = chunk(0x49444154, zlib.deflateSync(Buffer.concat(Array.from({ length: height }, () => row))));
-  const iend = chunk(0x49454e44, Buffer.alloc(0));
-  return Buffer.concat([signature, ihdr, idat, iend]);
-}
-
-function chunk(type, data) {
-  return Buffer.concat([int32(data.length), Buffer.from([type >>> 24, type >>> 16 & 255, type >>> 8 & 255, type & 255]), data, crc32(type, data)]);
-}
-
-function int32(value) {
-  return Buffer.from([(value >>> 24) & 255, (value >>> 16) & 255, (value >>> 8) & 255, value & 255]);
-}
-
-const CRC_TABLE = (() => {
-  const table = [];
-  for (let n = 0; n < 256; n++) {
-    let c = n;
-    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    table.push(c >>> 0);
-  }
-  return table;
-})();
-
-function crc32(type, data) {
-  const bytes = Buffer.concat([Buffer.from([type >>> 24, type >>> 16 & 255, type >>> 8 & 255, type & 255]), data]);
-  let crc = 0xffffffff;
-  for (const byte of bytes) crc = CRC_TABLE[(crc ^ byte) & 255] ^ (crc >>> 8);
-  return int32((crc ^ 0xffffffff) >>> 0);
-}
-
-// The editor is unusable until an image is loaded; wait for the signal that a
-// backend session exists rather than a fixed sleep.
-async function waitForImageLoaded(page) {
-  await expect(page.locator('#save-state')).toContainText('Saved in API session', { timeout: 20_000 });
-  await expect(page.locator('#empty-canvas')).toBeHidden();
-}
+import { makePngPath, waitForImageLoaded } from './fixtures.js';
 
 test('upload, adjust, apply, undo, and export the image', async ({ page }, testInfo) => {
   await page.goto('/editor-v2/');
@@ -86,7 +21,7 @@ test('upload, adjust, apply, undo, and export the image', async ({ page }, testI
   await expect(page.locator('#file-input')).toBeAttached();
 
   // --- Upload -----------------------------------------------------------
-  const png = makePngPath(testInfo);
+  const png = makePngPath(testInfo, 'smoke.png');
   await page.setInputFiles('#file-input', png);
   await waitForImageLoaded(page);
   await expect(page.locator('#document-name')).toContainText('smoke.png');
@@ -152,7 +87,7 @@ test('shows a friendly message when the backend is unreachable', async ({ page, 
   await page.route('**/api/**', (route) => route.abort());
   await page.goto('/editor-v2/');
 
-  const png = makePngPath({ project: { outputDir: 'test-results/browser' } });
+  const png = makePngPath({ project: { outputDir: 'test-results/browser' } }, 'smoke.png');
   await page.setInputFiles('#file-input', png);
 
   // The editor must surface a human-readable offline message, never a raw

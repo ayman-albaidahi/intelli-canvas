@@ -1,8 +1,8 @@
 # IntelliCanvas — Current Implementation Status
 
-**Last reviewed:** 2026-09-20
+**Last reviewed:** 2026-09-21
 **Reference branch:** `main`
-**Reference commit:** `94114d1` (includes PRs #98 reality sync and #99 capability discovery)
+**Reference commit:** `33c7cb2` (includes PRs #100 frontend manager coverage, #101 image revisions, #102 browser smoke)
 **Companion roadmap:** `docs/v0.9.1-development-roadmap.md` (supersedes `docs/v0.9-pr-roadmap.md`, which predates the restructuring)
 
 ## Purpose
@@ -13,15 +13,16 @@ This document records the current implementation state. It is a current-state co
 
 | Check | Result |
 |---|---:|
-| Automated Python tests | 276 passed |
+| Automated Python tests | 287 passed |
 | Ruff (`ruff check backend tests`) | Passed |
-| Ruff format (`ruff format --check`) | 84 files already formatted |
+| Ruff format (`ruff format --check`) | 85 files already formatted |
 | `compileall` | Passed |
 | Architecture boundary tests | 6 passed (`tests/test_architecture.py`) |
 | JavaScript syntax checks | Passed for editor modules |
-| Vitest | 46 passed (4 suites: transform-logic, api-client, history-manager, adjustments-manager) |
+| Vitest | 61 passed (5 suites: transform-logic, api-client, history-manager, adjustments-manager, ui-manager) |
+| Browser E2E (Playwright) | 22 passed — core editor workflow and backend-unreachable fallback (`tests/browser/smoke.spec.js`); mobile/tablet/desktop responsive coverage with a closable Inspector drawer and a measured "no interactive control outside the viewport" gate (`tests/browser/mobile.spec.js`); and one flow per shipping tool — Image Intelligence and Smart Suggestions, Smart Crop, Pipeline, Background Studio, filters and histogram, History navigation and comparison, Layers, and Export in all three formats (`tests/browser/features.spec.js`) |
 | OpenCV/NumPy import | Passed (`cv2` 5.0.0, NumPy 2.4.6) |
-| CI on `main` | `.github/workflows/ci.yml` runs compileall, pytest, `git diff --check`, `ruff check`, `ruff format --check`, `pip-audit --strict` (backend); `npm ci`, `node --check`, `npx vitest run` (frontend) |
+| CI on `main` | `.github/workflows/ci.yml` runs compileall, pytest, `git diff --check`, `ruff check`, `ruff format --check`, `pip-audit --strict` (backend); `npm ci`, `node --check`, `npx vitest run` (frontend); `npx playwright test` with the Playwright `webServer` fixture booting the backend (browser) |
 
 ## Backend restructuring (2026-09-19 → 2026-09-20)
 
@@ -55,6 +56,19 @@ ruff format --check backend tests
 python -m compileall -q backend
 python backend/run.py
 ```
+
+Browser tests boot the server themselves via the Playwright `webServer` fixture, so
+no manual `backend/run.py` is needed and CI no longer starts a second instance:
+
+```bash
+npx playwright install --with-deps chromium   # one-time browser download
+npx playwright test
+```
+
+System Chrome is the default browser because the Playwright-hosted headless shell
+is blocked by Application Control policy on some locked-down machines
+(WinError 4551). Set `PLAYWRIGHT_USE_HOSTED_CHROMIUM=1` to use the managed
+browser instead.
 
 The supported editor URL is `http://localhost:5000/editor-v2/`. The root URL `/` serves the same Editor V2 application. The directory `frontend/editor-v2/` is the active frontend implementation.
 
@@ -102,6 +116,7 @@ Processing and transformation use Flask, Pillow, OpenCV, and NumPy at runtime. S
 | POST | `/api/transform/smart-crop/preview` | Returns a non-persistent PNG crop proposal with saliency metadata in response headers. |
 | POST | `/api/transform/smart-crop/apply` | Applies the saliency-based crop in Python and records one History operation. |
 | GET | `/api/capabilities` | Reports the API version, every registered operation, and each operation's parameter contract (type, inclusive bounds, default, error code). Derived from the operation registry, so a new operation appears automatically. Read-only; no image session required. |
+| POST | `/api/process/*` (all registered operations, `/adjustments`, `/histogram`) | Accept an optional `source_revision`. When supplied, it must match the session's current history index or the request is rejected with 409 `STALE_IMAGE_REVISION` before any work runs and no History entry is appended. Omitting it preserves the historic unconditional behaviour. The guard follows the history pointer, so it stays correct across undo/redo. Transform, pipeline, and background endpoints are not yet covered by the guard. |
 
 ## Known non-current or deferred capabilities
 
@@ -109,7 +124,14 @@ The architecture and requirements documents describe a broader roadmap that incl
 
 Smart Crop is implemented in v0.8.3, including Pipeline-node integration. Explain Operation is implemented in v0.8.2.
 
-The v0.9 roadmap has been superseded by `docs/v0.9.1-development-roadmap.md`. What the old roadmap called "v0.9 Polish & Testing" is now partially complete — API error contracts are unified, the backend quality gate is in place, and API capability discovery is implemented (`GET /api/capabilities`) — so the remaining v0.9.1 work is, in order: **browser E2E coverage (zero today), frontend manager tests (4 of 13 managers now covered: api-client, history-manager, adjustments-manager, transform-logic; pipeline-manager and the tool managers remain), and image revision protection.** These gate the product features (Auto Enhance, Presets, Profiles, Quality Gates, Batch). Ownership/authentication and final production hardening remain later work.
+The v0.9 roadmap has been superseded by `docs/v0.9.1-development-roadmap.md`. What the old roadmap called "v0.9 Polish & Testing" is now partially complete — API error contracts are unified, the backend quality gate is in place, API capability discovery is implemented (`GET /api/capabilities`), frontend manager coverage has grown from one suite to five (api-client, history-manager, adjustments-manager, transform-logic, ui-manager), the image revision guard is in place, browser E2E covers the smoke suite plus per-tool feature flows and responsive layout, and the mobile interaction model has landed: below 900px the Inspector is no longer `display:none` with no reopen path, it is a closable drawer opened from the workspace header and closed by scrim tap or Escape, with `aria-expanded`/`aria-controls` wiring and focus returned to the toggle. The desktop three-column identity above 900px is unchanged. Remaining v0.9.1 work: **frontend manager tests for the remaining managers (pipeline-manager and the tool managers).** These gate the product features (Auto Enhance, Presets, Profiles, Quality Gates, Batch). Ownership/authentication and final production hardening remain later work.
+
+## Fixes landed with the 2026-09-21 verification pass
+
+The per-tool browser flows are not only coverage — writing them surfaced two real defects that unit tests had been masking:
+
+- **History panel never refreshed after any operation.** `HistoryManager.refresh()` called `this.render(state.image)`, but `ApiClient.history()` already unwraps the response envelope and returns the history state directly, so `state.image` was `undefined`, `render()` threw, and `refresh()` swallowed the exception in an empty `catch`. The panel therefore showed nothing after upload, adjustments, filters, pipeline apply, background work, or Smart Crop. The same double-unwrap existed in `step()`, `goto()`, and `clear()`. The unit tests did not catch it because their mock clients wrapped the state in `{ image: ... }`, matching the bug rather than the contract; the mocks now return the bare state and two regression tests pin the behaviour.
+- **`ic-operation` was dispatched while the acting manager was still busy.** `HistoryManager.refresh()` returns immediately whenever any manager is mid-operation, so the event fired from inside the `try` block — before the `finally` cleared the flag — and was silently dropped. Every manager that applies an operation (pipeline, adjustments, analysis, background, filters, smart-crop) now dispatches after the busy flag clears, so the history list reliably reflects each committed change.
 
 ## Change-control rule
 

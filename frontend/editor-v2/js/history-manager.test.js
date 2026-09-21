@@ -31,15 +31,17 @@ function threeEntries() {
 
 function makeClient(state = threeEntries()) {
   const calls = { undo: 0, redo: 0, goto: 0, clear: 0, history: 0 };
+  // ApiClient unwraps the response envelope itself, so these return the history
+  // state directly — mirroring the real contract the manager must handle.
   return {
     calls,
     imageId: 'img-1',
     contentUrl: (id) => `http://localhost:5000/api/images/${id}/content`,
-    async history() { calls.history += 1; return { image: state }; },
-    async undoHistory() { calls.undo += 1; return { image: state }; },
-    async redoHistory() { calls.redo += 1; return { image: state }; },
-    async gotoHistory(id, index) { calls.goto += 1; return { image: state }; },
-    async clearHistory() { calls.clear += 1; return { image: { ...state, total: 1, index: 0, entries: [state.entries[1]] } }; },
+    async history() { calls.history += 1; return state; },
+    async undoHistory() { calls.undo += 1; return state; },
+    async redoHistory() { calls.redo += 1; return state; },
+    async gotoHistory(id, index) { calls.goto += 1; return state; },
+    async clearHistory() { calls.clear += 1; return { ...state, total: 1, index: 0, entries: [state.entries[1]] }; },
     async compareHistory() { return { from: { url: 'http://from' }, to: { url: 'http://to' } }; },
     async diffHistory() { return new Blob(['x'], { type: 'image/png' }); },
   };
@@ -167,7 +169,7 @@ describe('HistoryManager — busy guard', () => {
     expect(manager.busy).toBe(true);
     // A second call while the first is still pending must be a no-op.
     manager.step('undo');
-    resolveFirst({ image: threeEntries() });
+    resolveFirst(threeEntries());
     await first;
     expect(client.calls.undo).toBe(1);
   });
@@ -180,7 +182,7 @@ describe('HistoryManager — busy guard', () => {
     const { manager } = await makeManager(client, canvasThatRecords(events));
     const first = manager.goto(2);
     manager.goto(0);
-    resolveFirst({ image: threeEntries() });
+    resolveFirst(threeEntries());
     await first;
     expect(client.calls.goto).toBe(1);
   });
@@ -224,5 +226,31 @@ describe('HistoryManager — event wiring', () => {
     document.dispatchEvent(new document.defaultView.CustomEvent('ic-operation'));
     await new Promise((resolve) => { setTimeout(resolve, 0); });
     expect(client.calls.history).toBe(1);
+  });
+
+  it('paints rows after a refresh driven by a real client envelope', async () => {
+    // The real ApiClient unwraps the response envelope itself and returns the
+    // history state directly. A manager that reaches for .image again receives
+    // undefined, render() throws before painting anything, and refresh()
+    // swallows the exception — the panel silently stays empty forever.
+    const events = [];
+    const client = makeClient();
+    client.history = async () => threeEntries();
+    const { manager, document } = await makeManager(client, canvasThatRecords(events));
+
+    await manager.refresh();
+
+    expect(document.querySelectorAll('#history-list .history-row')).toHaveLength(3);
+  });
+
+  it('paints rows after undo when the client returns the bare state', async () => {
+    const events = [];
+    const client = makeClient();
+    client.undoHistory = async () => threeEntries();
+    const { manager, document } = await makeManager(client, canvasThatRecords(events));
+
+    await manager.step('undo');
+
+    expect(document.querySelectorAll('#history-list .history-row')).toHaveLength(3);
   });
 });

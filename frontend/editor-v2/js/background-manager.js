@@ -198,7 +198,6 @@ export class BackgroundManager {
         : await this.apiClient.replaceBackground(payload);
       this.clearPreviews();
       await this.canvasManager.loadFromUrl(this.apiClient.contentUrl(image.image_id), image);
-      document.dispatchEvent(new CustomEvent('ic-operation'));
       this.controls.status.textContent = operation === 'remove' ? 'Background removed' : 'Background replaced';
       this.showToast(operation === 'remove' ? 'Background removed' : 'Background replaced');
     } catch (error) {
@@ -207,6 +206,10 @@ export class BackgroundManager {
     } finally {
       this.busy = false;
     }
+    // After the busy flag clears: HistoryManager.refresh() bails out while any
+    // manager is mid-operation, so an earlier dispatch is silently dropped and
+    // the history list never reflects the background change.
+    document.dispatchEvent(new CustomEvent('ic-operation'));
   }
 
   async refreshLibrary() {

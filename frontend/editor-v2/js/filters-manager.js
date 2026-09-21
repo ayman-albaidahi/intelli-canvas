@@ -65,7 +65,6 @@ export class FiltersManager {
       const result = await this.apiClient.process(operation, data);
       await this.canvasManager.loadFromUrl(this.apiClient.contentUrl(result.image_id), result);
       document.querySelector('#canvas-size').textContent = `${result.width} × ${result.height}`;
-      document.dispatchEvent(new CustomEvent('ic-operation'));
       this.setStatus(successMessage);
       this.showToast(successMessage);
     } catch (error) {
@@ -75,6 +74,10 @@ export class FiltersManager {
       this.busy = false;
       this.syncControls();
     }
+    // After the busy flag clears: HistoryManager.refresh() bails out while any
+    // manager is mid-operation, so an earlier dispatch is silently dropped and
+    // the history list never reflects the applied filter.
+    document.dispatchEvent(new CustomEvent('ic-operation'));
   }
 
   async histogram() {

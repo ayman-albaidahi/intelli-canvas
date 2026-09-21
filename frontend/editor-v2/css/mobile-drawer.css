@@ -1,0 +1,112 @@
+/* Mobile interaction model: below 900px the Inspector stops being a desktop
+   rail column and becomes a closable drawer. The desktop layout above 900px is
+   untouched — this file only adds the drawer mechanics and the button that
+   opens it, so the "canvas first, panels on demand" behaviour is opt-in by
+   viewport rather than a restyle of the desktop identity. */
+
+/* The toggle lives in the workspace header and is desktop-hidden. */
+.inspector-toggle {
+  display: none;
+}
+
+.inspector-scrim {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  /* Keep the header inside the viewport: the action row scrolls horizontally
+     instead of pushing New/Open/Export off-screen. Nothing is removed, so no
+     capability disappears on a narrow display. */
+  .topbar {
+    gap: 10px;
+    padding: 0 12px;
+  }
+
+  .top-actions {
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .top-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .brand-block span:not(.brand-mark) {
+    display: none;
+  }
+
+  .workspace {
+    min-width: 0;
+  }
+
+  .inspector-toggle {
+    display: inline-flex;
+  }
+
+  /* The drawer: fixed to the right edge, translated out of view when closed.
+     transform (not display) is the hide mechanism so the panels keep their
+     state and the open/close motion is continuous. */
+  .inspector {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 70;
+    display: flex;
+    flex-direction: column;
+    width: min(400px, 94vw);
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--surface, #fff);
+    border-left: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+    box-shadow: -18px 0 44px rgba(0, 0, 0, 0.22);
+    transform: translateX(105%);
+    transition: transform 0.25s ease;
+    visibility: hidden;
+  }
+
+  .inspector.is-open {
+    transform: translateX(0);
+    visibility: visible;
+  }
+
+  /* The tab bar stays pinned while the active panel scrolls beneath it. */
+  .inspector-tabs {
+    flex: 0 0 auto;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .inspector-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .inspector-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .inspector-scrim:not([hidden]) {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(1px);
+  }
+
+  /* The canvas-toolbar already scrolls; keep it clear of the bottom edge. */
+  .canvas-toolbar {
+    bottom: max(10px, env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 900px) and (prefers-reduced-motion: reduce) {
+  .inspector {
+    transition: none;
+  }
+}

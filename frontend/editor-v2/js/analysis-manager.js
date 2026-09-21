@@ -155,12 +155,15 @@ export class AnalysisManager {
     try {
       const applied = await this.apiClient.applySuggestion(this.apiClient.imageId, this.activeSuggestion.type);
       await this.canvasManager.loadFromUrl(this.apiClient.contentUrl(this.apiClient.imageId), {});
-      document.dispatchEvent(new CustomEvent('ic-operation'));
       this.showToast(`تم تطبيق الـ Pipeline كسجل واحد${applied?.image?.cache_hit ? ' من الذاكرة المؤقتة' : ''}`);
     } catch (error) {
       this.showToast(error.message);
     } finally {
       this.busy = false;
     }
+    // After the busy flag clears: HistoryManager.refresh() bails out while any
+    // manager is mid-operation, so an earlier dispatch is silently dropped and
+    // the history list never reflects the applied suggestion.
+    document.dispatchEvent(new CustomEvent('ic-operation'));
   }
 }
