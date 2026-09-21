@@ -1,4 +1,5 @@
 import { appState } from './app-state.js';
+import { openDialog, closeDialog } from './ui-manager.js';
 
 const HANDLE_SIZE = 9;
 const MIN_SIZE = 8;
@@ -37,6 +38,14 @@ export class ObjectManager {
     this.canvas.addEventListener('pointerup', (e) => this.onPointerEnd(e));
     this.canvas.addEventListener('pointercancel', (e) => this.onPointerEnd(e));
     this.canvas.addEventListener('dblclick', (e) => this.onDoubleClick(e));
+    // The text popover's own cancel buttons close it through the shared
+    // closer so focus still returns to whatever opened it.
+    document.querySelector('#text-popover-cancel')?.addEventListener('click', () => {
+      closeDialog(document.querySelector('#text-popover'));
+    });
+    document.querySelector('#text-popover-cancel-secondary')?.addEventListener('click', () => {
+      closeDialog(document.querySelector('#text-popover'));
+    });
     document.addEventListener('keydown', (e) => {
       if (!this.selected) return;
       const target = e.target;
@@ -191,30 +200,68 @@ export class ObjectManager {
     });
   }
 
+  // The text tool used to use window.prompt: it is unstyleable, blocks the
+  // whole page, cannot be dismissed cleanly by automation, and returns null
+  // for a cancelled dialog, which is indistinguishable from empty input. The
+  // inline popover is a real focus-managed dialog instead.
+  openTextPopover({ title = 'Add text', value = '', submitLabel = 'Add text', onSubmit } = {}) {
+    const popover = document.querySelector('#text-popover');
+    const heading = popover?.querySelector('#text-popover-heading');
+    const input = popover?.querySelector('#text-popover-input');
+    const submit = popover?.querySelector('#text-popover-submit');
+    if (!popover || !input) return;
+    heading.textContent = title;
+    submit.textContent = submitLabel;
+    input.value = value;
+    // The handler is rebound on every open so an edit after an add cannot
+    // carry the previous callback forward.
+    popover.onsubmit = (event) => {
+      event.preventDefault();
+      const text = input.value;
+      if (!text.trim()) return;
+      onSubmit?.(text.trim());
+      closeDialog(popover);
+    };
+    // The popover opens from a pointerdown handler on the canvas, and the
+    // browser's focus settlement for that click lands on the canvas element
+    // after the dialog is already open — stealing focus from the input.
+    // Deferring to the next macrotask lets the click finish first, so the
+    // focus move into the dialog is the last one that happens.
+    const popoverRef = popover;
+    setTimeout(() => openDialog(popoverRef, { focus: '#text-popover-input' }), 0);
+  }
+
   addText(point) {
-    const text = window.prompt('Text to add');
-    if (!text || !text.trim()) return;
     const color = document.querySelector('#drawing-color')?.value || '#d95687';
     const size = 26;
-    const rtl = /[\u0590-\u05FF\u0600-\u06FF]/.test(text);
-    const width = this.measureText(text, size) + 12;
-    return this.addObject({
-      id: 'o' + Math.random().toString(36).slice(2, 9), type: 'text', name: this.nextName('text'),
-      text: text.trim(), fontSize: size, color, rtl,
-      x: point.x, y: point.y - size / 2, w: width, h: size * 1.4, rotation: 0, opacity: 1,
-      blend: 'source-over', visible: true, locked: false,
+    this.openTextPopover({
+      onSubmit: (text) => {
+        const rtl = /[\u0590-\u05FF\u0600-\u06FF]/.test(text);
+        const width = this.measureText(text, size) + 12;
+        this.addObject({
+          id: 'o' + Math.random().toString(36).slice(2, 9), type: 'text', name: this.nextName('text'),
+          text, fontSize: size, color, rtl,
+          x: point.x, y: point.y - size / 2, w: width, h: size * 1.4, rotation: 0, opacity: 1,
+          blend: 'source-over', visible: true, locked: false,
+        });
+      },
     });
   }
 
   editText(id) {
     const object = this.getObject(id);
     if (!object || object.type !== 'text') return;
-    const text = window.prompt('Edit text', object.text);
-    if (text === null || !text.trim()) return;
-    object.text = text.trim();
-    object.rtl = /[\u0590-\u05FF\u0600-\u06FF]/.test(object.text);
-    object.w = this.measureText(object.text, object.fontSize) + 12;
-    this.changed();
+    this.openTextPopover({
+      title: 'Edit text',
+      value: object.text,
+      submitLabel: 'Save',
+      onSubmit: (text) => {
+        object.text = text;
+        object.rtl = /[\u0590-\u05FF\u0600-\u06FF]/.test(object.text);
+        object.w = this.measureText(object.text, object.fontSize) + 12;
+        this.changed();
+      },
+    });
   }
 
   measureText(text, size) {
