@@ -196,6 +196,14 @@ export class LayerManager {
       if (selected) this.objects.duplicate(selected.id);
     });
     document.querySelector('#obj-delete')?.addEventListener('click', () => this.objects.deleteSelected());
+    // The properties panel's "more" button was labelled "More property
+    // options" and did nothing at all. It duplicates the selected object,
+    // which is the action its position next to the heading suggests.
+    document.querySelector('.more-button')?.addEventListener('click', () => {
+      const selected = this.objects.selected;
+      if (!selected) { this.showToast('Select a layer first'); return; }
+      this.objects.duplicate(selected.id);
+    });
   }
 
   updateInspector() {

@@ -201,7 +201,10 @@ document.addEventListener('keydown', (event) => {
 });
 
 function renderZoom() {
-  document.querySelectorAll('[data-zoom-display]').forEach((element) => { element.textContent = `${appState.zoom}%`; });
+  // Before any image is loaded there is nothing to zoom, so reporting a
+  // percentage would describe a canvas that does not exist.
+  const value = canvasManager.hasImage() ? `${appState.zoom}%` : '—';
+  document.querySelectorAll('[data-zoom-display]').forEach((element) => { element.textContent = value; });
 }
 document.addEventListener('appstatechange', ({ detail }) => {
   document.body.dataset.activeTool = detail.activeTool || 'select';

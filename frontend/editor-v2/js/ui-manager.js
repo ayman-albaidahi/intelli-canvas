@@ -61,7 +61,11 @@ export function initUI() {
   document.querySelectorAll('[data-panel]').forEach((button) => {
     const panel = button.dataset.panel;
     if (panel === 'shortcuts') {
-      document.querySelector('#shortcuts-cancel')?.addEventListener('click', () => {
+      document.querySelector('.avatar')?.addEventListener('click', () => {
+    openDialog(document.querySelector('#shortcuts-dialog'), { focus: '#shortcuts-cancel-secondary' });
+  });
+
+  document.querySelector('#shortcuts-cancel')?.addEventListener('click', () => {
     closeDialog(document.querySelector('#shortcuts-dialog'));
   });
   document.querySelector('#shortcuts-cancel-secondary')?.addEventListener('click', () => {

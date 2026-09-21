@@ -218,8 +218,11 @@ export class BackgroundManager {
       this.controls.library.innerHTML = '<option value="">— choose background —</option>'
         + this.catalog.map((item) => `<option value="${escapeHtml(item.name)}">${escapeHtml(item.label)}</option>`).join('');
       this.renderCatalog();
-    } catch {
-      /* library stays empty when the API is offline */
+    } catch (error) {
+      // An empty library and an offline backend look identical to the user
+      // otherwise: the grid is just blank. Say which one it is.
+      this.controls.libraryGrid.innerHTML = '<p class="empty-panel-copy">Backgrounds could not be loaded. Check the connection and reopen this panel.</p>';
+      this.showToast('Background library unavailable');
     }
   }
 

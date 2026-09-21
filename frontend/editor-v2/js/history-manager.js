@@ -187,7 +187,13 @@ export class HistoryManager {
       const state = await this.apiClient.history(this.apiClient.imageId);
       this.render(state);
     } catch {
-      /* session may be gone; panel simply stays empty */
+      // The most common cause is a session that expired, which leaves the
+      // list empty for a real reason — but so does a dead backend, and the
+      // user cannot tell them apart from a blank panel alone.
+      const list = document.querySelector('#history-list');
+      if (list && !list.children.length) {
+        list.innerHTML = '<p class="empty-panel-copy">History is unavailable — the session may have expired. Reopen the image to reload it.</p>';
+      }
     }
   }
 }
