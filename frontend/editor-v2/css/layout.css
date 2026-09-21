@@ -2,6 +2,11 @@ body{min-width:1080px}.app-shell{height:100vh;display:flex;flex-direction:column
 
 /* Canvas workspace controls: floating view toolbar, fullscreen stage, tool cursors. */
 .canvas-toolbar{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:2px;padding:5px;border:1px solid var(--line);border-radius:12px;background:color-mix(in srgb,var(--surface) 94%,transparent);box-shadow:var(--shadow-soft);backdrop-filter:blur(6px)}
+/* The crop bar and the zoom bar are both pinned to bottom-centre of the
+   canvas, so an active crop stacks its Apply/Cancel buttons on top of the
+   zoom controls. The crop bar owns the space while it is up; the zoom bar is
+   not reachable through it anyway, and it comes back the moment crop ends. */
+.canvas-zone:has(#crop-controls:not([hidden])) .canvas-toolbar{display:none}
 .toolbar-button{min-width:30px;height:30px;padding:0 8px;border-radius:8px;color:var(--muted);font-size:11px;font-weight:650;display:grid;place-items:center;transition:background .16s var(--ease),color .16s var(--ease)}
 .toolbar-button:hover{background:var(--surface-muted);color:var(--text)}
 .toolbar-button:active{transform:scale(.96)}
