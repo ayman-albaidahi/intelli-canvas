@@ -18,8 +18,8 @@
      instead of pushing New/Open/Export off-screen. Nothing is removed, so no
      capability disappears on a narrow display. */
   .topbar {
-    gap: 10px;
-    padding: 0 12px;
+    gap: var(--space-10);
+    padding: 0 var(--space-12);
   }
 
   .top-actions {
