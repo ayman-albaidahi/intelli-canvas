@@ -1,3 +1,5 @@
+import { withBusy } from './ui-manager.js';
+
 async function applyServerTransform(canvasManager, apiClient, path, data) {
   const image = await apiClient.transform(path, data);
   await canvasManager.applyTransformResult(path, image, apiClient.contentUrl(image.image_id));
@@ -17,10 +19,15 @@ export function bindTransformTools(canvasManager, apiClient, showToast) {
     if (!action) return;
     button.addEventListener('click', async () => {
       if (!canvasManager.hasImage()) return showToast('Choose an image before using transforms');
-      try {
-        await action();
-        showToast(`${button.title || 'Transform'} applied`);
-      } catch (error) { showToast(error.message); }
+      // Rotate and flip round-trip through the backend; without a disabled
+      // trigger a double-click fires two requests and lands on a confusing
+      // intermediate state.
+      await withBusy(button, button.title || 'Working', async () => {
+        try {
+          await action();
+          showToast(`${button.title || 'Transform'} applied`);
+        } catch (error) { showToast(error.message); }
+      });
     });
   });
 

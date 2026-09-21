@@ -101,7 +101,20 @@ for (const button of document.querySelectorAll('[data-action]')) {
   if (action) button.addEventListener('click', action);
 }
 
+// A second upload started before the first finished would race: whichever
+// response lands last wins apiClient.imageId, and the canvas load guard can
+// disagree about which image is actually displayed. The flag makes a
+// mid-flight upload a no-op instead.
+let uploading = false;
+
 async function uploadImageFile(file) {
+  if (uploading) return;
+  uploading = true;
+  // The dropzone and the file input share this path, so both triggers are
+  // disabled for the duration — the user cannot start a second upload while
+  // the first is still in flight.
+  const openers = document.querySelectorAll('[data-action="open"], #file-input');
+  openers.forEach((el) => { el.disabled = true; });
   statusMessage.textContent = 'Uploading image…';
   showToast('Uploading image to IntelliCanvas API…');
   try {
@@ -118,6 +131,9 @@ async function uploadImageFile(file) {
   } catch (error) {
     statusMessage.textContent = error.message.startsWith('Could not reach') ? 'Backend offline' : 'Upload failed';
     showToast(error.message);
+  } finally {
+    uploading = false;
+    openers.forEach((el) => { el.disabled = false; });
   }
 }
 

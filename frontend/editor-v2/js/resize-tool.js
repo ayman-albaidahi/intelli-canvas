@@ -1,5 +1,5 @@
 import { aspectRatioDimensions } from './transform-logic.js';
-import { openDialog, closeDialog } from './ui-manager.js';
+import { openDialog, closeDialog, withBusy } from './ui-manager.js';
 
 export function initResizeTool(canvasManager, apiClient, showToast) {
   const dialog = document.querySelector('#resize-dialog');
@@ -35,6 +35,8 @@ export function initResizeTool(canvasManager, apiClient, showToast) {
     if (!Number.isInteger(nextWidth) || !Number.isInteger(nextHeight) || nextWidth * nextHeight > 24000000) {
       return showToast('Resize dimensions exceed the supported limit');
     }
+    const submit = document.querySelector('#resize-form button[type="submit"]');
+    await withBusy(submit, 'Resizing', async () => {
     try {
       const image = await apiClient.transform('resize', {
         width: nextWidth,
@@ -43,8 +45,9 @@ export function initResizeTool(canvasManager, apiClient, showToast) {
       });
       await canvasManager.loadFromUrl(apiClient.contentUrl(image.image_id), image);
       document.dispatchEvent(new CustomEvent('ic-operation'));
-      closeDialog(dialog);
-      showToast(`Canvas resized to ${image.width} × ${image.height}`);
-    } catch (error) { showToast(error.message); }
+        closeDialog(dialog);
+        showToast(`Canvas resized to ${image.width} × ${image.height}`);
+      } catch (error) { showToast(error.message); }
+    });
   });
 }

@@ -169,6 +169,32 @@ export function switchInspector(name) {
   if (isMobile()) openInspectorDrawer();
 }
 
+// A long-running operation that disables nothing leaves the user unable to
+// tell whether the click registered. This wraps the busy contract — disable
+// the trigger, swap its label, say what is happening in the status bar — and
+// always restores both, including on the failure path.
+//
+// Managers that already implement this inline (adjustments, filters,
+// smart-crop, export, pipeline) keep working; this is for the operations that
+// had a busy guard but no visible feedback.
+export async function withBusy(button, message, fn, options = {}) {
+  const { label = null, status = null } = options;
+  if (!button) return fn();
+  const original = label ?? button.textContent;
+  const busyLabel = message;
+  button.disabled = true;
+  button.classList.add('is-busy');
+  button.textContent = busyLabel;
+  if (status) status.textContent = `${message}…`;
+  try {
+    return await fn();
+  } finally {
+    button.disabled = false;
+    button.classList.remove('is-busy');
+    button.textContent = original;
+  }
+}
+
 export function showToast(message) {
   toast.textContent = message;
   toast.classList.add('is-visible');
