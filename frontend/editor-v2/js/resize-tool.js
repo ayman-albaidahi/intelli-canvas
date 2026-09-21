@@ -1,4 +1,5 @@
 import { aspectRatioDimensions } from './transform-logic.js';
+import { openDialog, closeDialog } from './ui-manager.js';
 
 export function initResizeTool(canvasManager, apiClient, showToast) {
   const dialog = document.querySelector('#resize-dialog');
@@ -12,10 +13,9 @@ export function initResizeTool(canvasManager, apiClient, showToast) {
     const dimensions = canvasManager.getSourceDimensions();
     width.value = dimensions.width;
     height.value = dimensions.height;
-    dialog.hidden = false;
-    width.focus();
+    openDialog(dialog, { focus: '#resize-width' });
   });
-  const close = () => { dialog.hidden = true; };
+  const close = () => closeDialog(dialog);
   document.querySelector('#resize-cancel')?.addEventListener('click', close);
   document.querySelector('#resize-cancel-secondary')?.addEventListener('click', close);
   width.addEventListener('input', () => {
@@ -43,7 +43,7 @@ export function initResizeTool(canvasManager, apiClient, showToast) {
       });
       await canvasManager.loadFromUrl(apiClient.contentUrl(image.image_id), image);
       document.dispatchEvent(new CustomEvent('ic-operation'));
-      dialog.hidden = true;
+      closeDialog(dialog);
       showToast(`Canvas resized to ${image.width} × ${image.height}`);
     } catch (error) { showToast(error.message); }
   });

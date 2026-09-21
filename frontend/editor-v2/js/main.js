@@ -1,6 +1,6 @@
 import { appState, setState } from './app-state.js';
 import { initThemeManager } from './theme-manager.js';
-import { initUI, showToast } from './ui-manager.js';
+import { initUI, initDialogEscape, initDialogFocusTrap, showToast } from './ui-manager.js';
 import { CanvasManager } from './canvas-manager.js';
 import { bindTransformTools } from './transform-tools.js';
 import { CropTool } from './crop-tool.js';
@@ -20,6 +20,10 @@ import { ApiClient } from './api-client.js';
 
 initThemeManager();
 initUI();
+// Dialogs must trap focus and close on Escape before any other Escape handler
+// claims the key, so they are initialised alongside the rest of the chrome.
+initDialogEscape();
+initDialogFocusTrap();
 
 const fileInput = document.querySelector('#file-input');
 const emptyCanvas = document.querySelector('#empty-canvas');

@@ -148,4 +148,79 @@ export function showToast(message) {
   toastTimer = setTimeout(() => toast.classList.remove('is-visible'), 2300);
 }
 
+// A dialog is only a dialog if the rest of the page cannot take focus while it
+// is open. Each dialog records the element that opened it so focus lands back
+// there on close — otherwise it falls on the body, which screen readers report
+// as landing nowhere.
+const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+
+function dialogAncestors(dialog) {
+  // Everything outside the dialog is made inert, so the background cannot be
+  // tabbed into or clicked through to while it is open.
+  return Array.from(document.body.children).filter((node) => !node.contains(dialog));
+}
+
+export function openDialog(dialog, options = {}) {
+  if (!dialog || !dialog.hidden) return;
+  const { focus = null } = options;
+  dialog._lastFocused = document.activeElement;
+  dialog.hidden = false;
+  dialog.classList.add('is-open');
+  const heading = dialog.querySelector('h2');
+  if (heading && !dialog.getAttribute('aria-labelledby')) {
+    if (!heading.id) heading.id = `dialog-label-${Math.random().toString(36).slice(2, 8)}`;
+    dialog.setAttribute('aria-labelledby', heading.id);
+  }
+  // Inert is a set-once property per element, but setting it again on a node
+  // that is still inert is harmless.
+  dialogAncestors(dialog).forEach((node) => { node.inert = true; });
+  (dialog.querySelector(focus) || dialog.querySelector(FOCUSABLE))?.focus();
+}
+
+export function closeDialog(dialog) {
+  if (!dialog || dialog.hidden) return;
+  dialog.hidden = true;
+  dialog.classList.remove('is-open');
+  dialogAncestors(dialog).forEach((node) => { node.inert = false; });
+  // Returning focus to the opener keeps keyboard users on the control they
+  // came from instead of stranding them at the top of the page.
+  const restore = dialog._lastFocused;
+  if (restore && document.contains(restore)) restore.focus();
+}
+
+// The one Escape handler for every dialog. A dialog that is open always wins
+// over the mobile drawer and the layer menu because it is the most restrictive
+// state on the page.
+export function initDialogEscape() {
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    const open = document.querySelector('.dialog-backdrop.is-open');
+    if (!open) return;
+    event.preventDefault();
+    closeDialog(open);
+  });
+}
+
+// A focus trap keeps Tab circulating inside the dialog. Without it, Tab at the
+// last control jumps out to the (now inert) background anyway, but the
+// sequence is unpredictable and Screen Reader users lose their place.
+export function initDialogFocusTrap() {
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Tab') return;
+    const dialog = document.querySelector('.dialog-backdrop.is-open');
+    if (!dialog) return;
+    const focusable = Array.from(dialog.querySelectorAll(FOCUSABLE)).filter((el) => el.offsetParent !== null);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+}
+
 function label(value) { return value.charAt(0).toUpperCase() + value.slice(1); }

@@ -1,3 +1,5 @@
+import { openDialog, closeDialog } from './ui-manager.js';
+
 export class ExportManager {
   constructor({ canvasManager, apiClient, objectManager, showToast }) {
     this.canvasManager = canvasManager;
@@ -47,10 +49,10 @@ export class ExportManager {
     this.width.value = dims.width;
     this.height.value = dims.height;
     this.name.value = (document.querySelector('#document-name')?.textContent || 'intellicanvas').replace(/\.[^.]+$/, '') || 'intellicanvas';
-    this.dialog.hidden = false;
+    openDialog(this.dialog, { focus: '#export-format' });
   }
 
-  close() { this.dialog.hidden = true; }
+  close() { closeDialog(this.dialog); }
 
   async export(event) {
     event.preventDefault();
