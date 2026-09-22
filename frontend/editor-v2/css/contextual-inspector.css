@@ -31,6 +31,40 @@
   line-height: 1.5;
 }
 
+.context-summary {
+  display: grid;
+  gap: var(--space-8);
+  margin-bottom: var(--space-16);
+  padding: var(--space-12);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+}
+
+.context-summary > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-10);
+}
+
+.context-summary span {
+  color: var(--muted);
+  font-size: var(--fs-10);
+}
+
+.context-summary strong {
+  color: var(--text);
+  font-size: var(--fs-11);
+  font-weight: 700;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.context-summary .button {
+  margin-top: var(--space-4);
+}
+
 .edit-context > .empty-panel {
   margin-top: var(--space-8);
 }
