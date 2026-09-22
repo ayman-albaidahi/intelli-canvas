@@ -39,6 +39,8 @@ test.describe('first paint before any image', () => {
 test.describe('panels with nothing to show yet', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/editor-v2/');
+    await page.setInputFiles('#file-input', makePngPath(test.info(), 'panel-empty.png'));
+    await waitForImageLoaded(page);
     await page.locator('[data-inspector="analysis"]').click();
   });
 

@@ -40,6 +40,8 @@ test.describe('inspector tabs', () => {
   });
 
   test('arrow keys move between tabs and switch panels', async ({ page }) => {
+    await page.setInputFiles('#file-input', makePngPath(test.info(), 'tabs.png'));
+    await waitForImageLoaded(page);
     await page.locator('[data-inspector="properties"]').focus();
     await page.keyboard.press('ArrowRight');
     // The first arrow lands on Layers.
@@ -68,6 +70,8 @@ test.describe('status and tools', () => {
   });
 
   test('tool buttons expose their pressed state from load', async ({ page }) => {
+    await page.setInputFiles('#file-input', makePngPath(test.info(), 'tools.png'));
+    await waitForImageLoaded(page);
     // Select is the default tool, so it must read as pressed before any click.
     await expect(page.locator('[data-tool="select"]')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('[data-tool="brush"]')).toHaveAttribute('aria-pressed', 'false');
