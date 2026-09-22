@@ -43,22 +43,22 @@
       <div class="editor-frame">
         <aside class="tool-rail" aria-label="Editor tools">
           <div class="tool-group">
-            <button class="tool-button is-active" aria-pressed="true" data-tool="select" title="Select (V)"><span>↖</span><small>Select</small></button>
-            <button class="tool-button" aria-pressed="false" data-tool="move" title="Move (M)"><span>✥</span><small>Move</small></button>
-            <button class="tool-button" aria-pressed="false" data-tool="crop" title="Crop (C)"><span>⌗</span><small>Crop</small></button>
+            <button class="tool-button is-active" aria-pressed="true" data-tool="select" data-requires-image title="Select (V)"><span>↖</span><small>Select</small></button>
+            <button class="tool-button" aria-pressed="false" data-tool="move" data-requires-image title="Move (M)"><span>✥</span><small>Move</small></button>
+            <button class="tool-button" aria-pressed="false" data-tool="crop" data-requires-image title="Crop (C)"><span>⌗</span><small>Crop</small></button>
           </div>
           <div class="tool-divider"></div>
           <div class="tool-group">
-            <button class="tool-button" aria-pressed="false" data-tool="brush" title="Brush (B)"><span>╱</span><small>Brush</small></button>
-            <button class="tool-button" aria-pressed="false" data-tool="eraser" title="Eraser (E)"><span>⌫</span><small>Eraser</small></button>
-            <button class="tool-button" aria-pressed="false" data-tool="shape" title="Shapes (U)"><span>◇</span><small>Shapes</small></button>
-            <button class="tool-button" aria-pressed="false" data-tool="text" title="Text (T)"><span>T</span><small>Text</small></button>
+            <button class="tool-button" aria-pressed="false" data-tool="brush" data-requires-image title="Brush (B)"><span>╱</span><small>Brush</small></button>
+            <button class="tool-button" aria-pressed="false" data-tool="eraser" data-requires-image title="Eraser (E)"><span>⌫</span><small>Eraser</small></button>
+            <button class="tool-button" aria-pressed="false" data-tool="shape" data-requires-image title="Shapes (U)"><span>◇</span><small>Shapes</small></button>
+            <button class="tool-button" aria-pressed="false" data-tool="text" data-requires-image title="Text (T)"><span>T</span><small>Text</small></button>
           </div>
           <div class="tool-divider"></div>
           <div class="tool-group">
-            <button class="tool-button" data-panel="adjustments" title="Adjustments"><span>◐</span><small>Adjust</small></button>
-            <button class="tool-button" data-panel="filters" title="Filters"><span>✧</span><small>Filters</small></button>
-            <button class="tool-button" data-panel="background" title="Background"><span>▧</span><small>Backdrop</small></button>
+            <button class="tool-button" data-panel="adjustments" data-requires-image title="Adjustments"><span>◐</span><small>Adjust</small></button>
+            <button class="tool-button" data-panel="filters" data-requires-image title="Filters"><span>✧</span><small>Filters</small></button>
+            <button class="tool-button" data-panel="background" data-requires-image title="Background"><span>▧</span><small>Backdrop</small></button>
           </div>
           <div class="tool-spacer"></div>
           <button class="tool-button" data-panel="shortcuts" title="Keyboard shortcuts"><span>⌘</span><small>Keys</small></button>
@@ -70,9 +70,9 @@
             <div class="breadcrumbs"><span>Projects</span><b>/</b><strong>Untitled project</strong></div>
             <div class="workspace-controls">
               <button class="view-button inspector-toggle" data-action="inspector-toggle" aria-label="Open inspector panels" aria-expanded="false" aria-controls="inspector">▦ <span>Panels</span></button>
-              <button class="view-button" data-action="compare">◐ <span>Compare</span></button>
+              <button class="view-button" data-action="compare" data-requires-image>◐ <span>Compare</span></button>
               <span class="control-separator"></span>
-              <button class="view-button" data-action="fit">Fit</button>
+              <button class="view-button" data-action="fit" data-requires-image>Fit</button>
             </div>
           </div>
           <section class="canvas-zone" id="canvas-zone" aria-label="Canvas workspace">
@@ -95,14 +95,14 @@
           <div class="canvas-overlay overlay-top"><span class="badge badge-soft">Original canvas</span></div>
           <div class="canvas-overlay overlay-bottom"><span>Ctrl+Wheel = Zoom</span><span>Wheel = Pan</span></div>
           <div class="canvas-toolbar" role="toolbar" aria-label="Canvas view controls">
-            <button class="toolbar-button" data-action="zoom-out" title="Zoom out (−)">−</button>
-            <button class="toolbar-button zoom-display" data-action="zoom-reset" data-zoom-display id="zoom-value" title="Reset to 100%">—</button>
-            <button class="toolbar-button" data-action="zoom-in" title="Zoom in (+)">+</button>
+            <button class="toolbar-button" data-action="zoom-out" data-requires-image title="Zoom out (−)">−</button>
+            <button class="toolbar-button zoom-display" data-action="zoom-reset" data-requires-image data-zoom-display id="zoom-value" title="Reset to 100%">—</button>
+            <button class="toolbar-button" data-action="zoom-in" data-requires-image title="Zoom in (+)">+</button>
             <span class="toolbar-separator"></span>
-            <button class="toolbar-button" data-action="fit" title="Fit to screen (0)">Fit</button>
-            <button class="toolbar-button" data-action="fit-width" title="Fit width">Width</button>
-            <button class="toolbar-button" data-action="zoom-100" title="Zoom to 100% (1)">100%</button>
-            <button class="toolbar-button" data-action="zoom-actual" title="Actual pixels">1:1</button>
+            <button class="toolbar-button" data-action="fit" data-requires-image title="Fit to screen (0)">Fit</button>
+            <button class="toolbar-button" data-action="fit-width" data-requires-image title="Fit width">Width</button>
+            <button class="toolbar-button" data-action="zoom-100" data-requires-image title="Zoom to 100% (1)">100%</button>
+            <button class="toolbar-button" data-action="zoom-actual" data-requires-image title="Actual pixels">1:1</button>
             <span class="toolbar-separator"></span>
             <button class="toolbar-button" data-action="fullscreen" title="Fullscreen canvas">⛶</button>
           </div>

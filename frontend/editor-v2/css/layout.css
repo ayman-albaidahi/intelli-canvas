@@ -46,7 +46,7 @@ details.panel-accordion[open]>summary::after{transform:rotate(90deg)}
 details.panel-accordion:not([open]) .accordion-body{display:none}
 details.panel-accordion .accordion-body{padding-top:var(--space-13)}
 details.panel-accordion.is-flash .accordion-body{animation:ic-flash 1.1s var(--ease)}
-@keyframes ic-flash{0%{background:var(--accent-wash);box-shadow:0 0 0 6px var(--accent-wash)}100%{background:transparent;box-shadow:none}}.tool-button.is-disabled,.button.is-disabled,.list-action.is-disabled{opacity:.4;cursor:not-allowed}.tool-button.is-disabled:hover,.button.is-disabled:hover,.list-action.is-disabled:hover{background:transparent;color:var(--muted)}
+@keyframes ic-flash{0%{background:var(--accent-wash);box-shadow:0 0 0 6px var(--accent-wash)}100%{background:transparent;box-shadow:none}}.tool-button.is-disabled,.button.is-disabled,.list-action.is-disabled,.view-button.is-disabled,.toolbar-button.is-disabled,.inspector-tab.is-disabled{opacity:.4;cursor:not-allowed}.tool-button.is-disabled:hover,.button.is-disabled:hover,.list-action.is-disabled:hover,.view-button.is-disabled:hover,.toolbar-button.is-disabled:hover,.inspector-tab.is-disabled:hover{background:transparent;color:var(--muted)}
 .canvas-zone.is-drop-target{outline:3px dashed var(--accent);outline-offset:-10px}
 .canvas-zone.is-drop-target::after{content:"Drop your image to start";position:absolute;inset:0;display:grid;place-items:center;background:color-mix(in srgb,var(--accent-wash) 78%,transparent);color:var(--accent-strong);font-size:var(--fs-15);font-weight:750;letter-spacing:.02em;z-index:7;pointer-events:none}
 .layer-row:hover{background:var(--surface-muted)}
