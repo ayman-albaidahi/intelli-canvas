@@ -65,6 +65,7 @@ export function mountInspectorContextContainers(root = document) {
   moveInto(root, '#smart-crop-accordion', sections.get('image'));
   moveInto(root, '#quick-accordion', sections.get('image'));
   moveInto(root, '#drawing-accordion', sections.get('brush'));
+  moveInto(root, '#eraser-accordion', sections.get('eraser'));
 
   return sections;
 }
@@ -77,6 +78,9 @@ export function renderInspectorContextContainers(context, root = document) {
     section.hidden = !active;
     section.inert = !active;
     section.setAttribute('aria-hidden', String(!active));
+    if (active && (section.dataset.editContext === 'brush' || section.dataset.editContext === 'eraser')) {
+      section.querySelectorAll('details').forEach((details) => { details.open = true; });
+    }
   });
   return context;
 }

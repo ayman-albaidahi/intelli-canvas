@@ -15,6 +15,11 @@ const BLEND_MODES = [
 const TYPE_GLYPH = { brush: '✎', shape: '▭', text: 'T', image: '🖼' };
 const TYPE_LABEL = { brush: 'Brush', shape: 'Shape', text: 'Text', image: 'Image' };
 
+function drawingControl(tool, name) {
+  const prefix = tool === 'eraser' ? 'eraser' : 'brush';
+  return document.querySelector(`#${prefix}-${name}`);
+}
+
 export { BLEND_MODES, TYPE_GLYPH, TYPE_LABEL };
 
 export class ObjectManager {
@@ -289,13 +294,15 @@ export class ObjectManager {
   }
 
   startBrush(point) {
+    const tool = appState.activeTool === 'eraser' ? 'eraser' : 'brush';
     const color = document.querySelector('#drawing-color')?.value || '#d95687';
-    const width = Number(document.querySelector('#brush-size')?.value || 8);
+    const width = Number(drawingControl(tool, 'size')?.value || 8);
+    const opacity = Number(drawingControl(tool, 'opacity')?.value ?? 100) / 100;
     const ip = this._screenToImage(point.x, point.y);
     this.drawing = {
       id: 'o' + Math.random().toString(36).slice(2, 9), type: 'brush', name: this.nextName('brush'),
       color, strokeWidth: width, points: [[ip.x, ip.y]],
-      rotation: 0, opacity: 1,
+      rotation: 0, opacity,
       // The eraser is an erasing brush, not a new blend mode: it is stored with
       // a supported blend so the backend accepts the layer, and flagged so the
       // renderer punches a hole through the layers below it instead of painting

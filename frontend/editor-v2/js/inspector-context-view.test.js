@@ -13,6 +13,7 @@ function markup() {
     <div class="inspector-quick-actions">image actions</div>
     <div class="panel-section"><details id="smart-crop-accordion">crop controls</details><details id="adjustments-accordion">image controls</details></div>
     <details id="drawing-accordion">brush controls</details>
+    <details id="eraser-accordion">eraser controls</details>
     <details id="quick-accordion">more image controls</details>
   </section>`;
 }
@@ -30,6 +31,7 @@ describe('Inspector context containers', () => {
     expect(document.querySelector('.inspector-quick-actions').closest('[data-edit-context]').dataset.editContext).toBe('image');
     expect(document.querySelector('#object-properties').closest('[data-edit-context]').dataset.editContext).toBe('layer');
     expect(document.querySelector('#drawing-accordion').closest('[data-edit-context]').dataset.editContext).toBe('brush');
+    expect(document.querySelector('#eraser-accordion').closest('[data-edit-context]').dataset.editContext).toBe('eraser');
     expect(document.querySelector('#smart-crop-accordion').closest('[data-edit-context]').dataset.editContext).toBe('image');
     expect(document.querySelector('#image-context-summary')).not.toBeNull();
     expect(document.querySelector('#layer-context-summary')).not.toBeNull();

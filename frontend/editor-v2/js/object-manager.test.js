@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ObjectManager } from './object-manager.js';
+import { setState } from './app-state.js';
 
 // jsdom does not implement the canvas API, so a real <canvas> yields no
 // context. ObjectManager only needs a bounding rect, a parent, a no-op
@@ -96,6 +97,28 @@ describe('brush coordinate alignment', () => {
 });
 
 describe('eraser layer hygiene', () => {
+  it('uses the active Brush controls for a painted stroke', () => {
+    const mgr = makeManager(makeCanvasManager());
+    setState({ activeTool: 'brush', editorReady: true, hasImage: true, selectedObjectId: null });
+    document.body.innerHTML = '<input id="brush-size" value="24"><input id="brush-opacity" value="65"><input id="drawing-color" value="#123456">';
+    mgr.startBrush({ x: 400, y: 300 });
+    expect(mgr.drawing.strokeWidth).toBe(24);
+    expect(mgr.drawing.opacity).toBeCloseTo(0.65);
+    expect(mgr.drawing.color).toBe('#123456');
+    expect(mgr.drawing.erasing).toBe(false);
+  });
+
+  it('uses independent Eraser controls and keeps eraser settings out of Brush controls', () => {
+    const mgr = makeManager(makeCanvasManager());
+    document.body.innerHTML = '<input id="brush-size" value="24"><input id="brush-opacity" value="65"><input id="drawing-color" value="#123456"><input id="eraser-size" value="42"><input id="eraser-opacity" value="35">';
+    setState({ editorReady: true, hasImage: true, activeTool: 'eraser', selectedObjectId: null });
+    mgr.startBrush({ x: 400, y: 300 });
+    expect(mgr.drawing.strokeWidth).toBe(42);
+    expect(mgr.drawing.opacity).toBeCloseTo(0.35);
+    expect(mgr.drawing.erasing).toBe(true);
+    setState({ activeTool: 'brush' });
+  });
+
   it('never stores destination-out as the blend mode', () => {
     const mgr = makeManager(makeCanvasManager());
     document.body.innerHTML = '<input id="brush-size" value="8"><input id="drawing-color" value="#d95687">';
