@@ -41,7 +41,7 @@ test.describe('panels with nothing to show yet', () => {
     await page.goto('/editor-v2/');
     await page.setInputFiles('#file-input', makePngPath(test.info(), 'panel-empty.png'));
     await waitForImageLoaded(page);
-    await page.locator('[data-inspector="analysis"]').click();
+    await page.locator('[data-inspector="insights"]').click();
   });
 
   test('the suggestion list explains how to fill it', async ({ page }) => {
@@ -68,7 +68,7 @@ test.describe('surfacing failed loads', () => {
     await page.setInputFiles('#file-input', makePngPath(testInfo, 'bg2.png'));
     await waitForImageLoaded(page);
 
-    await page.locator('[data-inspector="properties"]').click();
+    await page.locator('[data-inspector="edit"]').click();
     await expect(page.locator('#bg-library-grid')).toContainText(/could not be loaded/i);
   });
 });

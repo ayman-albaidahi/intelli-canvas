@@ -10,7 +10,7 @@
 import { test, expect } from '@playwright/test';
 import { makePngPath, waitForImageLoaded } from './fixtures.js';
 
-const ACCORDIONS = '#properties-panel details.panel-accordion';
+const ACCORDIONS = '#edit-panel details.panel-accordion';
 
 async function bodyDisplay(page, id) {
   return page.evaluate(

@@ -49,7 +49,7 @@ test.describe('blob URL accounting', () => {
     await waitForImageLoaded(page);
 
     // Run an analysis suggestion preview, which creates a blob URL.
-    await page.locator('[data-inspector="analysis"]').click();
+    await page.locator('[data-inspector="insights"]').click();
     await page.locator('[data-action="analyze-image"]').click();
     await expect(page.locator('#suggestion-card')).toBeVisible({ timeout: 20_000 });
     await page.locator('[data-action="preview-suggestion"]').click();

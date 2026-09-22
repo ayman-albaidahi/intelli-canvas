@@ -3,7 +3,7 @@
 // The desktop layout is a three-column grid: tool rail, canvas, inspector. Below
 // 900px the inspector stops being a grid column and becomes a closable drawer —
 // before it existed, the responsive stylesheet simply set display:none on it,
-// which removed every Properties/Layers/Pipeline/History control from a phone
+// which removed every  Edit/Layers/Pipeline/History control from a phone
 // with no way to get them back. This spec pins the fix: the drawer opens, shows
 // real panel content, and closes again, and nothing interactive leaves the
 // viewport at either size.
@@ -42,13 +42,13 @@ test.describe('mobile interaction model', () => {
     await expect(page.locator('#inspector-scrim')).toBeVisible();
 
     // The drawer must show the active panel, not an empty shell.
-    await expect(page.locator('#properties-panel')).toBeVisible();
-    await expect(page.locator('#properties-panel h2')).toContainText('Properties');
+    await expect(page.locator('#edit-panel')).toBeVisible();
+    await expect(page.locator('#edit-panel h2')).toContainText(' Edit');
 
     // --- Tab switch inside the drawer ---------------------------------
     await page.locator('[data-inspector="history"]').click();
     await expect(page.locator('#history-panel')).toBeVisible();
-    await expect(page.locator('#properties-panel')).toBeHidden();
+    await expect(page.locator('#edit-panel')).toBeHidden();
 
     // --- Close via the scrim ------------------------------------------
     // The drawer covers the right ~94% of the screen, so the scrim's geometric
@@ -119,7 +119,7 @@ test.describe('mobile interaction model', () => {
 
     // Adjustments live inside the drawer on mobile, so open it first.
     await page.locator('[data-action="inspector-toggle"]').click();
-    await expect(page.locator('#properties-panel')).toBeVisible();
+    await expect(page.locator('#edit-panel')).toBeVisible();
 
     const brightness = page.locator('[data-adjustment="brightness"]');
     await brightness.fill('150');
@@ -153,7 +153,7 @@ test.describe('desktop layout', () => {
 
     await expect(page.locator('[data-action="inspector-toggle"]')).toBeHidden();
     await expect(page.locator('#inspector')).toBeVisible();
-    await expect(page.locator('#properties-panel')).toBeVisible();
+    await expect(page.locator('#edit-panel')).toBeVisible();
     await expect(page.locator('.tool-rail')).toBeVisible();
 
     await expectNoControlOutsideViewport(page);

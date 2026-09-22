@@ -16,6 +16,36 @@ const isMobile = () => mobileQuery()?.matches ?? false;
 
 const READY_PANELS = new Set(['adjustments', 'filters', 'background', 'smart-crop']);
 
+const CONTEXT_LABELS = {
+  canvas: ['Nothing selected', 'Select an object or choose an editing tool.'],
+  image: ['Image selected', 'Edit the image with focused actions and adjustments.'],
+  layer: ['Layer selected', 'Edit the selected layer without unrelated image controls.'],
+  tool: ['Tool active', 'Adjust the active tool settings.'],
+  crop: ['Crop active', 'Set the framing, then apply or cancel the crop.'],
+};
+
+export function getInspectorContext({ ready, activeTool = 'select', selectedObjectId = null } = {}) {
+  if (!ready) return 'canvas';
+  if (activeTool === 'crop') return 'crop';
+  if (['brush', 'eraser', 'shape', 'text'].includes(activeTool)) return 'tool';
+  if (selectedObjectId) return 'layer';
+  return 'image';
+}
+
+export function renderInspectorContext({ ready = document.body.dataset.editorReady === 'true', activeTool = appState.activeTool, selectedObjectId = appState.selectedObjectId } = {}) {
+  const context = getInspectorContext({ ready, activeTool, selectedObjectId });
+  document.body.dataset.inspectorContext = context;
+  const [title, copy] = CONTEXT_LABELS[context];
+  const titleEl = document.querySelector('#edit-empty-title');
+  const copyEl = document.querySelector('#edit-empty-copy');
+  if (titleEl) titleEl.textContent = title;
+  if (copyEl) copyEl.textContent = copy;
+  document.querySelectorAll('[data-contextual-actions] [data-context]').forEach((action) => {
+    action.hidden = action.dataset.context !== context && !(context === 'crop' && action.dataset.context === 'image');
+  });
+  return context;
+}
+
 // The pre-upload hint is appended to the control's own tooltip rather than
 // replacing it. Caching the original title first means readiness can be
 // toggled any number of times without the hint accumulating or the real
@@ -35,11 +65,12 @@ function setControlReady(control, isReady) {
 export function setEditorReady(ready) {
   const isReady = Boolean(ready);
   document.body.dataset.editorReady = String(isReady);
+  renderInspectorContext({ ready: isReady });
   document.querySelectorAll('[data-requires-image]').forEach((control) => {
     setControlReady(control, isReady);
   });
   document.querySelectorAll('[data-inspector]').forEach((tab) => {
-    const available = isReady || tab.dataset.inspector === 'properties';
+    const available = isReady || tab.dataset.inspector === 'edit';
     tab.disabled = !available;
     tab.classList.toggle('is-disabled', !available);
     tab.setAttribute('aria-disabled', String(!available));
@@ -59,6 +90,7 @@ export function initUI() {
       button.classList.add('is-active');
       button.setAttribute('aria-pressed', 'true');
       setState({ activeTool: button.dataset.tool });
+      renderInspectorContext();
       showToast(`${button.dataset.tool[0].toUpperCase()}${button.dataset.tool.slice(1)} tool selected`);
     });
   });
@@ -111,7 +143,7 @@ export function initUI() {
       });
     } else if (READY_PANELS.has(panel)) {
       button.addEventListener('click', () => focusPanel(panel));
-    } else if (panel === 'history' || panel === 'analysis' || panel === 'pipeline') {
+    } else if (panel === 'history' || panel === 'insights' || panel === 'pipeline') {
       button.addEventListener('click', () => switchInspector(panel));
     } else {
       button.classList.add('is-disabled');
@@ -123,7 +155,7 @@ export function initUI() {
 
   document.querySelector('[data-action="new"]')?.addEventListener('click', () => showToast('New project workspace is ready'));
   document.querySelector('[data-action="add-layer"]')?.addEventListener('click', () => showToast('Layer creation will be enabled in the layers stage'));
-  document.querySelectorAll('#properties-panel details.panel-accordion').forEach((section) => {
+  document.querySelectorAll('#edit-panel details.panel-accordion').forEach((section) => {
     section.addEventListener('toggle', () => { if (section.open) closeOtherAccordions(section); });
   });
 
@@ -179,7 +211,7 @@ function markNotReady(selector, name) {
 }
 
 function focusPanel(panel) {
-  switchInspector('properties');
+  switchInspector('edit');
   const section = document.querySelector(`#${panel}-accordion`);
   if (!section) return;
   closeOtherAccordions(section);
@@ -192,14 +224,14 @@ function focusPanel(panel) {
 }
 
 function closeOtherAccordions(activeSection) {
-  document.querySelectorAll('#properties-panel details.panel-accordion').forEach((section) => {
+  document.querySelectorAll('#edit-panel details.panel-accordion').forEach((section) => {
     if (section !== activeSection) section.open = false;
   });
 }
 
 
 export function switchInspector(name) {
-  if (document.body.dataset.editorReady !== 'true' && name !== 'properties') return;
+  if (document.body.dataset.editorReady !== 'true' && name !== 'edit') return;
   setState({ activeInspector: name });
   document.querySelectorAll('[data-inspector]').forEach((tab) => {
     const active = tab.dataset.inspector === name;
@@ -208,10 +240,10 @@ export function switchInspector(name) {
     if (active) tab.scrollIntoView?.({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest', inline: 'nearest' });
   });
   updateInspectorTabScroller();
-  document.querySelector('#properties-panel').hidden = name !== 'properties';
+  document.querySelector('#edit-panel').hidden = name !== 'edit';
   document.querySelector('#layers-panel').hidden = name !== 'layers';
-  const analysisPanel = document.querySelector('#analysis-panel');
-  if (analysisPanel) analysisPanel.hidden = name !== 'analysis';
+  const analysisPanel = document.querySelector('#insights-panel');
+  if (analysisPanel) analysisPanel.hidden = name !== 'insights';
   const historyPanel = document.querySelector('#history-panel');
   if (historyPanel) historyPanel.hidden = name !== 'history';
   const pipelinePanel = document.querySelector('#pipeline-panel');

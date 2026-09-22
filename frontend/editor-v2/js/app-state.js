@@ -2,8 +2,9 @@ export const appState = {
   theme: localStorage.getItem('intelli-canvas-theme') || 'light',
   zoom: 75,
   activeTool: 'select',
-  activeInspector: 'properties',
+  activeInspector: 'edit',
   hasImage: false,
+  selectedObjectId: null,
 };
 
 export function setState(patch) {

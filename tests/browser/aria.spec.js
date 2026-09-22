@@ -8,7 +8,7 @@
 import { test, expect } from '@playwright/test';
 import { makePngPath, waitForImageLoaded } from './fixtures.js';
 
-const TABS = ['properties', 'layers', 'pipeline', 'analysis', 'history'];
+const TABS = ['edit', 'layers', 'insights', 'history'];
 
 test.describe('inspector tabs', () => {
   test.beforeEach(async ({ page }) => {
@@ -33,41 +33,41 @@ test.describe('inspector tabs', () => {
   });
 
   test('the active tab is selected on first paint', async ({ page }) => {
-    await expect(page.locator('[data-inspector="properties"]')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('[data-inspector="edit"]')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('[data-inspector="layers"]')).toHaveAttribute('aria-selected', 'false');
     // The panel it controls is the visible one.
-    await expect(page.locator('#properties-panel')).not.toHaveAttribute('hidden');
+    await expect(page.locator('#edit-panel')).not.toHaveAttribute('hidden');
   });
 
   test('arrow keys move between tabs and switch panels', async ({ page }) => {
     await page.setInputFiles('#file-input', makePngPath(test.info(), 'tabs.png'));
     await waitForImageLoaded(page);
-    await page.locator('[data-inspector="properties"]').focus();
+    await page.locator('[data-inspector="edit"]').focus();
     await page.keyboard.press('ArrowRight');
     // The first arrow lands on Layers.
     await expect(page.locator('[data-inspector="layers"]')).toBeFocused();
     await expect(page.locator('[data-inspector="layers"]')).toHaveAttribute('aria-selected', 'true');
-    await expect(page.locator('[data-inspector="properties"]')).toHaveAttribute('aria-selected', 'false');
+    await expect(page.locator('[data-inspector="edit"]')).toHaveAttribute('aria-selected', 'false');
     await expect(page.locator('#layers-panel')).not.toHaveAttribute('hidden');
-    await expect(page.locator('#properties-panel')).toHaveAttribute('hidden');
+    await expect(page.locator('#edit-panel')).toHaveAttribute('hidden');
 
     // Home and End jump to the ends of the list.
     await page.keyboard.press('End');
     await expect(page.locator(`[data-inspector="${TABS[TABS.length - 1]}"]`)).toBeFocused();
     await page.keyboard.press('Home');
-    await expect(page.locator('[data-inspector="properties"]')).toBeFocused();
+    await expect(page.locator('[data-inspector="edit"]')).toBeFocused();
   });
 
-  test('quick action opens Intelligence and keeps its tab discoverable', async ({ page }, testInfo) => {
+  test('quick action opens Insights and keeps its tab discoverable', async ({ page }, testInfo) => {
     await page.setInputFiles('#file-input', makePngPath(testInfo, 'intelligence-tab.png'));
     await waitForImageLoaded(page);
 
     await expect(page.locator('.inspector-tab-strip')).toBeVisible();
-    await page.locator('.quick-action[data-panel="analysis"]').click();
+    await page.locator('.quick-action[data-panel="insights"]').click();
 
-    await expect(page.locator('[data-inspector="analysis"]')).toHaveAttribute('aria-selected', 'true');
-    await expect(page.locator('#analysis-panel')).toBeVisible();
-    await expect(page.locator('[data-inspector="analysis"]')).toContainText('Intelligence');
+    await expect(page.locator('[data-inspector="insights"]')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#insights-panel')).toBeVisible();
+    await expect(page.locator('[data-inspector="insights"]')).toContainText('Insights');
   });
 });
 
