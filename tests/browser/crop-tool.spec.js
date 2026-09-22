@@ -87,9 +87,20 @@ async function setup(page, testInfo) {
 
 test('activating crop creates a selection inside the image', async ({ page }, testInfo) => {
   await setup(page, testInfo);
+  await expect(page.locator('body')).toHaveAttribute('data-inspector-context', 'crop');
+  await expect(page.locator('#crop-context-summary')).toBeVisible();
+  await expect(page.locator('#crop-controls').locator('#crop-apply')).toBeVisible();
   expectInside(await selection(page), await paintedRect(page), 'initial');
   // The readout reports source pixels: 80% of a 320x200 image.
   expect(page.locator('#crop-size')).toContainText('256 × 160 px');
+});
+
+test('canceling Crop returns to Image Context and hides the contextual controls', async ({ page }, testInfo) => {
+  await setup(page, testInfo);
+  await page.locator('#crop-cancel').click();
+  await expect(page.locator('body')).toHaveAttribute('data-inspector-context', 'image');
+  await expect(page.locator('#crop-controls')).toBeHidden();
+  await expect(page.locator('#crop-overlay')).toBeHidden();
 });
 
 test('each corner handle resizes without leaving the image', async ({ page }, testInfo) => {
