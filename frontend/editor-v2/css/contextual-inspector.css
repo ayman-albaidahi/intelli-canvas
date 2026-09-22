@@ -127,7 +127,6 @@
   flex-wrap: wrap;
 }
 
-
 @media (prefers-reduced-motion: reduce) {
   .edit-context-heading {
     scroll-behavior: auto;
