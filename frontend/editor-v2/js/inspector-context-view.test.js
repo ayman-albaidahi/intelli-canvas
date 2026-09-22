@@ -15,6 +15,7 @@ function markup() {
     <details id="drawing-accordion">brush controls</details>
     <details id="eraser-accordion">eraser controls</details>
     <details id="quick-accordion">more image controls</details>
+    <div id="crop-controls" hidden>crop controls</div>
   </section>`;
 }
 
@@ -32,6 +33,7 @@ describe('Inspector context containers', () => {
     expect(document.querySelector('#object-properties').closest('[data-edit-context]').dataset.editContext).toBe('layer');
     expect(document.querySelector('#drawing-accordion').closest('[data-edit-context]').dataset.editContext).toBe('brush');
     expect(document.querySelector('#eraser-accordion').closest('[data-edit-context]').dataset.editContext).toBe('eraser');
+    expect(document.querySelector('#crop-context-summary').closest('[data-edit-context]').dataset.editContext).toBe('crop');
     expect(document.querySelector('#smart-crop-accordion').closest('[data-edit-context]').dataset.editContext).toBe('image');
     expect(document.querySelector('#image-context-summary')).not.toBeNull();
     expect(document.querySelector('#layer-context-summary')).not.toBeNull();

@@ -31,6 +31,11 @@ function createContextSection(context) {
           <div><span>Visibility</span><strong id="layer-context-visibility">—</strong></div>
           <button class="button button-secondary full-width" id="layer-context-toggle-visibility" type="button">Toggle visibility</button>
         </div>`
+      : context === 'crop'
+        ? `<div class="context-summary crop-context-summary" id="crop-context-summary" aria-live="polite">
+            <div><span>Selection</span><strong id="crop-context-size">Not started</strong></div>
+            <p>Use the handles on the canvas to frame the crop, then apply or cancel it below the canvas.</p>
+          </div>`
       : '';
   section.innerHTML = `<div class="edit-context-heading"><span class="eyebrow">Inspector context</span><h3 id="edit-context-${context}-heading">${title}</h3><p>${copy}</p></div>${summary}`;
   return section;

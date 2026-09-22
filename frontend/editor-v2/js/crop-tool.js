@@ -1,4 +1,5 @@
 import { withBusy } from './ui-manager.js';
+import { setState } from './app-state.js';
 import {
   CROP_HANDLES, clampCropRect, cropSelectionToSource, moveCropRect, resizeCropRect,
 } from './transform-logic.js';
@@ -27,6 +28,10 @@ export class CropTool {
     document.querySelector('#crop-apply')?.addEventListener('click', () => this.apply());
     document.querySelector('#crop-cancel')?.addEventListener('click', () => this.deactivate());
     document.querySelector('#crop-reset')?.addEventListener('click', () => this.reset());
+    this.overlay?.addEventListener('pointerdown', (event) => this.onPointerDown(event));
+    this.overlay?.addEventListener('pointermove', (event) => this.onPointerMove(event));
+    this.overlay?.addEventListener('pointerup', () => this.stopDrag());
+    this.overlay?.addEventListener('pointercancel', () => this.stopDrag());
     window.addEventListener('resize', () => { if (this.active) this.syncToImage(); });
   }
 
@@ -38,7 +43,10 @@ export class CropTool {
   }
 
   activate() {
-    if (!this.canvasManager.hasImage()) return this.showToast('Choose an image before cropping');
+    if (!this.canvasManager.hasImage()) {
+      setState({ activeTool: 'select' });
+      return this.showToast('Choose an image before cropping');
+    }
     this.active = true;
     // Panning the image while a selection is on screen desyncs the two: the
     // overlay stays put and Apply maps a stale box against the moved image.
@@ -71,12 +79,16 @@ export class CropTool {
     // pixels — rather than view pixels, which change with zoom.
     const payload = cropSelectionToSource(this.selection, this.canvasManager.getImageRect(), this.canvasManager.getSourceDimensions());
     const size = document.querySelector('#crop-size');
+    const contextSize = document.querySelector('#crop-context-size');
     const apply = document.querySelector('#crop-apply');
     if (payload) {
-      if (size) size.textContent = `${payload.width} × ${payload.height} px`;
+      const label = `${payload.width} × ${payload.height} px`;
+      if (size) size.textContent = label;
+      if (contextSize) contextSize.textContent = label;
       if (apply) apply.disabled = false;
     } else {
       if (size) size.textContent = 'Selection too small';
+      if (contextSize) contextSize.textContent = 'Selection too small';
       if (apply) apply.disabled = true;
     }
   }
@@ -146,5 +158,6 @@ export class CropTool {
     this.canvasManager.panLocked = false;
     this.overlay.hidden = true;
     document.querySelector('#crop-controls').hidden = true;
+    setState({ activeTool: 'select' });
   }
 }
