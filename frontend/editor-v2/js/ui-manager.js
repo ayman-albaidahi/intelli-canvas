@@ -26,7 +26,7 @@ export function setEditorReady(ready) {
     if (!isReady) control.title = `${(control.title || 'This action').split(' — ')[0]} — Upload an image first`;
   });
   document.querySelectorAll('[data-inspector]').forEach((tab) => {
-    const available = isReady || tab.dataset.inspector === 'properties';
+    const available = isReady || tab.dataset.inspector === 'edit';
     tab.disabled = !available;
     tab.classList.toggle('is-disabled', !available);
     tab.setAttribute('aria-disabled', String(!available));
@@ -98,7 +98,7 @@ export function initUI() {
       });
     } else if (READY_PANELS.has(panel)) {
       button.addEventListener('click', () => focusPanel(panel));
-    } else if (panel === 'history' || panel === 'analysis' || panel === 'pipeline') {
+    } else if (panel === 'history' || panel === 'insights' || panel === 'pipeline') {
       button.addEventListener('click', () => switchInspector(panel));
     } else {
       button.classList.add('is-disabled');
@@ -110,7 +110,7 @@ export function initUI() {
 
   document.querySelector('[data-action="new"]')?.addEventListener('click', () => showToast('New project workspace is ready'));
   document.querySelector('[data-action="add-layer"]')?.addEventListener('click', () => showToast('Layer creation will be enabled in the layers stage'));
-  document.querySelectorAll('#properties-panel details.panel-accordion').forEach((section) => {
+  document.querySelectorAll('#edit-panel details.panel-accordion').forEach((section) => {
     section.addEventListener('toggle', () => { if (section.open) closeOtherAccordions(section); });
   });
 
@@ -166,7 +166,7 @@ function markNotReady(selector, name) {
 }
 
 function focusPanel(panel) {
-  switchInspector('properties');
+  switchInspector('edit');
   const section = document.querySelector(`#${panel}-accordion`);
   if (!section) return;
   closeOtherAccordions(section);
@@ -179,14 +179,14 @@ function focusPanel(panel) {
 }
 
 function closeOtherAccordions(activeSection) {
-  document.querySelectorAll('#properties-panel details.panel-accordion').forEach((section) => {
+  document.querySelectorAll('#edit-panel details.panel-accordion').forEach((section) => {
     if (section !== activeSection) section.open = false;
   });
 }
 
 
 export function switchInspector(name) {
-  if (document.body.dataset.editorReady !== 'true' && name !== 'properties') return;
+  if (document.body.dataset.editorReady !== 'true' && name !== 'edit') return;
   setState({ activeInspector: name });
   document.querySelectorAll('[data-inspector]').forEach((tab) => {
     const active = tab.dataset.inspector === name;
@@ -195,10 +195,10 @@ export function switchInspector(name) {
     if (active) tab.scrollIntoView?.({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest', inline: 'nearest' });
   });
   updateInspectorTabScroller();
-  document.querySelector('#properties-panel').hidden = name !== 'properties';
+  document.querySelector('#edit-panel').hidden = name !== 'edit';
   document.querySelector('#layers-panel').hidden = name !== 'layers';
-  const analysisPanel = document.querySelector('#analysis-panel');
-  if (analysisPanel) analysisPanel.hidden = name !== 'analysis';
+  const analysisPanel = document.querySelector('#insights-panel');
+  if (analysisPanel) analysisPanel.hidden = name !== 'insights';
   const historyPanel = document.querySelector('#history-panel');
   if (historyPanel) historyPanel.hidden = name !== 'history';
   const pipelinePanel = document.querySelector('#pipeline-panel');

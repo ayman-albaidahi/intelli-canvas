@@ -38,15 +38,15 @@ async function openInspector(page, tab) {
 // quick-action grid, and the "More tools" list — three matches, which Playwright
 // strict mode rejects. The rail is the canonical entry point when it carries the
 // panel; analysis and pipeline exist only in the quick-action grid inside
-// Properties, so they fall back to that.
+//  Edit, so they fall back to that.
 async function panelButton(page, name) {
   const rail = page.locator(`.tool-rail [data-panel="${name}"]`);
   if (await rail.count() > 0) return rail;
   return page.locator(`.quick-actions-grid [data-panel="${name}"]`);
 }
 
-// Image Intelligence: analysis, quality score, findings, and suggestions.
-test.describe('Image Intelligence', () => {
+// Image Insights: analysis, quality score, findings, and suggestions.
+test.describe('Image Insights', () => {
   test('analyzes the image and reports quality score, metrics, and findings', async ({ page }, testInfo) => {
     await upload(page, testInfo);
 

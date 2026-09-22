@@ -6,11 +6,11 @@ import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 const MARKUP = `
 <aside class="inspector" id="inspector" aria-label="Inspector panels">
   <div class="inspector-tabs" role="tablist" aria-label="Editor surfaces">
-    <button class="inspector-tab is-active" data-inspector="properties" role="tab">Properties</button>
+    <button class="inspector-tab is-active" data-inspector="edit" role="tab">Edit</button>
     <button class="inspector-tab" data-inspector="layers" role="tab">Layers <span class="count-pill">0</span></button>
-    <button class="inspector-tab" data-inspector="analysis" role="tab">Intelligence</button>
+    <button class="inspector-tab" data-inspector="insights" role="tab">Insights</button>
   </div>
-  <section class="inspector-content" id="properties-panel">properties</section>
+  <section class="inspector-content" id="edit-panel">edit</section>
   <section class="inspector-content" id="layers-panel" hidden>layers</section>
 </aside>
 <div id="inspector-scrim" class="inspector-scrim" hidden></div>
@@ -92,8 +92,8 @@ describe('inspector drawer', () => {
 describe('pre-upload progressive disclosure', () => {
   beforeEach(() => {
     document.body.innerHTML = `
-      <button data-inspector="properties"></button>
-      <button data-inspector="analysis"></button>
+      <button data-inspector="edit"></button>
+      <button data-inspector="insights"></button>
       <button data-tool="brush" data-requires-image title="Brush (B)"></button>
       <button data-action="zoom-in" data-requires-image title="Zoom in"></button>
     `;
@@ -104,16 +104,16 @@ describe('pre-upload progressive disclosure', () => {
 
     expect(document.querySelector('[data-tool="brush"]').disabled).toBe(true);
     expect(document.querySelector('[data-action="zoom-in"]').disabled).toBe(true);
-    expect(document.querySelector('[data-inspector="analysis"]').disabled).toBe(true);
+    expect(document.querySelector('[data-inspector="insights"]').disabled).toBe(true);
     expect(document.body.dataset.editorReady).toBe('false');
   });
 
-  it('enables image tools and Intelligence after upload readiness', () => {
+  it('enables image tools and Insights after upload readiness', () => {
     setEditorReady(true);
 
     expect(document.querySelector('[data-tool="brush"]').disabled).toBe(false);
     expect(document.querySelector('[data-action="zoom-in"]').disabled).toBe(false);
-    expect(document.querySelector('[data-inspector="analysis"]').disabled).toBe(false);
+    expect(document.querySelector('[data-inspector="insights"]').disabled).toBe(false);
     expect(document.body.dataset.editorReady).toBe('true');
   });
 });
