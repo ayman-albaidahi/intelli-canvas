@@ -4,6 +4,27 @@ const API_BASE = window.INTELLICANVAS_API_BASE || detectedApiBase;
 
 const OFFLINE_MESSAGE = 'Could not reach the editing server. Start it with: python backend/run.py';
 
+const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+function csrfToken() {
+  const token = document.cookie
+    .split('; ')
+    .find((entry) => entry.startsWith('ic_csrf='));
+  return token ? decodeURIComponent(token.slice('ic_csrf='.length)) : '';
+}
+
+async function secureFetch(url, options = {}) {
+  return fetch(url, secureOptions(options));
+}
+
+function secureOptions(options = {}) {
+  const headers = new Headers(options.headers || {});
+  const method = (options.method || 'GET').toUpperCase();
+  const token = csrfToken();
+  if (MUTATING_METHODS.has(method) && token) headers.set('X-CSRF-Token', token);
+  return { ...options, headers, credentials: 'include' };
+}
+
 function friendlyMessage(payload, status) {
   const code = payload.error?.code;
   if (code === 'IMAGE_SESSION_NOT_FOUND') return 'Your editing session expired — upload the image again.';
@@ -11,6 +32,9 @@ function friendlyMessage(payload, status) {
   if (code === 'STALE_IMAGE_REVISION') return 'The image changed while you were editing — the latest version is shown. Try again.';
   if (code === 'PIPELINE_EXECUTION_FAILED') return 'The pipeline could not be executed. Check its parameters and try again.';
   if (code === 'INVALID_PIPELINE') return 'The pipeline contains an unsupported operation or invalid parameter.';
+  if (code === 'AUTH_REQUIRED') return 'Your session has expired. Sign in again to continue.';
+  if (code === 'CSRF_TOKEN_INVALID') return 'Your security session expired. Refresh the page and try again.';
+  if (code === 'RATE_LIMITED') return 'Too many requests. Please wait a moment and try again.';
   return payload.error?.message || `Request failed (${status}). Make sure the app is running.`;
 }
 
@@ -19,7 +43,7 @@ async function request(url, options = {}) {
   const controller = options.signal ? null : new AbortController();
   const timeout = controller ? setTimeout(() => controller.abort(), 15000) : null;
   try {
-    response = await fetch(url, controller ? { ...options, signal: controller.signal } : options);
+    response = await secureFetch(url, controller ? { ...options, signal: controller.signal } : options);
   } catch (error) {
     if (error.name === 'AbortError') throw new Error('The editing server took too long to respond. Try again.');
     throw new Error(OFFLINE_MESSAGE);
@@ -27,6 +51,9 @@ async function request(url, options = {}) {
     if (timeout) clearTimeout(timeout);
   }
   const payload = await response.json().catch(() => ({}));
+  if (response.status === 401 && payload.error?.code === 'AUTH_REQUIRED') {
+    window.dispatchEvent(new CustomEvent('ic-auth-required', { detail: payload.error }));
+  }
   if (!response.ok || payload.success === false) {
     throw new Error(friendlyMessage(payload, response.status));
   }
@@ -35,6 +62,24 @@ async function request(url, options = {}) {
 
 export class ApiClient {
   constructor(baseUrl = API_BASE) { this.baseUrl = baseUrl.replace(/\/$/, ''); this.imageId = null; this.revision = null; }
+
+  resetSession() { this.imageId = null; this.revision = null; }
+
+  async me() {
+    return request(`${this.baseUrl}/auth/me`);
+  }
+
+  async login(email, password) {
+    return request(`${this.baseUrl}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+  }
+
+  async logout() {
+    return request(`${this.baseUrl}/auth/logout`, { method: 'POST' });
+  }
 
   async upload(file) {
     const body = new FormData(); body.append('file', file);
@@ -60,7 +105,7 @@ export class ApiClient {
     if (!this.imageId) throw new Error('Upload an image before using Smart Crop.');
     let response;
     try {
-      response = await fetch(`${this.baseUrl}/transform/smart-crop/preview`, {
+      response = await secureFetch(`${this.baseUrl}/transform/smart-crop/preview`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image_id: this.imageId, aspect_ratio: aspectRatio }),
@@ -124,7 +169,7 @@ export class ApiClient {
     if (!this.imageId) throw new Error('Upload an image before exporting it.');
     let response;
     try {
-      response = await fetch(`${this.baseUrl}/images/export`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, format, quality, width, height, composite_layers: compositeLayers }) });
+      response = await secureFetch(`${this.baseUrl}/images/export`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, format, quality, width, height, composite_layers: compositeLayers }) });
     } catch {
       throw new Error(OFFLINE_MESSAGE);
     }
@@ -166,7 +211,7 @@ export class ApiClient {
   async diffHistory(fromIndex, toIndex, mode = 'absolute', threshold = 0, imageId = this.imageId) {
     let response;
     try {
-      response = await fetch(`${this.baseUrl}/history/diff`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, from_index: fromIndex, to_index: toIndex, mode, threshold }) });
+      response = await secureFetch(`${this.baseUrl}/history/diff`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, from_index: fromIndex, to_index: toIndex, mode, threshold }) });
     } catch {
       throw new Error(OFFLINE_MESSAGE);
     }
@@ -209,7 +254,7 @@ export class ApiClient {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30000);
     try {
-      response = await fetch(`${this.baseUrl}/pipeline/preview`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, ...(nodes ? { nodes } : {}) }), signal: controller.signal });
+      response = await secureFetch(`${this.baseUrl}/pipeline/preview`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, ...(nodes ? { nodes } : {}) }), signal: controller.signal });
     } catch (error) {
       if (error.name === 'AbortError') throw new Error('Pipeline preview timed out. Try a smaller image or fewer operations.');
       throw new Error(OFFLINE_MESSAGE);
@@ -254,7 +299,7 @@ export class ApiClient {
     if (!this.imageId) throw new Error('Upload an image first.');
     let response;
     try {
-      response = await fetch(`${this.baseUrl}/background/mask-preview`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, ...params }) });
+      response = await secureFetch(`${this.baseUrl}/background/mask-preview`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, ...params }) });
     } catch {
       throw new Error(OFFLINE_MESSAGE);
     }
@@ -278,7 +323,7 @@ export class ApiClient {
     if (!this.imageId) throw new Error('Upload an image first.');
     let response;
     try {
-      response = await fetch(`${this.baseUrl}/background/replace-preview`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, ...params }) });
+      response = await secureFetch(`${this.baseUrl}/background/replace-preview`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: this.imageId, ...params }) });
     } catch {
       throw new Error(OFFLINE_MESSAGE);
     }
@@ -292,7 +337,7 @@ export class ApiClient {
   async listBackgrounds() {
     let response;
     try {
-      response = await fetch(`${this.baseUrl}/background/backgrounds`);
+      response = await secureFetch(`${this.baseUrl}/background/backgrounds`);
     } catch {
       throw new Error(OFFLINE_MESSAGE);
     }
@@ -330,7 +375,7 @@ export class ApiClient {
   async previewSuggestion(imageId = this.imageId, type) {
     let response;
     try {
-      response = await fetch(`${this.baseUrl}/suggestions/preview`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, type }) });
+      response = await secureFetch(`${this.baseUrl}/suggestions/preview`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_id: imageId, type }) });
     } catch {
       throw new Error(OFFLINE_MESSAGE);
     }
