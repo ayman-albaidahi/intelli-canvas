@@ -123,7 +123,7 @@ test.describe('Processing pipeline', () => {
 
     await openInspector(page, 'history');
     await page.locator('#process-disclosure summary').click();
-    await page.locator('[data-panel="pipeline"]').click();
+    await page.locator('#process-disclosure [data-panel="pipeline"]').click();
     await expect(page.locator('#pipeline-panel')).toBeVisible();
 
     await page.locator('#pipeline-operation').selectOption('brightness');
