@@ -4,6 +4,7 @@ export const appState = {
   activeTool: 'select',
   activeInspector: 'edit',
   hasImage: false,
+  selectedObjectId: null,
 };
 
 export function setState(patch) {

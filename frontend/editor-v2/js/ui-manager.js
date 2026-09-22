@@ -16,9 +16,40 @@ const isMobile = () => mobileQuery()?.matches ?? false;
 
 const READY_PANELS = new Set(['adjustments', 'filters', 'background', 'smart-crop']);
 
+const CONTEXT_LABELS = {
+  canvas: ['Nothing selected', 'Select an object or choose an editing tool.'],
+  image: ['Image selected', 'Edit the image with focused actions and adjustments.'],
+  layer: ['Layer selected', 'Edit the selected layer without unrelated image controls.'],
+  tool: ['Tool active', 'Adjust the active tool settings.'],
+  crop: ['Crop active', 'Set the framing, then apply or cancel the crop.'],
+};
+
+export function getInspectorContext({ ready, activeTool = 'select', selectedObjectId = null } = {}) {
+  if (!ready) return 'canvas';
+  if (activeTool === 'crop') return 'crop';
+  if (['brush', 'eraser', 'shape', 'text'].includes(activeTool)) return 'tool';
+  if (selectedObjectId) return 'layer';
+  return 'image';
+}
+
+export function renderInspectorContext({ ready = document.body.dataset.editorReady === 'true', activeTool = appState.activeTool, selectedObjectId = appState.selectedObjectId } = {}) {
+  const context = getInspectorContext({ ready, activeTool, selectedObjectId });
+  document.body.dataset.inspectorContext = context;
+  const [title, copy] = CONTEXT_LABELS[context];
+  const titleEl = document.querySelector('#edit-empty-title');
+  const copyEl = document.querySelector('#edit-empty-copy');
+  if (titleEl) titleEl.textContent = title;
+  if (copyEl) copyEl.textContent = copy;
+  document.querySelectorAll('[data-contextual-actions] [data-context]').forEach((action) => {
+    action.hidden = action.dataset.context !== context && !(context === 'crop' && action.dataset.context === 'image');
+  });
+  return context;
+}
+
 export function setEditorReady(ready) {
   const isReady = Boolean(ready);
   document.body.dataset.editorReady = String(isReady);
+  renderInspectorContext({ ready: isReady });
   document.querySelectorAll('[data-requires-image]').forEach((control) => {
     control.disabled = !isReady;
     control.classList.toggle('is-disabled', !isReady);
@@ -46,6 +77,7 @@ export function initUI() {
       button.classList.add('is-active');
       button.setAttribute('aria-pressed', 'true');
       setState({ activeTool: button.dataset.tool });
+      renderInspectorContext();
       showToast(`${button.dataset.tool[0].toUpperCase()}${button.dataset.tool.slice(1)} tool selected`);
     });
   });

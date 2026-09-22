@@ -117,3 +117,14 @@ describe('pre-upload progressive disclosure', () => {
     expect(document.body.dataset.editorReady).toBe('true');
   });
 });
+
+describe('contextual Edit state', () => {
+  it('maps editor situations to focused inspector contexts', async () => {
+    const { getInspectorContext } = await import('./ui-manager.js');
+    expect(getInspectorContext({ ready: false })).toBe('canvas');
+    expect(getInspectorContext({ ready: true, activeTool: 'select' })).toBe('image');
+    expect(getInspectorContext({ ready: true, activeTool: 'select', selectedObjectId: 'layer-1' })).toBe('layer');
+    expect(getInspectorContext({ ready: true, activeTool: 'brush' })).toBe('tool');
+    expect(getInspectorContext({ ready: true, activeTool: 'crop' })).toBe('crop');
+  });
+});

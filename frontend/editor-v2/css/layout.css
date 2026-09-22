@@ -139,3 +139,14 @@ details.panel-accordion.is-flash .accordion-body{animation:ic-flash 1.1s var(--e
   .editor-frame { grid-template-columns: 72px minmax(0, 1fr) 360px; }
   .inspector-tab-strip .inspector-tabs { gap: var(--space-10); padding-inline: var(--space-12); }
 }
+
+/* Contextual Edit disclosure: the inspector only exposes controls for the current task. */
+[data-inspector-context="canvas"] .inspector-quick-actions, [data-inspector-context="canvas"] #edit-panel .panel-section, [data-inspector-context="canvas"] #edit-panel > .panel-section { display:none; }
+[data-inspector-context="layer"] #edit-panel .panel-section { display:none; }
+[data-inspector-context="tool"] #edit-panel .panel-section:not(:has(#drawing-accordion)) { display:none; }
+[data-inspector-context="crop"] #edit-panel .panel-section:not(:has(#smart-crop-accordion)) { display:none; }
+[data-inspector-context="image"] #edit-panel #drawing-accordion { display:none; }
+[data-inspector-context="image"] #edit-panel #object-empty { display:none; }
+[data-inspector-context="layer"] #edit-panel #object-empty { display:none; }
+[data-inspector-context="tool"] #edit-panel #object-empty { display:none; }
+[data-inspector-context="crop"] #edit-panel #object-empty { display:none; }
