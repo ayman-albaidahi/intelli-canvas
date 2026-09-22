@@ -46,15 +46,28 @@ export function renderInspectorContext({ ready = document.body.dataset.editorRea
   return context;
 }
 
+// The pre-upload hint is appended to the control's own tooltip rather than
+// replacing it. Caching the original title first means readiness can be
+// toggled any number of times without the hint accumulating or the real
+// label being lost once an image is loaded.
+function setControlReady(control, isReady) {
+  control.disabled = !isReady;
+  control.classList.toggle('is-disabled', !isReady);
+  control.setAttribute('aria-disabled', String(!isReady));
+  if (control.dataset.originalTitle === undefined) {
+    control.dataset.originalTitle = control.title || '';
+  }
+  control.title = isReady
+    ? control.dataset.originalTitle
+    : `${control.dataset.originalTitle} — Upload an image first`;
+}
+
 export function setEditorReady(ready) {
   const isReady = Boolean(ready);
   document.body.dataset.editorReady = String(isReady);
   renderInspectorContext({ ready: isReady });
   document.querySelectorAll('[data-requires-image]').forEach((control) => {
-    control.disabled = !isReady;
-    control.classList.toggle('is-disabled', !isReady);
-    control.setAttribute('aria-disabled', String(!isReady));
-    if (!isReady) control.title = `${(control.title || 'This action').split(' — ')[0]} — Upload an image first`;
+    setControlReady(control, isReady);
   });
   document.querySelectorAll('[data-inspector]').forEach((tab) => {
     const available = isReady || tab.dataset.inspector === 'edit';
