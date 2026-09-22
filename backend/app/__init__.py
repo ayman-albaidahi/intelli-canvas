@@ -1,10 +1,13 @@
+from copy import deepcopy
 from pathlib import Path
 
 from flask import Flask, request, send_from_directory
 
-from .config import Config
+from .config import Config, validate_production_config
+from .csrf import enforce_enabled_csrf, set_csrf_cookie
 from .database import SQLiteSessionRepository
 from .errors import register_error_handlers
+from .rate_limit import InMemoryRateLimiter, enforce_rate_limit
 from .routes import (
     analysis_bp,
     auth_bp,
@@ -32,6 +35,8 @@ def create_app(database_path: str | None = None) -> Flask:
     """Application factory for the IntelliCanvas backend."""
     app = Flask(__name__, static_folder=str(FRONTEND_DIR), static_url_path="")
     app.config.from_object(Config)
+    app.config["RATE_LIMIT_RULES"] = deepcopy(app.config["RATE_LIMIT_RULES"])
+    validate_production_config(app.config)
     # Editor assets change between commits while a tab stays open; never let
     # the browser reuse cached HTML/CSS/JS in this development stage.
     app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
@@ -50,7 +55,15 @@ def create_app(database_path: str | None = None) -> Flask:
         app.config["FILE_STORAGE_SERVICE"],
         app.config["IMAGE_SESSIONS"],
     )
+    app.extensions["rate_limiter"] = InMemoryRateLimiter()
     register_error_handlers(app)
+
+    @app.before_request
+    def enforce_request_security():
+        csrf_response = enforce_enabled_csrf()
+        if csrf_response is not None:
+            return csrf_response
+        return enforce_rate_limit()
 
     app.register_blueprint(health_bp)
     app.register_blueprint(capabilities_bp)
@@ -67,13 +80,19 @@ def create_app(database_path: str | None = None) -> Flask:
     app.register_blueprint(auth_bp)
 
     @app.after_request
+    def add_csrf_cookie(response):
+        return set_csrf_cookie(response)
+
+    @app.after_request
     def add_dev_cors_headers(response):
         origin = request.headers.get("Origin", "")
         allowed_origins = {"http://localhost:5500", "http://127.0.0.1:5500"}
         if origin in allowed_origins:
             response.headers["Access-Control-Allow-Origin"] = origin
             response.headers.setdefault("Vary", "Origin")
-            response.headers.setdefault("Access-Control-Allow-Headers", "Content-Type")
+            response.headers.setdefault(
+                "Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token"
+            )
             response.headers.setdefault(
                 "Access-Control-Allow-Methods", "GET, POST, OPTIONS"
             )

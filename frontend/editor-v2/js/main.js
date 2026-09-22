@@ -18,7 +18,13 @@ import { PipelineManager } from './pipeline-manager.js';
 import { SmartCropManager } from './smart-crop-manager.js';
 import { ApiClient } from './api-client.js';
 import { renderImageContextSummary } from './inspector-context-view.js';
+import { AuthManager } from './auth-manager.js';
 
+const apiClient = new ApiClient();
+const authManager = new AuthManager({ apiClient });
+const authenticatedUser = await authManager.start();
+
+if (authenticatedUser) {
 initThemeManager();
 initUI();
 // Dialogs must trap focus and close on Escape before any other Escape handler
@@ -65,7 +71,6 @@ const fileInput = document.querySelector('#file-input');
 const emptyCanvas = document.querySelector('#empty-canvas');
 const statusMessage = document.querySelector('#status-message');
 const canvasManager = new CanvasManager(document.querySelector('#image-canvas'), document.querySelector('#canvas-card'));
-const apiClient = new ApiClient();
 bindTransformTools(canvasManager, apiClient, showToast);
 const cropTool = new CropTool(canvasManager, document.querySelector('#canvas-card'), apiClient, showToast);
 initResizeTool(canvasManager, apiClient, showToast);
@@ -268,3 +273,4 @@ document.addEventListener('appstatechange', ({ detail }) => {
 });
 document.body.dataset.activeTool = appState.activeTool;
 renderZoom();
+}

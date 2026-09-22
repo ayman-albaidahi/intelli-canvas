@@ -16,9 +16,24 @@
     <link rel="stylesheet" href="css/mobile-drawer.css" />
     <link rel="stylesheet" href="css/icons.css" />
     <link rel="stylesheet" href="css/contextual-inspector.css" />
+    <link rel="stylesheet" href="css/auth.css" />
   </head>
   <body>
-    <div class="app-shell">
+    <section id="auth-gate" class="auth-gate" aria-labelledby="login-heading">
+      <div class="auth-card">
+        <div class="auth-brand"><img src="assets/intellicanvas-logo.png" alt="" /><span>IntelliCanvas</span></div>
+        <span class="eyebrow">Private workspace</span>
+        <h1 id="login-heading">Sign in to your canvas</h1>
+        <p class="auth-copy">Your projects and editing sessions stay protected behind your account.</p>
+        <form id="login-form" novalidate>
+          <label class="property-field" for="login-email">Email<input id="login-email" name="email" type="email" autocomplete="username" required /></label>
+          <label class="property-field" for="login-password">Password<input id="login-password" name="password" type="password" autocomplete="current-password" required /></label>
+          <p id="login-error" class="auth-error" role="alert" hidden></p>
+          <button id="login-submit" class="button button-primary full-width" type="submit"><span id="auth-loading" class="auth-loading" hidden aria-hidden="true"></span>Sign in</button>
+        </form>
+      </div>
+    </section>
+    <div class="app-shell" hidden>
       <header class="topbar">
         <div class="brand-block">
           <img class="brand-logo" src="assets/intellicanvas-logo.png" alt="IntelliCanvas" />
@@ -38,7 +53,7 @@
           <button class="icon-button" data-action="undo" aria-label="Undo" title="Undo">↶</button>
           <button class="icon-button" data-action="redo" aria-label="Redo" title="Redo">↷</button>
           <button class="icon-button theme-toggle" data-action="theme" aria-label="Toggle color theme" title="Toggle theme">☼</button>
-          <button class="avatar" aria-label="Account menu">AY</button>
+          <span class="account-label" id="account-label">Account</span><button class="button button-ghost" id="logout-button" type="button" hidden>Sign out</button><button class="avatar" id="account-avatar" aria-label="Current account">AC</button>
         </nav>
       </header>
 

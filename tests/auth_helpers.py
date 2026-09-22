@@ -20,4 +20,7 @@ def authenticated_client(app, email="owner@example.com"):
         },
     )
     assert response.status_code == 200
+    csrf_cookie = client.get_cookie(app.config["CSRF_COOKIE_NAME"])
+    assert csrf_cookie is not None
+    client.environ_base["HTTP_X_CSRF_TOKEN"] = csrf_cookie.value
     return client
