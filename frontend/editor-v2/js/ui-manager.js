@@ -1,5 +1,6 @@
 import { appState, setState } from './app-state.js';
 import { deriveInspectorContext } from './inspector-context.js';
+import { mountInspectorContextContainers, renderInspectorContextContainers } from './inspector-context-view.js';
 
 const toast = document.querySelector('#toast');
 let toastTimer;
@@ -17,17 +18,6 @@ const isMobile = () => mobileQuery()?.matches ?? false;
 
 const READY_PANELS = new Set(['adjustments', 'filters', 'background', 'smart-crop']);
 
-const CONTEXT_LABELS = {
-  empty: ['Nothing selected', 'Select an object or choose an editing tool.'],
-  image: ['Image selected', 'Edit the image with focused actions and adjustments.'],
-  layer: ['Layer selected', 'Edit the selected layer without unrelated image controls.'],
-  brush: ['Brush active', 'Adjust the active brush settings.'],
-  eraser: ['Eraser active', 'Adjust the active eraser settings.'],
-  crop: ['Crop active', 'Set the framing, then apply or cancel the crop.'],
-  processing: ['Processing', 'Your operation is being prepared.'],
-  error: ['Something went wrong', 'Review the error and try again.'],
-};
-
 export function getInspectorContext({ ready, activeTool = 'select', selectedObjectId = null } = {}) {
   return deriveInspectorContext({ editorReady: ready, activeTool, selectedObjectId });
 }
@@ -35,11 +25,7 @@ export function getInspectorContext({ ready, activeTool = 'select', selectedObje
 export function renderInspectorContext(state = appState) {
   const context = deriveInspectorContext(state);
   document.body.dataset.inspectorContext = context;
-  const [title, copy] = CONTEXT_LABELS[context];
-  const titleEl = document.querySelector('#edit-empty-title');
-  const copyEl = document.querySelector('#edit-empty-copy');
-  if (titleEl) titleEl.textContent = title;
-  if (copyEl) copyEl.textContent = copy;
+  renderInspectorContextContainers(context);
   document.querySelectorAll('[data-contextual-actions] [data-context]').forEach((action) => {
     action.hidden = action.dataset.context !== context && !(context === 'crop' && action.dataset.context === 'image');
   });
@@ -78,8 +64,10 @@ export function setEditorReady(ready) {
 }
 
 export function initUI() {
-  setEditorReady(false);
+  mountInspectorContextContainers();
   document.addEventListener('appstatechange', ({ detail }) => renderInspectorContext(detail));
+  setEditorReady(false);
+  renderInspectorContext(appState);
   document.querySelectorAll('[data-tool]').forEach((button) => {
     button.addEventListener('click', () => {
       document.querySelectorAll('[data-tool]').forEach((item) => {
