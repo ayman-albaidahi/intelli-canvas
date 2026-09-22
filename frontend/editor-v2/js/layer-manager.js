@@ -1,6 +1,7 @@
 import { TYPE_LABEL, BLEND_MODES } from './object-manager.js';
 import { escapeHtml } from './escape-html.js';
 import { iconMarkup } from './icons.js';
+import { renderLayerContextSummary } from './inspector-context-view.js';
 
 export class LayerManager {
   constructor(objectManager, { list, empty, count, showToast }) {
@@ -197,6 +198,10 @@ export class LayerManager {
       if (selected) this.objects.duplicate(selected.id);
     });
     document.querySelector('#obj-delete')?.addEventListener('click', () => this.objects.deleteSelected());
+    document.querySelector('#layer-context-toggle-visibility')?.addEventListener('click', () => {
+      const selected = this.objects.selected;
+      if (selected && !selected.locked) this.objects.toggleVisibility(selected.id);
+    });
     // The properties panel's "more" button was labelled "More property
     // options" and did nothing at all. It duplicates the selected object,
     // which is the action its position next to the heading suggests.
@@ -210,6 +215,7 @@ export class LayerManager {
   updateInspector() {
     const selected = this.objects.selected;
     const { box, empty, name, type, x, y, w, h, rotation, opacity, opacityVal, blend } = this.props;
+    renderLayerContextSummary(selected ? { ...selected, typeLabel: TYPE_LABEL[selected.type] } : null);
     box.hidden = !selected;
     empty.hidden = Boolean(selected);
     if (!selected) return;

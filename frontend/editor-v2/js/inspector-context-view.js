@@ -19,7 +19,20 @@ function createContextSection(context) {
   section.setAttribute('role', 'region');
   section.setAttribute('aria-labelledby', `edit-context-${context}-heading`);
   const [title, copy] = CONTEXT_COPY[context];
-  section.innerHTML = `<div class="edit-context-heading"><span class="eyebrow">Inspector context</span><h3 id="edit-context-${context}-heading">${title}</h3><p>${copy}</p></div>`;
+  const summary = context === 'image'
+    ? `<div class="context-summary image-context-summary" id="image-context-summary" aria-live="polite">
+        <div><span>File</span><strong id="image-context-name">No image loaded</strong></div>
+        <div><span>Dimensions</span><strong id="image-context-dimensions">—</strong></div>
+        <div><span>Status</span><strong id="image-context-status">Waiting for an image</strong></div>
+      </div>`
+    : context === 'layer'
+      ? `<div class="context-summary layer-context-summary" id="layer-context-summary" aria-live="polite">
+          <div><span>Type</span><strong id="layer-context-type">—</strong></div>
+          <div><span>Visibility</span><strong id="layer-context-visibility">—</strong></div>
+          <button class="button button-secondary full-width" id="layer-context-toggle-visibility" type="button">Toggle visibility</button>
+        </div>`
+      : '';
+  section.innerHTML = `<div class="edit-context-heading"><span class="eyebrow">Inspector context</span><h3 id="edit-context-${context}-heading">${title}</h3><p>${copy}</p></div>${summary}`;
   return section;
 }
 
@@ -66,4 +79,26 @@ export function renderInspectorContextContainers(context, root = document) {
     section.setAttribute('aria-hidden', String(!active));
   });
   return context;
+}
+
+export function renderImageContextSummary(summary = {}, root = document) {
+  const name = root.querySelector('#image-context-name');
+  const dimensions = root.querySelector('#image-context-dimensions');
+  const status = root.querySelector('#image-context-status');
+  if (!name || !dimensions || !status) return;
+  name.textContent = summary.name || 'No image loaded';
+  dimensions.textContent = summary.width && summary.height ? `${summary.width} × ${summary.height}` : '—';
+  status.textContent = summary.status || (summary.name ? 'Ready to edit' : 'Waiting for an image');
+}
+
+export function renderLayerContextSummary(layer = null, root = document) {
+  const type = root.querySelector('#layer-context-type');
+  const visibility = root.querySelector('#layer-context-visibility');
+  const toggle = root.querySelector('#layer-context-toggle-visibility');
+  if (!type || !visibility || !toggle) return;
+  type.textContent = layer?.typeLabel || layer?.type || '—';
+  visibility.textContent = layer ? (layer.visible ? 'Visible' : 'Hidden') : '—';
+  toggle.disabled = !layer || layer.locked;
+  toggle.setAttribute('aria-pressed', String(Boolean(layer?.visible)));
+  toggle.textContent = layer?.visible ? 'Hide layer' : 'Show layer';
 }

@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   mountInspectorContextContainers,
+  renderImageContextSummary,
+  renderLayerContextSummary,
   renderInspectorContextContainers,
 } from './inspector-context-view.js';
 
@@ -29,6 +31,25 @@ describe('Inspector context containers', () => {
     expect(document.querySelector('#object-properties').closest('[data-edit-context]').dataset.editContext).toBe('layer');
     expect(document.querySelector('#drawing-accordion').closest('[data-edit-context]').dataset.editContext).toBe('brush');
     expect(document.querySelector('#smart-crop-accordion').closest('[data-edit-context]').dataset.editContext).toBe('image');
+    expect(document.querySelector('#image-context-summary')).not.toBeNull();
+    expect(document.querySelector('#layer-context-summary')).not.toBeNull();
+  });
+
+  it('renders image metadata without leaking it into the layer context', () => {
+    mountInspectorContextContainers();
+    renderImageContextSummary({ name: 'portrait.png', width: 1200, height: 800, status: 'Ready to edit' });
+    expect(document.querySelector('#image-context-name').textContent).toBe('portrait.png');
+    expect(document.querySelector('#image-context-dimensions').textContent).toBe('1200 × 800');
+    expect(document.querySelector('#layer-context-summary').textContent).not.toContain('portrait.png');
+  });
+
+  it('renders layer type and visibility with a separate visibility action', () => {
+    mountInspectorContextContainers();
+    renderLayerContextSummary({ typeLabel: 'Brush stroke', visible: true, locked: false });
+    expect(document.querySelector('#layer-context-type').textContent).toBe('Brush stroke');
+    expect(document.querySelector('#layer-context-visibility').textContent).toBe('Visible');
+    expect(document.querySelector('#layer-context-toggle-visibility').textContent).toBe('Hide layer');
+    expect(document.querySelector('#layer-context-toggle-visibility').disabled).toBe(false);
   });
 
   it.each(['empty', 'image', 'layer', 'brush', 'eraser', 'crop', 'processing', 'error'])('shows only %s', (context) => {

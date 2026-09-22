@@ -17,6 +17,7 @@ import { AnalysisManager } from './analysis-manager.js';
 import { PipelineManager } from './pipeline-manager.js';
 import { SmartCropManager } from './smart-crop-manager.js';
 import { ApiClient } from './api-client.js';
+import { renderImageContextSummary } from './inspector-context-view.js';
 
 initThemeManager();
 initUI();
@@ -24,6 +25,7 @@ initUI();
 // claims the key, so they are initialised alongside the rest of the chrome.
 initDialogEscape();
 initDialogFocusTrap();
+renderImageContextSummary();
 
 const fileInput = document.querySelector('#file-input');
 const emptyCanvas = document.querySelector('#empty-canvas');
@@ -34,8 +36,12 @@ bindTransformTools(canvasManager, apiClient, showToast);
 const cropTool = new CropTool(canvasManager, document.querySelector('#canvas-card'), apiClient, showToast);
 initResizeTool(canvasManager, apiClient, showToast);
 const objectManager = new ObjectManager(document.querySelector('#object-canvas'), showToast, canvasManager);
-objectManager.onSelectionChange = (id) => { setState({ selectedObjectId: id }); };
 const layerManager = new LayerManager(objectManager, { list: document.querySelector('#layers-list'), empty: document.querySelector('#layers-empty'), count: document.querySelector('#layer-count'), showToast });
+const refreshSelectionState = objectManager.onSelectionChange;
+objectManager.onSelectionChange = (id) => {
+  refreshSelectionState?.(id);
+  setState({ selectedObjectId: id });
+};
 const refreshLayerPanel = objectManager.onChange;
 let layerSaveTimer = null;
 objectManager.onChange = () => {
@@ -132,12 +138,19 @@ async function uploadImageFile(file) {
     emptyCanvas.hidden = true;
     document.querySelector('#document-name').textContent = image.original_filename;
     document.querySelector('#canvas-size').textContent = `${image.width ?? canvasManager.getSourceDimensions().width} × ${image.height ?? canvasManager.getSourceDimensions().height}`;
+    renderImageContextSummary({
+      name: image.original_filename,
+      width: image.width ?? canvasManager.getSourceDimensions().width,
+      height: image.height ?? canvasManager.getSourceDimensions().height,
+      status: 'Ready to edit',
+    });
     document.querySelector('#save-state').textContent = 'Saved in API session';
     statusMessage.textContent = 'Image loaded — backend session ready';
     showToast(`${image.original_filename} uploaded successfully`);
   } catch (error) {
     setState({ hasImage: false, selectedObjectId: null });
     setEditorReady(false);
+    renderImageContextSummary({ status: 'Waiting for an image' });
     statusMessage.textContent = error.message.startsWith('Could not reach') ? 'Backend offline' : 'Upload failed';
     showToast(error.message);
   } finally {
