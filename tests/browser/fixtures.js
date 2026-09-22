@@ -11,11 +11,11 @@ import { join } from 'node:path';
 import zlib from 'node:zlib';
 import { expect } from '@playwright/test';
 
-export function makePngPath(testInfo, name = 'fixture.png', rgb = [180, 120, 90]) {
+export function makePngPath(testInfo, name = 'fixture.png', rgb = [180, 120, 90], size = [32, 32]) {
   const dir = join(testInfo.project.outputDir, 'fixtures');
   mkdirSync(dir, { recursive: true });
   const path = join(dir, name);
-  writeFileSync(path, encodePng(32, 32, rgb));
+  writeFileSync(path, encodePng(size[0], size[1], rgb));
   return path;
 }
 
