@@ -1,5 +1,6 @@
 import io
 
+from auth_helpers import authenticated_client
 from PIL import Image
 
 from backend.app import create_app
@@ -18,7 +19,7 @@ def _upload(client):
 
 def test_explain_operation_describes_parameters_and_source():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     response = client.post(
         "/api/explain-operation",
         json={
@@ -37,7 +38,7 @@ def test_explain_operation_describes_parameters_and_source():
 
 def test_explain_operation_can_explain_a_finding():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     finding = {
         "code": "LOW_BRIGHTNESS",
         "severity": "high",
@@ -60,7 +61,7 @@ def test_explain_operation_can_explain_a_finding():
 
 def test_analysis_and_suggestions_expose_explainable_evidence():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload(client)
     report = client.post("/api/analysis", json={"image_id": image_id}).get_json()
     assert report["findings"]
@@ -77,7 +78,7 @@ def test_analysis_and_suggestions_expose_explainable_evidence():
 
 def test_explain_operation_rejects_invalid_parameters():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     response = client.post(
         "/api/explain-operation",
         json={"operation": "median-filter", "parameters": {"ksize": 4}},

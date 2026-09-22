@@ -1,5 +1,6 @@
 import io
 
+from auth_helpers import authenticated_client
 from PIL import Image
 
 from backend.app import create_app
@@ -19,7 +20,7 @@ def _upload_solid(client, color, name="audit.png"):
 
 def test_analysis_flags_low_brightness_on_dark_image():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_solid(client, (30, 30, 35))
 
     response = client.post("/api/analysis", json={"image_id": image_id})
@@ -33,7 +34,7 @@ def test_analysis_flags_low_brightness_on_dark_image():
 
 def test_analysis_flags_low_contrast_on_flat_image():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_solid(client, (128, 128, 128))
 
     response = client.post("/api/analysis", json={"image_id": image_id})
@@ -44,7 +45,7 @@ def test_analysis_flags_low_contrast_on_flat_image():
 
 def test_analysis_flags_high_brightness():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_solid(client, (250, 250, 250))
 
     response = client.post("/api/analysis", json={"image_id": image_id})
@@ -55,7 +56,7 @@ def test_analysis_flags_high_brightness():
 
 def test_analysis_does_not_modify_the_image():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_solid(client, (255, 0, 0))
 
     client.post("/api/analysis", json={"image_id": image_id})
@@ -66,7 +67,7 @@ def test_analysis_does_not_modify_the_image():
 
 def test_analysis_requires_known_session():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
 
     response = client.post("/api/analysis", json={"image_id": "ghost"})
 
@@ -75,7 +76,7 @@ def test_analysis_requires_known_session():
 
 def test_suggestions_propose_brightness_boost_with_reason_and_confidence():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_solid(client, (25, 25, 30))
 
     response = client.post("/api/suggestions", json={"image_id": image_id})
@@ -93,7 +94,7 @@ def test_suggestions_propose_brightness_boost_with_reason_and_confidence():
 
 def test_suggestion_preview_returns_png_without_state_change():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_solid(client, (25, 25, 30))
 
     response = client.post(
@@ -109,7 +110,7 @@ def test_suggestion_preview_returns_png_without_state_change():
 
 def test_suggestion_apply_brightens_and_records_history():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_solid(client, (25, 25, 30))
 
     applied = client.post(
@@ -130,7 +131,7 @@ def test_suggestion_apply_brightens_and_records_history():
 
 def test_suggestion_dismiss_is_accepted():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
 
     response = client.post(
         "/api/suggestions/dismiss",
@@ -143,7 +144,7 @@ def test_suggestion_dismiss_is_accepted():
 
 def test_suggestion_unavailable_for_balanced_image():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_solid(client, (140, 128, 150))
 
     response = client.post(

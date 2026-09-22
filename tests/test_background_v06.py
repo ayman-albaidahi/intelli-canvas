@@ -1,5 +1,6 @@
 import io
 
+from auth_helpers import authenticated_client
 from PIL import Image
 
 from backend.app import create_app
@@ -23,7 +24,7 @@ def _upload_scene(client):
 
 def test_replace_preview_is_non_destructive_and_supports_new_effect_parameters():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_scene(client)
     before = app.config["IMAGE_SESSION_SERVICE"].history(image_id)
 
@@ -51,7 +52,7 @@ def test_replace_preview_is_non_destructive_and_supports_new_effect_parameters()
 
 def test_replace_with_effects_preserves_foreground_and_history_once():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_scene(client)
 
     response = client.post(
@@ -84,7 +85,7 @@ def test_replace_with_effects_preserves_foreground_and_history_once():
 
 def test_background_effect_parameters_are_validated():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_scene(client)
 
     response = client.post(

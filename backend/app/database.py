@@ -6,6 +6,9 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+SYSTEM_OWNER_USER_ID = "system-owner"
+SYSTEM_OWNER_EMAIL = "system-owner@internal.invalid"
+
 SCHEMA = """
 PRAGMA foreign_keys = ON;
 CREATE TABLE IF NOT EXISTS users (
@@ -29,6 +32,7 @@ CREATE INDEX IF NOT EXISTS idx_auth_sessions_token_hash ON auth_sessions(token_h
 CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions(user_id);
 CREATE TABLE IF NOT EXISTS projects (
     project_id TEXT PRIMARY KEY,
+    owner_id TEXT NOT NULL REFERENCES users(user_id),
     name TEXT NOT NULL,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
@@ -123,6 +127,19 @@ class SQLiteSessionRepository:
     def _initialize(self) -> None:
         with self._connect() as connection:
             connection.executescript(SCHEMA)
+            now = 0
+            connection.execute(
+                "INSERT OR IGNORE INTO users (user_id, email, password_hash, display_name, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, 0, ?, ?)",
+                (
+                    SYSTEM_OWNER_USER_ID,
+                    SYSTEM_OWNER_EMAIL,
+                    "!system-account!",
+                    "System Owner",
+                    now,
+                    now,
+                ),
+            )
+            self._migrate_projects_to_owned_schema(connection)
             columns = {
                 row[1]
                 for row in connection.execute("PRAGMA table_info(image_sessions)")
@@ -138,6 +155,43 @@ class SQLiteSessionRepository:
                 connection.execute(
                     "ALTER TABLE image_history ADD COLUMN parameters_json TEXT NOT NULL DEFAULT '{}'"
                 )
+
+    @staticmethod
+    def _migrate_projects_to_owned_schema(connection: sqlite3.Connection) -> None:
+        columns = {
+            row[1]: row for row in connection.execute("PRAGMA table_info(projects)")
+        }
+        if "owner_id" not in columns:
+            connection.execute("ALTER TABLE projects ADD COLUMN owner_id TEXT")
+            columns = {
+                row[1]: row for row in connection.execute("PRAGMA table_info(projects)")
+            }
+        connection.execute(
+            "UPDATE projects SET owner_id = ? WHERE owner_id IS NULL OR owner_id = ''",
+            (SYSTEM_OWNER_USER_ID,),
+        )
+        if columns["owner_id"][3] == 0:
+            connection.commit()
+            connection.execute("PRAGMA foreign_keys = OFF")
+            connection.execute(
+                """CREATE TABLE projects_owned (
+                    project_id TEXT PRIMARY KEY,
+                    owner_id TEXT NOT NULL REFERENCES users(user_id),
+                    name TEXT NOT NULL,
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL
+                )"""
+            )
+            connection.execute(
+                "INSERT INTO projects_owned (project_id, owner_id, name, created_at, updated_at) SELECT project_id, owner_id, name, created_at, updated_at FROM projects"
+            )
+            connection.execute("DROP TABLE projects")
+            connection.execute("ALTER TABLE projects_owned RENAME TO projects")
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS idx_projects_owner_id ON projects(owner_id)"
+            )
+            connection.commit()
+            connection.execute("PRAGMA foreign_keys = ON")
 
     def __contains__(self, image_id: str) -> bool:
         return self.get_session(image_id) is not None
@@ -245,20 +299,106 @@ class SQLiteSessionRepository:
             )
             return cursor.rowcount
 
+    def create_project(
+        self, owner_id: str, name: str, now: int | None = None
+    ) -> dict[str, Any]:
+        project_id = uuid.uuid4().hex
+        timestamp = now if now is not None else 0
+        with self._connect() as connection:
+            if (
+                connection.execute(
+                    "SELECT 1 FROM users WHERE user_id = ?", (owner_id,)
+                ).fetchone()
+                is None
+            ):
+                raise ValueError("Project owner was not found.")
+            connection.execute(
+                "INSERT INTO projects (project_id, owner_id, name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+                (project_id, owner_id, name, timestamp, timestamp),
+            )
+        return self.get_project(project_id)  # type: ignore[return-value]
+
+    def get_project(self, project_id: str) -> dict[str, Any] | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT project_id, owner_id, name, created_at, updated_at FROM projects WHERE project_id = ?",
+                (project_id,),
+            ).fetchone()
+        return dict(row) if row else None
+
+    def get_project_for_owner(
+        self, project_id: str, owner_id: str
+    ) -> dict[str, Any] | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT project_id, owner_id, name, created_at, updated_at FROM projects WHERE project_id = ? AND owner_id = ?",
+                (project_id, owner_id),
+            ).fetchone()
+        return dict(row) if row else None
+
+    def get_session_for_owner(
+        self, image_id: str, owner_id: str
+    ) -> dict[str, Any] | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT s.* FROM image_sessions s JOIN projects p ON p.project_id = s.project_id WHERE s.image_id = ? AND p.owner_id = ?",
+                (image_id, owner_id),
+            ).fetchone()
+            if row is None:
+                return None
+            session = dict(row)
+            session["history"] = self._history(connection, image_id)
+            session["layers"] = self._layers(connection, image_id)
+            return session
+
+    def get_layers_for_owner(
+        self, image_id: str, owner_id: str
+    ) -> list[dict[str, Any]] | None:
+        if self.get_session_for_owner(image_id, owner_id) is None:
+            return None
+        return self.get_layers(image_id)
+
+    def get_asset_for_owner(
+        self, asset_id: str, owner_id: str
+    ) -> dict[str, Any] | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT a.* FROM image_assets a JOIN image_sessions s ON s.image_id = a.image_id JOIN projects p ON p.project_id = s.project_id WHERE a.asset_id = ? AND p.owner_id = ?",
+                (asset_id, owner_id),
+            ).fetchone()
+        return dict(row) if row else None
+
+    def get_pipeline_for_owner(
+        self, image_id: str, owner_id: str
+    ) -> dict[str, Any] | None:
+        if self.get_session_for_owner(image_id, owner_id) is None:
+            return None
+        return self.get_pipeline(image_id)
+
     def create_session(self, payload: dict[str, Any]) -> dict[str, Any]:
         with self._connect() as connection:
             project_id = payload.get("project_id")
+            owner_id = payload.get("owner_id") or SYSTEM_OWNER_USER_ID
             if project_id is None:
                 project_id = uuid.uuid4().hex
                 connection.execute(
-                    "INSERT INTO projects (project_id, name, created_at, updated_at) VALUES (?, ?, ?, ?)",
+                    "INSERT INTO projects (project_id, owner_id, name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
                     (
                         project_id,
+                        owner_id,
                         payload["original_filename"],
                         payload["created_at"],
                         payload["updated_at"],
                     ),
                 )
+            elif (
+                connection.execute(
+                    "SELECT 1 FROM projects WHERE project_id = ? AND owner_id = ?",
+                    (project_id, owner_id),
+                ).fetchone()
+                is None
+            ):
+                raise PermissionError("Project does not belong to the owner.")
             connection.execute(
                 """INSERT INTO image_sessions
                 (image_id, project_id, original_filename, base_stem, stored_filename,

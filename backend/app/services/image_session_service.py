@@ -18,7 +18,12 @@ class ImageSessionService:
     def __init__(self, repository: SessionStore):
         self.repository = repository
 
-    def create_session(self, metadata: dict[str, Any]) -> dict[str, Any]:
+    def create_session(
+        self,
+        metadata: dict[str, Any],
+        owner_id: str | None = None,
+        project_id: str | None = None,
+    ) -> dict[str, Any]:
         image_id = uuid.uuid4().hex
         while image_id in self.repository.list_ids():
             image_id = uuid.uuid4().hex
@@ -32,6 +37,10 @@ class ImageSessionService:
             "created_at": now,
             "updated_at": now,
         }
+        if owner_id is not None:
+            payload["owner_id"] = owner_id
+        if project_id is not None:
+            payload["project_id"] = project_id
         return self.repository.create_session(payload)
 
     def _base_stem(self, original_filename: Any) -> str:

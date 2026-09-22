@@ -17,7 +17,13 @@ class ImageUploadService:
         self.session_service = session_service
         self.storage_service = storage_service
 
-    def upload(self, uploaded_file: BinaryIO, filename: str) -> dict[str, Any]:
+    def upload(
+        self,
+        uploaded_file: BinaryIO,
+        filename: str,
+        owner_id: str | None = None,
+        project_id: str | None = None,
+    ) -> dict[str, Any]:
         self.storage_service.validate_file(uploaded_file, filename)
         saved_path = self.storage_service.save_file(uploaded_file, filename)
 
@@ -30,7 +36,9 @@ class ImageUploadService:
         }
 
         try:
-            session_data = self.session_service.create_session(image_metadata)
+            session_data = self.session_service.create_session(
+                image_metadata, owner_id=owner_id, project_id=project_id
+            )
         except (OSError, TypeError, ValueError, KeyError):
             if saved_path.exists():
                 saved_path.unlink()

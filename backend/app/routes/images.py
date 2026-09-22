@@ -2,6 +2,7 @@ import sys
 
 from flask import Blueprint, jsonify, request, send_file
 
+from ..auth import current_user
 from ..dependencies import (
     get_layer_compositor,
     get_session_repository,
@@ -31,6 +32,11 @@ images_bp = Blueprint(
 
 @images_bp.post("")
 def upload_image():
+    user = current_user()
+    if user is None:
+        return error_response(
+            ErrorCodes.AUTH_REQUIRED, "Authentication is required.", 401
+        )
     uploaded_file = request.files.get("file")
     if uploaded_file is None:
         return error_response(ErrorCodes.INVALID_REQUEST, "No file was uploaded.", 400)
@@ -45,9 +51,27 @@ def upload_image():
         )
 
     try:
+        project_id = request.form.get("project_id") or None
+        if (
+            project_id is not None
+            and get_session_repository().get_project_for_owner(
+                project_id, user["user_id"]
+            )
+            is None
+        ):
+            return error_response(
+                ErrorCodes.RESOURCE_NOT_FOUND,
+                "The requested project was not found.",
+                404,
+            )
         public_image = ImageUploadService(
             get_session_service(), get_storage_service(sys.modules[__name__])
-        ).upload(uploaded_file, filename)
+        ).upload(
+            uploaded_file,
+            filename,
+            owner_id=user["user_id"],
+            project_id=project_id,
+        )
         return jsonify(success=True, image=public_image)
     except FileValidationError as exc:
         return error_response(ErrorCodes.INVALID_FILE, str(exc), 400)

@@ -1,5 +1,6 @@
 import io
 
+from auth_helpers import authenticated_client
 from PIL import Image
 
 from backend.app import create_app
@@ -18,7 +19,7 @@ def _upload(client, image):
 
 def test_unified_analyzer_returns_quality_metrics_and_findings():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload(client, Image.new("RGB", (32, 24), (25, 25, 30)))
     response = client.post("/api/analysis", json={"image_id": image_id})
     assert response.status_code == 200
@@ -48,7 +49,7 @@ def test_analysis_cache_hits_without_modifying_image_or_history():
         "analysis-cache-*.json"
     ):
         cache_file.unlink()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload(client, Image.new("RGB", (24, 24), (140, 128, 150)))
     before_content = client.get(f"/api/images/{image_id}/content").data
 
@@ -67,7 +68,7 @@ def test_analysis_cache_hits_without_modifying_image_or_history():
 
 def test_analysis_export_uses_unified_report():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload(client, Image.new("RGB", (16, 16), (255, 255, 255)))
     response = client.post("/api/analysis/export-report", json={"image_id": image_id})
     assert response.status_code == 200

@@ -1,5 +1,6 @@
 import io
 
+from auth_helpers import authenticated_client
 from PIL import Image
 
 from backend.app import create_app
@@ -19,7 +20,7 @@ def _upload(client):
 
 def test_history_metadata_content_and_compare_are_read_only():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload(client)
     processed = client.post(
         "/api/process/brightness", json={"image_id": image_id, "value": 130}
@@ -50,7 +51,7 @@ def test_history_metadata_content_and_compare_are_read_only():
 
 def test_history_diff_returns_png_without_mutating_current_state():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload(client)
     client.post("/api/process/brightness", json={"image_id": image_id, "value": 150})
     before = client.get(f"/api/images/{image_id}/content").data
@@ -79,7 +80,7 @@ def test_history_diff_returns_png_without_mutating_current_state():
 
 def test_history_diff_rejects_mismatched_dimensions():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload(client)
     client.post(
         "/api/transform/resize", json={"image_id": image_id, "width": 3, "height": 3}
