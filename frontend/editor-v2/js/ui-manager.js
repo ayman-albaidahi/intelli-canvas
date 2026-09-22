@@ -1,4 +1,5 @@
 import { appState, setState } from './app-state.js';
+import { deriveInspectorContext } from './inspector-context.js';
 
 const toast = document.querySelector('#toast');
 let toastTimer;
@@ -17,23 +18,22 @@ const isMobile = () => mobileQuery()?.matches ?? false;
 const READY_PANELS = new Set(['adjustments', 'filters', 'background', 'smart-crop']);
 
 const CONTEXT_LABELS = {
-  canvas: ['Nothing selected', 'Select an object or choose an editing tool.'],
+  empty: ['Nothing selected', 'Select an object or choose an editing tool.'],
   image: ['Image selected', 'Edit the image with focused actions and adjustments.'],
   layer: ['Layer selected', 'Edit the selected layer without unrelated image controls.'],
-  tool: ['Tool active', 'Adjust the active tool settings.'],
+  brush: ['Brush active', 'Adjust the active brush settings.'],
+  eraser: ['Eraser active', 'Adjust the active eraser settings.'],
   crop: ['Crop active', 'Set the framing, then apply or cancel the crop.'],
+  processing: ['Processing', 'Your operation is being prepared.'],
+  error: ['Something went wrong', 'Review the error and try again.'],
 };
 
 export function getInspectorContext({ ready, activeTool = 'select', selectedObjectId = null } = {}) {
-  if (!ready) return 'canvas';
-  if (activeTool === 'crop') return 'crop';
-  if (['brush', 'eraser', 'shape', 'text'].includes(activeTool)) return 'tool';
-  if (selectedObjectId) return 'layer';
-  return 'image';
+  return deriveInspectorContext({ editorReady: ready, activeTool, selectedObjectId });
 }
 
-export function renderInspectorContext({ ready = document.body.dataset.editorReady === 'true', activeTool = appState.activeTool, selectedObjectId = appState.selectedObjectId } = {}) {
-  const context = getInspectorContext({ ready, activeTool, selectedObjectId });
+export function renderInspectorContext(state = appState) {
+  const context = deriveInspectorContext(state);
   document.body.dataset.inspectorContext = context;
   const [title, copy] = CONTEXT_LABELS[context];
   const titleEl = document.querySelector('#edit-empty-title');
@@ -64,8 +64,8 @@ function setControlReady(control, isReady) {
 
 export function setEditorReady(ready) {
   const isReady = Boolean(ready);
+  setState({ editorReady: isReady, hasImage: isReady });
   document.body.dataset.editorReady = String(isReady);
-  renderInspectorContext({ ready: isReady });
   document.querySelectorAll('[data-requires-image]').forEach((control) => {
     setControlReady(control, isReady);
   });
@@ -79,6 +79,7 @@ export function setEditorReady(ready) {
 
 export function initUI() {
   setEditorReady(false);
+  document.addEventListener('appstatechange', ({ detail }) => renderInspectorContext(detail));
   document.querySelectorAll('[data-tool]').forEach((button) => {
     button.addEventListener('click', () => {
       document.querySelectorAll('[data-tool]').forEach((item) => {
@@ -90,7 +91,6 @@ export function initUI() {
       button.classList.add('is-active');
       button.setAttribute('aria-pressed', 'true');
       setState({ activeTool: button.dataset.tool });
-      renderInspectorContext();
       showToast(`${button.dataset.tool[0].toUpperCase()}${button.dataset.tool.slice(1)} tool selected`);
     });
   });

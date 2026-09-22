@@ -1,6 +1,6 @@
 import { appState, setState } from './app-state.js';
 import { initThemeManager } from './theme-manager.js';
-import { initUI, initDialogEscape, initDialogFocusTrap, setEditorReady, renderInspectorContext, showToast } from './ui-manager.js';
+import { initUI, initDialogEscape, initDialogFocusTrap, setEditorReady, showToast } from './ui-manager.js';
 import { CanvasManager } from './canvas-manager.js';
 import { bindTransformTools } from './transform-tools.js';
 import { CropTool } from './crop-tool.js';
@@ -34,7 +34,7 @@ bindTransformTools(canvasManager, apiClient, showToast);
 const cropTool = new CropTool(canvasManager, document.querySelector('#canvas-card'), apiClient, showToast);
 initResizeTool(canvasManager, apiClient, showToast);
 const objectManager = new ObjectManager(document.querySelector('#object-canvas'), showToast, canvasManager);
-objectManager.onSelectionChange = (id) => { setState({ selectedObjectId: id }); renderInspectorContext(); };
+objectManager.onSelectionChange = (id) => { setState({ selectedObjectId: id }); };
 const layerManager = new LayerManager(objectManager, { list: document.querySelector('#layers-list'), empty: document.querySelector('#layers-empty'), count: document.querySelector('#layer-count'), showToast });
 const refreshLayerPanel = objectManager.onChange;
 let layerSaveTimer = null;

@@ -99,7 +99,7 @@ describe('pre-upload progressive disclosure', () => {
     `;
   });
 
-  it('disables image tools and non-properties tabs before upload', () => {
+  it('disables image tools and non-Edit tabs before upload', () => {
     setEditorReady(false);
 
     expect(document.querySelector('[data-tool="brush"]').disabled).toBe(true);
@@ -144,10 +144,10 @@ describe('pre-upload progressive disclosure', () => {
 describe('contextual Edit state', () => {
   it('maps editor situations to focused inspector contexts', async () => {
     const { getInspectorContext } = await import('./ui-manager.js');
-    expect(getInspectorContext({ ready: false })).toBe('canvas');
+    expect(getInspectorContext({ ready: false })).toBe('empty');
     expect(getInspectorContext({ ready: true, activeTool: 'select' })).toBe('image');
     expect(getInspectorContext({ ready: true, activeTool: 'select', selectedObjectId: 'layer-1' })).toBe('layer');
-    expect(getInspectorContext({ ready: true, activeTool: 'brush' })).toBe('tool');
+    expect(getInspectorContext({ ready: true, activeTool: 'brush' })).toBe('brush');
     expect(getInspectorContext({ ready: true, activeTool: 'crop' })).toBe('crop');
   });
 });
