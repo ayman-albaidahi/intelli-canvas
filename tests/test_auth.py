@@ -113,7 +113,11 @@ def test_logout_revokes_session_and_clears_cookie():
     )
     assert login.status_code == 200
 
-    logout = client.post("/api/auth/logout")
+    csrf_cookie = client.get_cookie("ic_csrf")
+    assert csrf_cookie is not None
+    logout = client.post(
+        "/api/auth/logout", headers={"X-CSRF-Token": csrf_cookie.value}
+    )
     assert logout.status_code == 200
     assert "Max-Age=0" in logout.headers["Set-Cookie"]
     assert client.get("/api/auth/me").get_json()["authenticated"] is False

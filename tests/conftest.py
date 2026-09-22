@@ -37,6 +37,9 @@ def authenticate_legacy_clients(request, monkeypatch):
             json={"email": payload["email"], "password": payload["password"]},
         )
         assert login.status_code == 200
+        csrf_cookie = client.get_cookie(app.config["CSRF_COOKIE_NAME"])
+        assert csrf_cookie is not None
+        client.environ_base["HTTP_X_CSRF_TOKEN"] = csrf_cookie.value
         return client
 
     monkeypatch.setattr(Flask, "test_client", authenticated_test_client)
