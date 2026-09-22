@@ -15,3 +15,9 @@ class Config:
     DATABASE_PATH = os.environ.get(
         "INTELLICANVAS_DATABASE_PATH", "instance/intellicanvas.sqlite3"
     )
+    AUTH_COOKIE_NAME = os.environ.get("INTELLICANVAS_AUTH_COOKIE", "ic_session")
+    AUTH_SESSION_TTL_SECONDS = int(
+        os.environ.get("INTELLICANVAS_AUTH_TTL_SECONDS", 60 * 60 * 24 * 7)
+    )
+    AUTH_COOKIE_SECURE = os.environ.get("INTELLICANVAS_AUTH_COOKIE_SECURE", "0") == "1"
+    AUTH_COOKIE_SAMESITE = "Lax"

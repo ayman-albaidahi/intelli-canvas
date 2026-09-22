@@ -8,6 +8,25 @@ from typing import Any
 
 SCHEMA = """
 PRAGMA foreign_keys = ON;
+CREATE TABLE IF NOT EXISTS users (
+    user_id TEXT PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    display_name TEXT,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS auth_sessions (
+    session_id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    token_hash TEXT NOT NULL UNIQUE,
+    expires_at INTEGER NOT NULL,
+    created_at INTEGER NOT NULL,
+    last_seen_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_auth_sessions_token_hash ON auth_sessions(token_hash);
+CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions(user_id);
 CREATE TABLE IF NOT EXISTS projects (
     project_id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -152,6 +171,79 @@ class SQLiteSessionRepository:
 
     def __len__(self) -> int:
         return self.count()
+
+    def create_user(self, user: dict[str, Any]) -> dict[str, Any]:
+        with self._connect() as connection:
+            connection.execute(
+                "INSERT INTO users (user_id, email, password_hash, display_name, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    user["user_id"],
+                    user["email"],
+                    user["password_hash"],
+                    user.get("display_name"),
+                    int(user.get("is_active", True)),
+                    user["created_at"],
+                    user["updated_at"],
+                ),
+            )
+        return self.get_user(user["user_id"])  # type: ignore[return-value]
+
+    def get_user(self, user_id: str) -> dict[str, Any] | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT user_id, email, password_hash, display_name, is_active, created_at, updated_at FROM users WHERE user_id = ?",
+                (user_id,),
+            ).fetchone()
+        return dict(row) if row else None
+
+    def get_user_by_email(self, email: str) -> dict[str, Any] | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT user_id, email, password_hash, display_name, is_active, created_at, updated_at FROM users WHERE email = ?",
+                (email,),
+            ).fetchone()
+        return dict(row) if row else None
+
+    def create_auth_session(self, session: dict[str, Any]) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                "INSERT INTO auth_sessions (session_id, user_id, token_hash, expires_at, created_at, last_seen_at) VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    session["session_id"],
+                    session["user_id"],
+                    session["token_hash"],
+                    session["expires_at"],
+                    session["created_at"],
+                    session["last_seen_at"],
+                ),
+            )
+
+    def get_auth_session(self, token_hash: str, now: int) -> dict[str, Any] | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT s.session_id, s.user_id, s.expires_at, s.created_at, s.last_seen_at, u.email, u.display_name, u.is_active FROM auth_sessions s JOIN users u ON u.user_id = s.user_id WHERE s.token_hash = ? AND s.expires_at > ?",
+                (token_hash, now),
+            ).fetchone()
+            if row is None or not row["is_active"]:
+                return None
+            connection.execute(
+                "UPDATE auth_sessions SET last_seen_at = ? WHERE session_id = ?",
+                (now, row["session_id"]),
+            )
+        return dict(row)
+
+    def delete_auth_session(self, token_hash: str) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                "DELETE FROM auth_sessions WHERE token_hash = ?", (token_hash,)
+            )
+
+    def delete_expired_auth_sessions(self, now: int) -> int:
+        with self._connect() as connection:
+            cursor = connection.execute(
+                "DELETE FROM auth_sessions WHERE expires_at <= ?", (now,)
+            )
+            return cursor.rowcount
 
     def create_session(self, payload: dict[str, Any]) -> dict[str, Any]:
         with self._connect() as connection:
