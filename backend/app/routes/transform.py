@@ -2,6 +2,7 @@ import sys
 
 from flask import Blueprint, jsonify, request, send_file
 
+from ..authorization import require_owned_image
 from ..dependencies import get_session_service, get_storage_service
 from ..error_codes import ErrorCodes
 from ..errors import error_response
@@ -57,6 +58,7 @@ def _geometry_service() -> GeometryService:
 
 
 @transform_bp.post("/crop")
+@require_owned_image
 def crop_image():
     payload = require_dict(request.get_json(silent=True), name="request body")
     image_id, error = _image_id_from_payload(payload)
@@ -80,6 +82,7 @@ def crop_image():
 
 
 @transform_bp.post("/resize")
+@require_owned_image
 def resize_image():
     payload = require_dict(request.get_json(silent=True), name="request body")
     image_id = require_str(
@@ -132,6 +135,7 @@ def resize_image():
 
 
 @transform_bp.post("/rotate")
+@require_owned_image
 def rotate_image():
     payload = require_dict(request.get_json(silent=True), name="request body")
     image_id, error = _image_id_from_payload(payload)
@@ -154,6 +158,7 @@ def rotate_image():
 
 
 @transform_bp.post("/flip")
+@require_owned_image
 def flip_image():
     payload = require_dict(request.get_json(silent=True), name="request body")
     image_id, error = _image_id_from_payload(payload)
@@ -179,6 +184,7 @@ def flip_image():
 
 
 @transform_bp.post("/smart-crop/preview")
+@require_owned_image
 def smart_crop_preview():
     payload, error = _smart_crop_payload()
     if error:
@@ -208,6 +214,7 @@ def smart_crop_preview():
 
 
 @transform_bp.post("/smart-crop/apply")
+@require_owned_image
 def smart_crop_apply():
     payload, error = _smart_crop_payload()
     if error:

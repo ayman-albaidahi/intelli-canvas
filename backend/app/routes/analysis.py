@@ -2,6 +2,7 @@ import io
 
 from flask import Blueprint, jsonify, request, send_file
 
+from ..authorization import require_owned_image
 from ..dependencies import get_session_service, get_storage_service
 from ..error_codes import ErrorCodes
 from ..errors import error_response
@@ -37,6 +38,7 @@ def _session_image(image_id: str):
 
 
 @analysis_bp.post("")
+@require_owned_image
 def analyze_image():
     payload = request.get_json(silent=True) or {}
     image_id = payload.get("image_id")
@@ -67,6 +69,7 @@ def analyze_image():
 
 
 @analysis_bp.post("/export-report")
+@require_owned_image
 def export_report():
     payload = request.get_json(silent=True) or {}
     image_id = payload.get("image_id")

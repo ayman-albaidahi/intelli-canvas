@@ -2,6 +2,7 @@ import io
 
 from flask import Blueprint, jsonify, request, send_file
 
+from ..authorization import require_owned_image
 from ..dependencies import get_session_service, get_storage_service
 from ..error_codes import ErrorCodes
 from ..errors import error_response
@@ -64,6 +65,7 @@ def _state(image_id: str):
 
 
 @history_bp.get("")
+@require_owned_image
 def get_history():
     image_id = request.args.get("image_id")
     if not image_id:
@@ -78,6 +80,7 @@ def get_history():
 
 
 @history_bp.post("/goto")
+@require_owned_image
 def goto_history():
     image_id, error = _image_id()
     if error:
@@ -91,6 +94,7 @@ def goto_history():
 
 
 @history_bp.post("/undo")
+@require_owned_image
 def undo_history():
     image_id, error = _image_id()
     if error:
@@ -103,6 +107,7 @@ def undo_history():
 
 
 @history_bp.post("/redo")
+@require_owned_image
 def redo_history():
     image_id, error = _image_id()
     if error:
@@ -115,6 +120,7 @@ def redo_history():
 
 
 @history_bp.post("/clear")
+@require_owned_image
 def clear_history():
     image_id, error = _image_id()
     if error:
@@ -124,6 +130,7 @@ def clear_history():
 
 
 @history_bp.get("/current-file")
+@require_owned_image
 def current_file():
     image_id = request.args.get("image_id")
     if not image_id:
@@ -147,6 +154,7 @@ def current_file():
 
 
 @history_bp.get("/content/<image_id>/<int:index>")
+@require_owned_image
 def history_content(image_id: str, index: int):
     try:
         path = _comparison_service().path_for(image_id, index)
@@ -158,6 +166,7 @@ def history_content(image_id: str, index: int):
 
 
 @history_bp.get("/compare")
+@require_owned_image
 def compare_history():
     image_id = request.args.get("image_id")
     try:
@@ -174,6 +183,7 @@ def compare_history():
 
 
 @history_bp.post("/diff")
+@require_owned_image
 def diff_history():
     payload = request.get_json(silent=True) or {}
     image_id = payload.get("image_id")

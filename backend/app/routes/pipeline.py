@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request, send_file
 
+from ..authorization import require_owned_image
 from ..dependencies import get_session_service, get_storage_service
 from ..error_codes import ErrorCodes
 from ..errors import error_response
@@ -73,6 +74,7 @@ def _handle(action):
 
 
 @pipeline_bp.get("")
+@require_owned_image
 def get_pipeline():
     image_id, error = _image_id(request.args.to_dict())
     if error:
@@ -84,26 +86,31 @@ def get_pipeline():
 
 
 @pipeline_bp.put("")
+@require_owned_image
 def put_pipeline():
     return _handle(_service().save)
 
 
 @pipeline_bp.post("/preview")
+@require_owned_image
 def preview_pipeline():
     return _execution(request.get_json(silent=True) or {}, persist=False)
 
 
 @pipeline_bp.post("/apply")
+@require_owned_image
 def apply_pipeline():
     return _execution(request.get_json(silent=True) or {}, persist=True)
 
 
 @pipeline_bp.post("/nodes")
+@require_owned_image
 def add_node():
     return _handle(_service().add)
 
 
 @pipeline_bp.patch("/nodes/<node_id>")
+@require_owned_image
 def patch_node(node_id):
     return _handle(
         lambda image_id, payload: _service().patch(image_id, node_id, payload)
@@ -111,16 +118,19 @@ def patch_node(node_id):
 
 
 @pipeline_bp.delete("/nodes/<node_id>")
+@require_owned_image
 def delete_node(node_id):
     return _handle(lambda image_id, payload: _service().delete(image_id, node_id))
 
 
 @pipeline_bp.post("/nodes/<node_id>/toggle")
+@require_owned_image
 def toggle_node(node_id):
     return _handle(lambda image_id, payload: _service().toggle(image_id, node_id))
 
 
 @pipeline_bp.post("/reorder")
+@require_owned_image
 def reorder_node():
     return _handle(
         lambda image_id, payload: _service().reorder(

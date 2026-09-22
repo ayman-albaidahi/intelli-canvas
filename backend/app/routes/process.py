@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from flask import Blueprint, jsonify, request
 
+from ..authorization import require_owned_image
 from ..dependencies import get_session_service, get_storage_service
 from ..error_codes import ErrorCodes
 from ..errors import InvalidRequestError, error_response
@@ -108,7 +109,9 @@ def _register_routes() -> None:
             return _run_registered(_slug)
 
         view.__name__ = f"process_{slug.replace('-', '_')}"
-        process_bp.add_url_rule(f"/{slug}", view_func=view, methods=["POST"])
+        process_bp.add_url_rule(
+            f"/{slug}", view_func=require_owned_image(view), methods=["POST"]
+        )
 
 
 _register_routes()
@@ -121,6 +124,7 @@ _register_routes()
 
 
 @process_bp.post("/adjustments")
+@require_owned_image
 def apply_adjustments():
     image_id, _revision, error = _image_id_from_payload()
     if error:
@@ -181,6 +185,7 @@ def apply_adjustments():
 
 
 @process_bp.post("/histogram")
+@require_owned_image
 def image_histogram():
     image_id, _revision, error = _image_id_from_payload()
     if error:
