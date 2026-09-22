@@ -46,10 +46,16 @@ export default defineConfig({
 
   projects: [
     {
+      name: "setup",
+      testMatch: /auth\.setup\.js/,
+    },
+    {
       name: "chromium",
+      dependencies: ["setup"],
 
       use: {
         ...devices["Desktop Chrome"],
+        storageState: "test-results/browser/.auth/user.json",
 
         ...(useSystemChrome
           ? {

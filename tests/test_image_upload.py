@@ -1,5 +1,6 @@
 import io
 
+from auth_helpers import authenticated_client
 from PIL import Image
 
 from backend.app import create_app
@@ -22,7 +23,7 @@ def _upload(client, content, filename, content_type="image/png", part_type="imag
 
 def test_upload_image_returns_metadata_and_session_id():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     content = _png_bytes()
 
     response = _upload(client, content, "sample.png")
@@ -41,7 +42,7 @@ def test_upload_image_returns_metadata_and_session_id():
 
 def test_missing_file_returns_400():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
 
     response = client.post(
         "/api/images",
@@ -56,7 +57,7 @@ def test_missing_file_returns_400():
 
 def test_unsupported_extension_is_rejected():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
 
     response = _upload(client, _png_bytes(), "document.txt")
 
@@ -67,7 +68,7 @@ def test_unsupported_extension_is_rejected():
 
 def test_non_image_content_with_image_extension_is_rejected():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
 
     response = _upload(client, b"definitely not an image payload", "innocent.png")
 
@@ -77,7 +78,7 @@ def test_non_image_content_with_image_extension_is_rejected():
 
 def test_unsafe_file_path_is_rejected():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
 
     response = _upload(client, _png_bytes(), "../../escape.png")
 
@@ -87,7 +88,7 @@ def test_unsafe_file_path_is_rejected():
 
 def test_uploads_create_unique_image_ids_and_session_records():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
 
     first = _upload(client, _png_bytes(), "duplicate.png")
     second = _upload(client, _png_bytes(), "duplicate.png")
@@ -107,7 +108,7 @@ def test_app_session_state_is_isolated_between_app_instances():
     app1 = create_app()
     app2 = create_app()
 
-    response = app1.test_client().post(
+    response = authenticated_client(app1, "first-owner@example.com").post(
         "/api/images",
         data={"file": (io.BytesIO(_png_bytes()), "first.png")},
         content_type="multipart/form-data",

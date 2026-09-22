@@ -1,6 +1,7 @@
 import io
 import json
 
+from auth_helpers import authenticated_client
 from PIL import Image
 
 from backend.app import create_app
@@ -21,7 +22,7 @@ def _upload_image(client):
 
 def test_analysis_report_export_returns_json_attachment_without_mutating_history():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_image(client)
 
     response = client.post(

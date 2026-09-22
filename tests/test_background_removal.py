@@ -1,5 +1,6 @@
 import io
 
+from auth_helpers import authenticated_client
 from PIL import Image
 
 from backend.app import create_app
@@ -26,7 +27,7 @@ def _pixel(client, image_id, at=(0, 0)):
 
 def test_mask_preview_returns_png_mask():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_solid(client, (255, 0, 0))
 
     response = client.post(
@@ -43,7 +44,7 @@ def test_mask_preview_returns_png_mask():
 
 def test_remove_makes_key_color_transparent():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_solid(client, (255, 0, 0))
 
     processed = client.post(
@@ -64,7 +65,7 @@ def test_remove_makes_key_color_transparent():
 
 def test_invert_keeps_key_color_instead():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_solid(client, (255, 0, 0))
 
     processed = client.post(
@@ -85,7 +86,7 @@ def test_invert_keeps_key_color_instead():
 
 def test_replace_with_solid_color():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_solid(client, (255, 0, 0))
 
     processed = client.post(
@@ -108,7 +109,7 @@ def test_replace_with_solid_color():
 
 def test_replace_with_library_background():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_solid(client, (255, 0, 0))
 
     backdrop = io.BytesIO()
@@ -144,7 +145,7 @@ def test_replace_with_library_background():
 
 def test_remove_rejects_invalid_color():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_solid(client, (255, 0, 0))
 
     response = client.post(
@@ -158,7 +159,7 @@ def test_remove_rejects_invalid_color():
 
 def test_remove_rejects_out_of_range_tolerance():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_solid(client, (255, 0, 0))
 
     response = client.post(
@@ -172,7 +173,7 @@ def test_remove_rejects_out_of_range_tolerance():
 
 def test_remove_rejects_unknown_session():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
 
     response = client.post(
         "/api/background/remove",
@@ -185,7 +186,7 @@ def test_remove_rejects_unknown_session():
 
 def test_replace_rejects_missing_target():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_solid(client, (255, 0, 0))
 
     response = client.post(
@@ -199,7 +200,7 @@ def test_replace_rejects_missing_target():
 
 def test_replace_rejects_both_targets():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_solid(client, (255, 0, 0))
 
     response = client.post(
@@ -219,7 +220,7 @@ def test_replace_rejects_both_targets():
 
 def test_upload_background_rejects_non_image():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
 
     response = client.post(
         "/api/background/backgrounds",
@@ -233,7 +234,7 @@ def test_upload_background_rejects_non_image():
 
 def test_chained_background_operations_keep_filenames_bounded():
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     image_id = _upload_solid(client, (255, 0, 0))
 
     for _ in range(5):
