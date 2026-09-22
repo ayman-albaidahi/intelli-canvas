@@ -1,5 +1,6 @@
-import { TYPE_GLYPH, TYPE_LABEL, BLEND_MODES } from './object-manager.js';
+import { TYPE_LABEL, BLEND_MODES } from './object-manager.js';
 import { escapeHtml } from './escape-html.js';
+import { iconMarkup } from './icons.js';
 
 export class LayerManager {
   constructor(objectManager, { list, empty, count, showToast }) {
@@ -49,12 +50,12 @@ export class LayerManager {
     row.dataset.id = object.id;
     row.draggable = true;
     row.innerHTML = `
-      <button class="layer-vis" title="Show / hide">${object.visible ? '👁' : '🚫'}</button>
-      <span class="layer-thumb" title="${TYPE_LABEL[object.type]}">${TYPE_GLYPH[object.type]}</span>
+      <button class="layer-vis" title="Show / hide">${iconMarkup(object.visible ? 'eye' : 'eyeOff')}</button>
+      <span class="layer-thumb" title="${TYPE_LABEL[object.type]}">${iconMarkup({ brush: 'brush', shape: 'shape', text: 'text', image: 'image' }[object.type] || 'layers')}</span>
       <span class="layer-name" title="Double-click to rename">${escapeHtml(object.name)}</span>
-      <span class="layer-type">${TYPE_LABEL[object.type]}${object.locked ? ' · 🔒' : ''}</span>
-      <button class="layer-lock" title="Lock / unlock">${object.locked ? '🔒' : '🔓'}</button>
-      <button class="layer-more" title="More actions" aria-haspopup="true" aria-expanded="false">⋯</button>`;
+      <span class="layer-type">${TYPE_LABEL[object.type]}${object.locked ? ' · locked' : ''}</span>
+      <button class="layer-lock" title="Lock / unlock">${iconMarkup(object.locked ? 'lock' : 'unlock')}</button>
+      <button class="layer-more" title="More actions" aria-haspopup="true" aria-expanded="false">${iconMarkup('more')}</button>`;
     row.addEventListener('click', (event) => {
       if (event.target.closest('.layer-vis')) { this.objects.toggleVisibility(object.id); return; }
       if (event.target.closest('.layer-lock')) { this.objects.toggleLock(object.id); return; }
