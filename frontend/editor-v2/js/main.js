@@ -36,6 +36,11 @@ initResizeTool(canvasManager, apiClient, showToast);
 const objectManager = new ObjectManager(document.querySelector('#object-canvas'), showToast, canvasManager);
 objectManager.onSelectionChange = (id) => { setState({ selectedObjectId: id }); renderInspectorContext(); };
 const layerManager = new LayerManager(objectManager, { list: document.querySelector('#layers-list'), empty: document.querySelector('#layers-empty'), count: document.querySelector('#layer-count'), showToast });
+const refreshSelectionState = objectManager.onSelectionChange;
+objectManager.onSelectionChange = (id) => {
+  refreshSelectionState?.(id);
+  setState({ selectedObjectId: id });
+};
 const refreshLayerPanel = objectManager.onChange;
 let layerSaveTimer = null;
 objectManager.onChange = () => {
