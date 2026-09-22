@@ -116,4 +116,27 @@ describe('pre-upload progressive disclosure', () => {
     expect(document.querySelector('[data-inspector="analysis"]').disabled).toBe(false);
     expect(document.body.dataset.editorReady).toBe('true');
   });
+
+  it('appends the pre-upload hint and restores the original title when ready', () => {
+    // Toggling readiness is not one-shot: an image can be removed and another
+    // loaded, so the hint has to come and go without accumulating or losing the
+    // authored label.
+    setEditorReady(false);
+    expect(document.querySelector('[data-tool="brush"]').title).toBe('Brush (B) — Upload an image first');
+
+    setEditorReady(true);
+    expect(document.querySelector('[data-tool="brush"]').title).toBe('Brush (B)');
+
+    // A second round must land on the same strings.
+    setEditorReady(false);
+    expect(document.querySelector('[data-tool="brush"]').title).toBe('Brush (B) — Upload an image first');
+    setEditorReady(true);
+    expect(document.querySelector('[data-tool="brush"]').title).toBe('Brush (B)');
+  });
+
+  it('keeps a titleless control annotated rather than prefixed with an empty label', () => {
+    // A control with no authored title still needs a readable hint.
+    setEditorReady(false);
+    expect(document.querySelector('[data-action="zoom-in"]').title).toBe('Zoom in — Upload an image first');
+  });
 });
