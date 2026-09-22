@@ -37,8 +37,8 @@ async function openInspector(page, tab) {
 // data-panel="filters"/"background" is carried by the rail button, the
 // quick-action grid, and the "More tools" list — three matches, which Playwright
 // strict mode rejects. The rail is the canonical entry point when it carries the
-// panel; analysis and pipeline exist only in the quick-action grid inside
-//  Edit, so they fall back to that.
+// panel; Insights exists only in the quick-action grid inside Edit, so it falls
+// back to that.
 async function panelButton(page, name) {
   const rail = page.locator(`.tool-rail [data-panel="${name}"]`);
   if (await rail.count() > 0) return rail;
@@ -50,7 +50,7 @@ test.describe('Image Insights', () => {
   test('analyzes the image and reports quality score, metrics, and findings', async ({ page }, testInfo) => {
     await upload(page, testInfo);
 
-    await (await panelButton(page, 'analysis')).click();
+    await (await panelButton(page, 'insights')).click();
     await page.locator('[data-action="analyze-image"]').click();
 
     // The status region is aria-live; a completed analysis states so there.
@@ -65,7 +65,7 @@ test.describe('Image Insights', () => {
   test('derives smart suggestions from the analysis and previews one without committing', async ({ page }, testInfo) => {
     await upload(page, testInfo);
 
-    await (await panelButton(page, 'analysis')).click();
+    await (await panelButton(page, 'insights')).click();
     await page.locator('[data-action="analyze-image"]').click();
     await expect(page.locator('#analysis-status')).toContainText(/اكتمل|الذاكرة المؤقتة|Ready/i, { timeout: 20_000 });
 
@@ -121,7 +121,9 @@ test.describe('Processing pipeline', () => {
   test('adds a node, previews it, and applies as a single history entry', async ({ page }, testInfo) => {
     await upload(page, testInfo);
 
-    await openInspector(page, 'pipeline');
+    await openInspector(page, 'history');
+    await page.locator('#process-disclosure summary').click();
+    await page.locator('[data-panel="pipeline"]').click();
     await expect(page.locator('#pipeline-panel')).toBeVisible();
 
     await page.locator('#pipeline-operation').selectOption('brightness');

@@ -8,7 +8,7 @@
 import { test, expect } from '@playwright/test';
 import { makePngPath, waitForImageLoaded } from './fixtures.js';
 
-const TABS = ['properties', 'layers', 'pipeline', 'analysis', 'history'];
+const TABS = ['edit', 'layers', 'insights', 'history'];
 
 test.describe('inspector tabs', () => {
   test.beforeEach(async ({ page }) => {
@@ -63,7 +63,7 @@ test.describe('inspector tabs', () => {
     await waitForImageLoaded(page);
 
     await expect(page.locator('.inspector-tab-strip')).toBeVisible();
-    await page.locator('.quick-action[data-panel="analysis"]').click();
+    await page.locator('.quick-action[data-panel="insights"]').click();
 
     await expect(page.locator('[data-inspector="insights"]')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('#insights-panel')).toBeVisible();
