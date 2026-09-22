@@ -18,8 +18,8 @@
      instead of pushing New/Open/Export off-screen. Nothing is removed, so no
      capability disappears on a narrow display. */
   .topbar {
-    gap: 10px;
-    padding: 0 12px;
+    gap: var(--space-10);
+    padding: 0 var(--space-12);
   }
 
   .top-actions {
@@ -102,6 +102,50 @@
   /* The canvas-toolbar already scrolls; keep it clear of the bottom edge. */
   .canvas-toolbar {
     bottom: max(10px, env(safe-area-inset-bottom));
+  }
+
+  /* Touch targets: 44px is the floor a finger can hit reliably. Measured at
+     390px before this rule, the topbar icon buttons rendered 27x34, the zoom
+     toolbar buttons 26x26 and the inspector tabs 41px tall -- every one of
+     them a mis-tap waiting to hit the neighbour instead.
+
+     Only the hit area grows. min-height/min-width stretch the box while the
+     glyph keeps its own font-size, and the flex/grid centres that already
+     hold these buttons keep the icon in the middle of the bigger box, so the
+     visual density of the rail and the toolbars is unchanged. The side rail
+     is left alone: its 60px width fits its 52px buttons already. */
+  .button,
+  .icon-button,
+  .view-button,
+  .toolbar-button,
+  .mini-button,
+  .inspector-tab,
+  .quick-action,
+  .more-button,
+  .avatar,
+  .list-action,
+  .panel-accordion > summary {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* An accordion header is the whole row, not the 14px of glyph height its
+     text occupies. The section-heading flex row already centres it; lifting
+     the box makes the full header a tap target. */
+  .panel-accordion > summary {
+    align-items: center;
+  }
+
+  /* Full-width rows already cover the width; only the height needs lifting.
+     A form row is its control's hit area -- tapping the label text focuses
+     the field -- so lifting the row lifts the checkbox and the range slider
+     that could never clear 44px on their own. */
+  .button.full-width,
+  .list-action,
+  .check-row,
+  .property-field {
+    min-height: 44px;
+    min-width: 0;
   }
 }
 

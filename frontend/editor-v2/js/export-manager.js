@@ -1,3 +1,5 @@
+import { openDialog, closeDialog } from './ui-manager.js';
+
 export class ExportManager {
   constructor({ canvasManager, apiClient, objectManager, showToast }) {
     this.canvasManager = canvasManager;
@@ -47,10 +49,10 @@ export class ExportManager {
     this.width.value = dims.width;
     this.height.value = dims.height;
     this.name.value = (document.querySelector('#document-name')?.textContent || 'intellicanvas').replace(/\.[^.]+$/, '') || 'intellicanvas';
-    this.dialog.hidden = false;
+    openDialog(this.dialog, { focus: '#export-format' });
   }
 
-  close() { this.dialog.hidden = true; }
+  close() { closeDialog(this.dialog); }
 
   async export(event) {
     event.preventDefault();
@@ -81,7 +83,7 @@ export class ExportManager {
       link.download = filename;
       link.click();
       // Defer revocation so the browser has time to start the download.
-      setTimeout(() => URL.revokeObjectURL(url), 0);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
       this.showToast(`Exported ${filename}`);
       this.close();
     } catch (error) {

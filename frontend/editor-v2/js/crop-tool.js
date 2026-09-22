@@ -1,3 +1,4 @@
+import { withBusy } from './ui-manager.js';
 export class CropTool {
   constructor(canvasManager, card, apiClient, showToast) {
     this.canvasManager = canvasManager;
@@ -63,6 +64,8 @@ export class CropTool {
 
   async apply() {
     if (!this.selection) return;
+    const button = document.querySelector('#crop-apply');
+    await withBusy(button, 'Applying crop', async () => {
     const imageRect = this.canvasManager.getImageRect();
     const dimensions = this.canvasManager.getSourceDimensions();
     const payload = {
@@ -75,9 +78,10 @@ export class CropTool {
       const image = await this.apiClient.transform('crop', payload);
       await this.canvasManager.loadFromUrl(this.apiClient.contentUrl(image.image_id), image);
       document.dispatchEvent(new CustomEvent('ic-operation'));
-      this.deactivate();
-      this.showToast('Crop applied');
-    } catch (error) { this.showToast(error.message); }
+        this.deactivate();
+        this.showToast('Crop applied');
+      } catch (error) { this.showToast(error.message); }
+    });
   }
 
   reset() { this.selection = null; this.syncToImage(); }

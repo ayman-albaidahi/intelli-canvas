@@ -243,13 +243,6 @@ test.describe('History', () => {
 // Layers: shape and text layers persist through the object canvas.
 test.describe('Layers', () => {
   test('adds a text layer that appears in the layers panel', async ({ page }, testInfo) => {
-    // Text placement goes through window.prompt for the string itself, which
-    // headless Chrome would otherwise dismiss as cancelled. addInitScript runs
-    // before navigation so the stub is in place for the whole session.
-    await page.addInitScript(() => {
-      window.prompt = () => 'Layer label';
-    });
-
     await upload(page, testInfo);
 
     await openInspector(page, 'layers');
@@ -257,8 +250,12 @@ test.describe('Layers', () => {
 
     await page.locator('[data-action="add-text-layer"]').click();
 
-    // The text tool is now active; clicking the object canvas places the layer.
+    // The text tool is now active; clicking the object canvas opens the
+    // inline text popover rather than a native prompt.
     await page.locator('#object-canvas').click();
+    await expect(page.locator('#text-popover')).toBeVisible();
+    await page.locator('#text-popover-input').fill('Layer label');
+    await page.keyboard.press('Enter');
 
     await expect(page.locator('#layer-count')).not.toHaveText('0');
     await expect(page.locator('#layers-list .layer-row')).toHaveCount(1);

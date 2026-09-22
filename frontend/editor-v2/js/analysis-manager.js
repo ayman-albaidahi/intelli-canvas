@@ -135,6 +135,21 @@ export class AnalysisManager {
     }
   }
 
+  // Called when a new image is loaded. The previous session's preview blob
+  // URL is never revoked otherwise — it outlives the image it belongs to and
+  // leaks for the rest of the page's life.
+  reset() {
+    if (this._previewObjectUrl) {
+      URL.revokeObjectURL(this._previewObjectUrl);
+      this._previewObjectUrl = null;
+    }
+    if (this.previewImg) {
+      this.previewImg.removeAttribute('src');
+      this.previewImg.hidden = true;
+    }
+    this.activeSuggestion = null;
+  }
+
   async dismiss() {
     if (!this.activeSuggestion) return;
     try {

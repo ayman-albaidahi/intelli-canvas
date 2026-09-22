@@ -1,4 +1,5 @@
 import { escapeHtml } from './escape-html.js';
+import { confirmDialog } from './ui-manager.js';
 
 export class HistoryManager {
   constructor({ canvasManager, apiClient, showToast }) {
@@ -74,6 +75,14 @@ export class HistoryManager {
 
   async clear() {
     if (this.busy || !this.apiClient.imageId) return;
+    // Clearing drops every recorded step except the current state; once it is
+    // gone there is no path back to any earlier version of the image.
+    const confirmed = await confirmDialog({
+      title: 'Clear history?',
+      body: 'Every recorded step will be discarded. The current image stays, but earlier versions cannot be recovered.',
+      confirmLabel: 'Clear history',
+    });
+    if (!confirmed) return;
     this.busy = true;
     try {
       const state = await this.apiClient.clearHistory(this.apiClient.imageId);
@@ -178,7 +187,13 @@ export class HistoryManager {
       const state = await this.apiClient.history(this.apiClient.imageId);
       this.render(state);
     } catch {
-      /* session may be gone; panel simply stays empty */
+      // The most common cause is a session that expired, which leaves the
+      // list empty for a real reason — but so does a dead backend, and the
+      // user cannot tell them apart from a blank panel alone.
+      const list = document.querySelector('#history-list');
+      if (list && !list.children.length) {
+        list.innerHTML = '<p class="empty-panel-copy">History is unavailable — the session may have expired. Reopen the image to reload it.</p>';
+      }
     }
   }
 }

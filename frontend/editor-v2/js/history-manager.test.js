@@ -15,6 +15,13 @@ const HISTORY_HTML = `
   <div id="history-comparison" hidden>
     <img id="history-before-image"><img id="history-after-image"><img id="history-diff-image">
   </div>
+  <div id="confirm-dialog" hidden>
+    <h2 id="confirm-dialog-heading">Are you sure?</h2>
+    <p id="confirm-dialog-body">This cannot be undone.</p>
+    <button id="confirm-accept">Confirm</button>
+    <button id="confirm-cancel">Cancel</button>
+    <button id="confirm-cancel-secondary">Cancel</button>
+  </div>
 `;
 
 function threeEntries() {
@@ -202,9 +209,23 @@ describe('HistoryManager — goto and clear', () => {
     const events = [];
     const client = makeClient();
     const { showToast } = await makeManager(client, canvasThatRecords(events));
-    await client.__manager.clear();
+    // clear() now waits on a confirm dialog, so the test has to answer it.
+    const clear = client.__manager.clear();
+    document.querySelector('#confirm-accept').click();
+    await clear;
     expect(client.calls.clear).toBe(1);
     expect(showToast).toHaveBeenCalledWith('History cleared — current state kept');
+  });
+
+  it('leaves history untouched when the confirm dialog is cancelled', async () => {
+    const events = [];
+    const client = makeClient();
+    const { showToast } = await makeManager(client, canvasThatRecords(events));
+    const clear = client.__manager.clear();
+    document.querySelector('#confirm-cancel-secondary').click();
+    await clear;
+    expect(client.calls.clear).toBe(0);
+    expect(showToast).not.toHaveBeenCalled();
   });
 
   it('revokes the diff object URL when comparison is cleared', async () => {

@@ -1,3 +1,2 @@
-.smart-crop-card{margin-bottom:12px;padding:10px;border:1px solid var(--line);border-radius:9px;background:var(--surface-soft)}
-.smart-crop-card .section-heading{margin-bottom:8px}
-.smart-crop-preview{display:block;width:100%;max-height:150px;object-fit:contain;margin-top:8px;border-radius:6px;background:var(--surface);border:1px solid var(--line)}
+
+.smart-crop-preview{display:block;width:100%;max-height:150px;object-fit:contain;margin-top:var(--space-8);border-radius:var(--radius-6);background:var(--surface);border:1px solid var(--line)}

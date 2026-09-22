@@ -1,6 +1,6 @@
 import { appState, setState } from './app-state.js';
 import { initThemeManager } from './theme-manager.js';
-import { initUI, showToast } from './ui-manager.js';
+import { initUI, initDialogEscape, initDialogFocusTrap, showToast } from './ui-manager.js';
 import { CanvasManager } from './canvas-manager.js';
 import { bindTransformTools } from './transform-tools.js';
 import { CropTool } from './crop-tool.js';
@@ -20,10 +20,13 @@ import { ApiClient } from './api-client.js';
 
 initThemeManager();
 initUI();
+// Dialogs must trap focus and close on Escape before any other Escape handler
+// claims the key, so they are initialised alongside the rest of the chrome.
+initDialogEscape();
+initDialogFocusTrap();
 
 const fileInput = document.querySelector('#file-input');
 const emptyCanvas = document.querySelector('#empty-canvas');
-const mockArtboard = document.querySelector('#mock-artboard');
 const statusMessage = document.querySelector('#status-message');
 const canvasManager = new CanvasManager(document.querySelector('#image-canvas'), document.querySelector('#canvas-card'));
 const apiClient = new ApiClient();
@@ -56,9 +59,9 @@ new FiltersManager({ canvasManager, apiClient, showToast });
 const backgroundManager = new BackgroundManager({ canvasManager, apiClient, objectManager, showToast });
 const historyManager = new HistoryManager({ canvasManager, apiClient, showToast });
 new ExportManager({ canvasManager, apiClient, objectManager, showToast });
-new AnalysisManager({ canvasManager, apiClient, showToast });
+const analysisManager = new AnalysisManager({ canvasManager, apiClient, showToast });
 new PipelineManager({ apiClient, canvasManager, showToast });
-new SmartCropManager({ canvasManager, apiClient, showToast });
+const smartCropManager = new SmartCropManager({ canvasManager, apiClient, showToast });
 objectManager.setInteractive(true);
 document.addEventListener('appstatechange', ({ detail }) => objectManager.setInteractive(['select', 'brush', 'eraser', 'shape', 'text'].includes(detail.activeTool)));
 document.querySelectorAll('[data-action="add-layer"]').forEach((button) => button.remove());
@@ -97,15 +100,29 @@ for (const button of document.querySelectorAll('[data-action]')) {
   if (action) button.addEventListener('click', action);
 }
 
+// A second upload started before the first finished would race: whichever
+// response lands last wins apiClient.imageId, and the canvas load guard can
+// disagree about which image is actually displayed. The flag makes a
+// mid-flight upload a no-op instead.
+let uploading = false;
+
 async function uploadImageFile(file) {
+  if (uploading) return;
+  uploading = true;
+  // The dropzone and the file input share this path, so both triggers are
+  // disabled for the duration — the user cannot start a second upload while
+  // the first is still in flight.
+  const openers = document.querySelectorAll('[data-action="open"], #file-input');
+  openers.forEach((el) => { el.disabled = true; });
   statusMessage.textContent = 'Uploading image…';
   showToast('Uploading image to IntelliCanvas API…');
   try {
     const image = await apiClient.upload(file);
     await canvasManager.loadFromUrl(apiClient.contentUrl(image.image_id), image);
     await restoreLayers();
+    analysisManager.reset();
+    smartCropManager.resetPreviewOnly();
     emptyCanvas.hidden = true;
-    mockArtboard.hidden = true;
     document.querySelector('#document-name').textContent = image.original_filename;
     document.querySelector('#canvas-size').textContent = `${image.width ?? canvasManager.getSourceDimensions().width} × ${image.height ?? canvasManager.getSourceDimensions().height}`;
     document.querySelector('#save-state').textContent = 'Saved in API session';
@@ -114,6 +131,9 @@ async function uploadImageFile(file) {
   } catch (error) {
     statusMessage.textContent = error.message.startsWith('Could not reach') ? 'Backend offline' : 'Upload failed';
     showToast(error.message);
+  } finally {
+    uploading = false;
+    openers.forEach((el) => { el.disabled = false; });
   }
 }
 
@@ -142,21 +162,49 @@ canvasZone.addEventListener('drop', (event) => {
   uploadImageFile(file);
 });
 
+const TOOL_SHORTCUTS = {
+  v: 'select', m: 'move', c: 'crop', b: 'brush',
+  e: 'eraser', u: 'shape', t: 'text',
+};
+
 document.addEventListener('keydown', (event) => {
   const target = event.target;
-  if (target instanceof HTMLElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
-  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'o') { event.preventDefault(); fileInput.click(); }
+  // Typing into a field must not trigger tool shortcuts. contentEditable
+  // covers the rename input, which is not a real input element.
+  if (target instanceof HTMLElement && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)) return;
+
+  // Undo/redo is the most expected editor shortcut and the plumbing already
+  // exists in transform-tools; it just was not wired to the keyboard.
+  const isMod = event.metaKey || event.ctrlKey;
+  if (isMod && event.key.toLowerCase() === 'z') {
+    event.preventDefault();
+    const action = event.shiftKey ? 'redo' : 'undo';
+    document.querySelector(`[data-action="${action}"]`)?.click();
+    return;
+  }
+  if (isMod && event.key.toLowerCase() === 'y') {
+    event.preventDefault();
+    document.querySelector('[data-action="redo"]')?.click();
+    return;
+  }
+  if (isMod && event.key.toLowerCase() === 'o') { event.preventDefault(); fileInput.click(); return; }
+  // Anything past this point is a single-key shortcut and must not fire while
+  // a modifier is held, so Ctrl+S and friends do not also switch tools.
+  if (isMod || event.altKey) return;
+
   if (event.key === '+' || event.key === '=') canvasManager.zoomStep(10);
   if (event.key === '-' || event.key === '_') canvasManager.zoomStep(-10);
   if (event.key === '0') { canvasManager.fit(); showToast('Canvas fitted to workspace'); }
   if (event.key === '1') canvasManager.setHundredPercent();
-  if (event.key.toLowerCase() === 'b') document.querySelector('[data-tool="brush"]')?.click();
-  if (event.key.toLowerCase() === 'v') document.querySelector('[data-tool="select"]')?.click();
-  if (event.key.toLowerCase() === 'c') document.querySelector('[data-tool="crop"]')?.click();
+  const tool = TOOL_SHORTCUTS[event.key.toLowerCase()];
+  if (tool) document.querySelector(`[data-tool="${tool}"]`)?.click();
 });
 
 function renderZoom() {
-  document.querySelectorAll('[data-zoom-display]').forEach((element) => { element.textContent = `${appState.zoom}%`; });
+  // Before any image is loaded there is nothing to zoom, so reporting a
+  // percentage would describe a canvas that does not exist.
+  const value = canvasManager.hasImage() ? `${appState.zoom}%` : '—';
+  document.querySelectorAll('[data-zoom-display]').forEach((element) => { element.textContent = value; });
 }
 document.addEventListener('appstatechange', ({ detail }) => {
   document.body.dataset.activeTool = detail.activeTool || 'select';
