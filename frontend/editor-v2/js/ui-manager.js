@@ -32,8 +32,8 @@ export function getInspectorContext({ ready, activeTool = 'select', selectedObje
   return deriveInspectorContext({ editorReady: ready, activeTool, selectedObjectId });
 }
 
-export function renderInspectorContext({ ready = document.body.dataset.editorReady === 'true', activeTool = appState.activeTool, selectedObjectId = appState.selectedObjectId } = {}) {
-  const context = deriveInspectorContext({ ...appState, editorReady: ready, activeTool, selectedObjectId });
+export function renderInspectorContext(state = appState) {
+  const context = deriveInspectorContext(state);
   document.body.dataset.inspectorContext = context;
   const [title, copy] = CONTEXT_LABELS[context];
   const titleEl = document.querySelector('#edit-empty-title');
