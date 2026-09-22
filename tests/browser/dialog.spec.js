@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test';
 import { makePngPath, waitForImageLoaded } from './fixtures.js';
 
 const DIALOGS = [
-  ['#resize-dialog', '[data-action="resize"]', '#resize-width'],
+  ['#resize-dialog', '.top-actions [data-action="resize"]', '#resize-width'],
   ['#export-dialog', '[data-action="export"]', '#export-format'],
 ];
 
