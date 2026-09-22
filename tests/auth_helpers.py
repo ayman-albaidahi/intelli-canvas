@@ -20,7 +20,5 @@ def authenticated_client(app, email="owner@example.com"):
         },
     )
     assert response.status_code == 200
-    app.config["IMAGE_SESSIONS"]._test_owner_id = response.get_json()["user"][
-        "user_id"
-    ]
+    app.config["IMAGE_SESSIONS"]._test_owner_id = response.get_json()["user"]["user_id"]
     return client

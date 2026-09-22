@@ -109,9 +109,7 @@ def require_owned_asset(view: Callable):
                 404,
             )
         session = repository.get_session_for_owner(image_id, user["user_id"])
-        asset = repository.get_asset_for_owner(
-            asset_id, image_id, user["user_id"]
-        )
+        asset = repository.get_asset_for_owner(asset_id, image_id, user["user_id"])
         if session is None or asset is None:
             return _resource_not_found()
         g.authorized_image_id = image_id

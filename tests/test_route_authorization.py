@@ -76,7 +76,11 @@ def test_second_user_cannot_read_or_mutate_image_scoped_routes():
             response = other.get(path, query_string=payload)
         else:
             response = getattr(other, method)(path, json=payload)
-        assert response.status_code == 404, (method, path, response.get_data(as_text=True))
+        assert response.status_code == 404, (
+            method,
+            path,
+            response.get_data(as_text=True),
+        )
         assert response.get_json()["error"]["code"] == "RESOURCE_NOT_FOUND"
 
     asset = other.get(
