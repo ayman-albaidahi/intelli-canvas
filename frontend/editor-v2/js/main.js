@@ -80,9 +80,13 @@ document.querySelector('#layer-image-input')?.addEventListener('change', ({ targ
   reader.readAsDataURL(file);
   target.value = '';
 });
-document.querySelector('#crop-overlay').addEventListener('pointerdown', (event) => cropTool.onPointerDown(event));
-document.querySelector('#crop-overlay').addEventListener('pointermove', (event) => cropTool.onPointerMove(event));
-document.querySelector('#crop-overlay').addEventListener('pointerup', () => cropTool.stopDrag());
+const cropOverlay = document.querySelector('#crop-overlay');
+cropOverlay.addEventListener('pointerdown', (event) => cropTool.onPointerDown(event));
+cropOverlay.addEventListener('pointermove', (event) => cropTool.onPointerMove(event));
+cropOverlay.addEventListener('pointerup', () => cropTool.stopDrag());
+// A cancelled drag (system gesture, window blur) must not leave the crop tool
+// mid-resize, or the next pointerdown would resume a drag that never ended.
+cropOverlay.addEventListener('pointercancel', () => cropTool.stopDrag());
 
 const canvasViewActions = {
   'zoom-in': () => canvasManager.zoomStep(10),

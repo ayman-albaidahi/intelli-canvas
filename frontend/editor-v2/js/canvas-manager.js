@@ -24,6 +24,7 @@ export class CanvasManager {
     this.drag = null;
     this.pointers = new Map();
     this.pinch = null;
+    this.panLocked = false;
     this.checkerPattern = null;
     this.bindEvents();
     this.resize();
@@ -46,6 +47,10 @@ export class CanvasManager {
 
   onWheel(event) {
     if (!this.image) return;
+    // Set by the crop tool while a selection is on screen: wheel-panning the
+    // image under the overlay desyncs the two and Apply would map a stale
+    // selection against the moved image.
+    if (this.panLocked) return;
     event.preventDefault();
     const point = this.stagePoint(event);
     if (event.ctrlKey || event.metaKey) {
