@@ -29,7 +29,9 @@ class Config:
     RATE_LIMIT_RULES = {
         "register": {"limit": 5, "window_seconds": 60},
         "login": {"limit": 10, "window_seconds": 60},
-        "expensive": {"limit": 30, "window_seconds": 60},
+        # Keep the default high enough for a normal editing session and the
+        # browser suite; deployments can lower it through app configuration.
+        "expensive": {"limit": 120, "window_seconds": 60},
     }
 
 
