@@ -130,8 +130,8 @@ export class CropTool {
         document.dispatchEvent(new CustomEvent('ic-operation'));
         this.deactivate();
         this.showToast('Crop applied');
-      } catch (error) { this.showToast(error.message); }
-    });
+      } catch (error) { this.showToast(error.message); throw error; }
+    }, { operation: 'Applying crop', retry: () => this.apply() });
   }
 
   reset() {

@@ -94,6 +94,40 @@
   margin-top: 0;
 }
 
+.processing-context-summary,
+.error-context-summary {
+  display: grid;
+  gap: var(--space-10);
+  padding: var(--space-16);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-10);
+  background: var(--surface-soft);
+}
+
+.processing-context-summary strong,
+.error-context-summary strong {
+  color: var(--text);
+  font-size: var(--fs-13);
+}
+
+.processing-context-summary p,
+.error-context-summary p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.error-context-summary {
+  border-color: color-mix(in srgb, var(--accent-strong) 45%, var(--line));
+}
+
+.context-actions {
+  display: flex;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+}
+
+
 @media (prefers-reduced-motion: reduce) {
   .edit-context-heading {
     scroll-behavior: auto;

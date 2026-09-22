@@ -47,7 +47,7 @@ export function initResizeTool(canvasManager, apiClient, showToast) {
       document.dispatchEvent(new CustomEvent('ic-operation'));
         closeDialog(dialog);
         showToast(`Canvas resized to ${image.width} × ${image.height}`);
-      } catch (error) { showToast(error.message); }
-    });
+      } catch (error) { showToast(error.message); throw error; }
+    }, { operation: 'Resizing', retry: () => form.requestSubmit() });
   });
 }

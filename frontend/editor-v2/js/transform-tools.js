@@ -26,8 +26,8 @@ export function bindTransformTools(canvasManager, apiClient, showToast) {
         try {
           await action();
           showToast(`${button.title || 'Transform'} applied`);
-        } catch (error) { showToast(error.message); }
-      });
+        } catch (error) { showToast(error.message); throw error; }
+      }, { operation: button.title || 'Transform', retry: () => button.click() });
     });
   });
 
