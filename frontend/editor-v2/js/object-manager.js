@@ -666,11 +666,21 @@ export class ObjectManager {
     const c = this.centerOf(o);
     ctx.save();
     ctx.globalAlpha = o.opacity;
+
+    // Brush strokes are stored in image coordinates and drawBrushStroke()
+    // projects them into screen coordinates. Keep them out of the generic
+    // object transform below; otherwise the center translation is applied a
+    // second time and the visible stroke is displaced from the pointer.
+    if (o.type === 'brush') {
+      this.drawBrushStroke({ ...o, points: o.pointsRel });
+      ctx.restore();
+      return;
+    }
+
     ctx.globalCompositeOperation = o.blend || 'source-over';
     ctx.translate(c.x, c.y);
     ctx.rotate((o.rotation * Math.PI) / 180);
-    if (o.type === 'brush') this.drawBrushStroke({ ...o, points: o.pointsRel });
-    else if (o.type === 'image') ctx.drawImage(o.img, -o.w / 2, -o.h / 2, o.w, o.h);
+    if (o.type === 'image') ctx.drawImage(o.img, -o.w / 2, -o.h / 2, o.w, o.h);
     else if (o.type === 'text') {
       ctx.font = `600 ${o.fontSize}px Inter, "Segoe UI", Tahoma, sans-serif`;
       ctx.fillStyle = o.color;
@@ -689,7 +699,7 @@ export class ObjectManager {
       const center = this.centerOf(object);
       ctx.save();
       ctx.globalAlpha = object.opacity;
-      ctx.globalCompositeOperation = object.blend || 'source-over';
+      ctx.globalCompositeOperation = object.erasing ? 'destination-out' : (object.blend || 'source-over');
       ctx.translate((center.x - imageRect.x) * scaleX, (center.y - imageRect.y) * scaleY);
       ctx.rotate((object.rotation * Math.PI) / 180);
       ctx.scale(scaleX, scaleY);

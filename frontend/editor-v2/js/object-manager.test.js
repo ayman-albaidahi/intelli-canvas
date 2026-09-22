@@ -130,4 +130,54 @@ describe('eraser layer hygiene', () => {
       expect(after.points[1]).toEqual(before.points[1]);
     });
   });
+
+  it('renders a stored brush in screen space without a second center translation', () => {
+    const transforms = [];
+    const ctx = new Proxy({}, {
+      get: (_target, property) => {
+        if (property === 'translate') return (...args) => transforms.push(args);
+        return () => {};
+      },
+      set: () => true,
+    });
+    const cm = makeCanvasManager({ width: 100, height: 100, offset: { x: 300, y: 200 } });
+    const mgr = makeManager(cm);
+    mgr.ctx = ctx;
+    mgr.objects = [{
+      id: 'brush-1', type: 'brush', x: 10, y: 10, w: 20, h: 20,
+      pointsRel: [[-10, -10], [10, 10]], strokeWidth: 8,
+      color: '#d95687', opacity: 1, rotation: 0, blend: 'source-over', visible: true,
+    }];
+
+    mgr.drawObject(mgr.objects[0]);
+
+    // The brush renderer owns the image-to-screen translation. drawObject must
+    // not add the object's local center translation before calling it.
+    expect(transforms).toEqual([[270, 170]]);
+  });
+
+  it('uses destination-out when exporting an erasing brush', () => {
+    let composite = null;
+    const ctx = new Proxy({}, {
+      get: (_target, property) => {
+        if (property === 'globalCompositeOperation') return composite;
+        return () => {};
+      },
+      set: (_target, property, value) => {
+        if (property === 'globalCompositeOperation') composite = value;
+        return true;
+      },
+    });
+    const mgr = makeManager(makeCanvasManager({ width: 100, height: 100 }));
+    mgr.objects = [{
+      id: 'eraser-1', type: 'brush', x: 40, y: 40, w: 20, h: 20,
+      pointsRel: [[-10, -10], [10, 10]], strokeWidth: 8,
+      color: '#d95687', opacity: 1, rotation: 0,
+      blend: 'source-over', erasing: true, visible: true,
+    }];
+
+    mgr.renderExport(ctx, { x: 0, y: 0, width: 100, height: 100 }, 100, 100);
+
+    expect(composite).toBe('destination-out');
+  });
 });
