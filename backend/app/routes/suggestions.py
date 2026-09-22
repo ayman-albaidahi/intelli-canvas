@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request, send_file
 
+from ..authorization import require_owned_image
 from ..dependencies import get_session_service, get_storage_service
 from ..error_codes import ErrorCodes
 from ..errors import error_response
@@ -69,6 +70,7 @@ _dismissed: dict[str, set[str]] = {}
 
 
 @suggestions_bp.post("")
+@require_owned_image
 def list_suggestions():
     payload = request.get_json(silent=True) or {}
     image_id = payload.get("image_id")
@@ -99,6 +101,7 @@ def list_suggestions():
 
 
 @suggestions_bp.post("/preview")
+@require_owned_image
 def preview_suggestion():
     payload = request.get_json(silent=True) or {}
     image_id = payload.get("image_id")
@@ -133,6 +136,7 @@ def preview_suggestion():
 
 
 @suggestions_bp.post("/apply")
+@require_owned_image
 def apply_suggestion():
     payload = request.get_json(silent=True) or {}
     image_id = payload.get("image_id")
@@ -187,6 +191,7 @@ def apply_suggestion():
 
 
 @suggestions_bp.post("/dismiss")
+@require_owned_image
 def dismiss_suggestion():
     payload = request.get_json(silent=True) or {}
     image_id = payload.get("image_id")

@@ -3,6 +3,7 @@ import sys
 from flask import Blueprint, jsonify, request, send_file
 
 from ..auth import current_user
+from ..authorization import require_owned_image
 from ..dependencies import (
     get_layer_compositor,
     get_session_repository,
@@ -82,6 +83,7 @@ def upload_image():
 
 
 @images_bp.post("/convert")
+@require_owned_image
 def convert_image():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
@@ -122,6 +124,7 @@ def convert_image():
 
 
 @images_bp.get("/<image_id>/content")
+@require_owned_image
 def image_content(image_id: str):
     session = get_session_service().get_session(image_id)
     if session is None:
@@ -157,6 +160,7 @@ def image_content(image_id: str):
 
 
 @images_bp.post("/export")
+@require_owned_image
 def export_image():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):

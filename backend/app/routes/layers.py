@@ -6,6 +6,7 @@ import uuid
 
 from flask import Blueprint, jsonify, request, send_file
 
+from ..authorization import require_owned_asset, require_owned_image
 from ..dependencies import (
     get_layer_compositor,
     get_session_repository,
@@ -151,6 +152,7 @@ def _store_data_url(image_id, layer, storage, repository):
 
 
 @layers_bp.get("")
+@require_owned_image
 def get_layers():
     image_id = request.args.get("image_id", "")
     if not image_id.strip():
@@ -167,6 +169,7 @@ def get_layers():
 
 
 @layers_bp.post("/compose")
+@require_owned_image
 def compose_layers():
     payload = request.get_json(silent=True) or {}
     image_id = payload.get("image_id")
@@ -188,6 +191,7 @@ def compose_layers():
 
 
 @layers_bp.put("")
+@require_owned_image
 def save_layers():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
@@ -221,6 +225,7 @@ def save_layers():
 
 
 @layers_bp.get("/assets/<asset_id>")
+@require_owned_asset
 def get_layer_asset(asset_id):
     image_id = request.args.get("image_id", "")
     asset = get_session_repository().get_asset_for_image(asset_id, image_id)

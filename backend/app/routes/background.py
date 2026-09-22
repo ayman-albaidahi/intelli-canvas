@@ -2,6 +2,8 @@ import io
 
 from flask import Blueprint, jsonify, request, send_file
 
+from ..auth import require_current_user
+from ..authorization import require_owned_image
 from ..dependencies import get_session_service, get_storage_service
 from ..error_codes import ErrorCodes
 from ..errors import error_response
@@ -58,6 +60,7 @@ def _image_id_and_params():
 
 
 @background_bp.post("/mask-preview")
+@require_owned_image
 def mask_preview():
     image_id, params, error = _image_id_and_params()
     if error:
@@ -74,6 +77,7 @@ def mask_preview():
 
 
 @background_bp.post("/remove")
+@require_owned_image
 def remove_background():
     image_id, params, error = _image_id_and_params()
     if error:
@@ -90,6 +94,7 @@ def remove_background():
 
 
 @background_bp.post("/replace")
+@require_owned_image
 def replace_background():
     image_id, params, error = _image_id_and_params()
     if error:
@@ -113,6 +118,7 @@ def replace_background():
 
 
 @background_bp.post("/replace-preview")
+@require_owned_image
 def replace_background_preview():
     image_id, params, error = _image_id_and_params()
     if error:
@@ -156,6 +162,7 @@ def background_thumbnail(name):
 
 
 @background_bp.post("/backgrounds")
+@require_current_user
 def upload_background():
     uploaded_file = request.files.get("file")
     filename = uploaded_file.filename if uploaded_file else ""

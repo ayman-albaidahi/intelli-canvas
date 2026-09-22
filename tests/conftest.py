@@ -2,6 +2,7 @@ import pytest
 from flask import Flask
 
 from backend.app.config import Config
+from backend.app.database import SYSTEM_OWNER_USER_ID, SQLiteSessionRepository
 
 
 @pytest.fixture(autouse=True)
@@ -18,10 +19,23 @@ def authenticate_legacy_clients(request, monkeypatch):
     directly; authenticate those clients at the fixture boundary rather than
     weakening production authorization or editing every historical test.
     """
-    if str(request.path).endswith(("test_auth.py", "test_ownership.py")):
+    if str(request.path).endswith(
+        ("test_auth.py", "test_ownership.py", "test_route_authorization.py")
+    ):
         return
 
     original_test_client = Flask.test_client
+    original_create_session = SQLiteSessionRepository.create_session
+    legacy_owners = {}
+
+    def create_session(repository, payload):
+        if not payload.get("owner_id"):
+            owner_id = getattr(repository, "_test_owner_id", None) or legacy_owners.get(
+                id(repository)
+            )
+            if owner_id:
+                payload = {**payload, "owner_id": owner_id}
+        return original_create_session(repository, payload)
 
     def authenticated_test_client(app, *args, **kwargs):
         client = original_test_client(app, *args, **kwargs)
@@ -37,6 +51,15 @@ def authenticate_legacy_clients(request, monkeypatch):
             json={"email": payload["email"], "password": payload["password"]},
         )
         assert login.status_code == 200
+        owner_id = login.get_json()["user"]["user_id"]
+        legacy_owners[id(app.config["IMAGE_SESSIONS"])] = owner_id
+        app.config["IMAGE_SESSIONS"]._test_owner_id = owner_id
+        with app.config["IMAGE_SESSIONS"]._connect() as connection:
+            connection.execute(
+                "UPDATE projects SET owner_id = ? WHERE owner_id = ?",
+                (owner_id, SYSTEM_OWNER_USER_ID),
+            )
         return client
 
     monkeypatch.setattr(Flask, "test_client", authenticated_test_client)
+    monkeypatch.setattr(SQLiteSessionRepository, "create_session", create_session)

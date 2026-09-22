@@ -1,5 +1,7 @@
 from flask import Blueprint, jsonify, request
 
+# This endpoint explains a supplied operation and does not access an image or
+# project resource, so it is intentionally outside image ownership checks.
 from ..error_codes import ErrorCodes
 from ..errors import error_response
 from ..services.explainability_service import explain_operation

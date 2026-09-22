@@ -67,8 +67,8 @@ def test_layers_reject_invalid_payload_and_unknown_session():
     client = app.test_client()
 
     invalid = client.put("/api/layers", json={"image_id": "missing", "layers": "nope"})
-    assert invalid.status_code == 400
-    assert invalid.get_json()["error"]["code"] == "INVALID_LAYERS"
+    assert invalid.status_code == 404
+    assert invalid.get_json()["error"]["code"] == "IMAGE_SESSION_NOT_FOUND"
 
     missing = client.get("/api/layers?image_id=missing")
     assert missing.status_code == 404

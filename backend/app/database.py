@@ -359,12 +359,12 @@ class SQLiteSessionRepository:
         return self.get_layers(image_id)
 
     def get_asset_for_owner(
-        self, asset_id: str, owner_id: str
+        self, asset_id: str, image_id: str, owner_id: str
     ) -> dict[str, Any] | None:
         with self._connect() as connection:
             row = connection.execute(
-                "SELECT a.* FROM image_assets a JOIN image_sessions s ON s.image_id = a.image_id JOIN projects p ON p.project_id = s.project_id WHERE a.asset_id = ? AND p.owner_id = ?",
-                (asset_id, owner_id),
+                "SELECT a.* FROM image_assets a JOIN image_sessions s ON s.image_id = a.image_id JOIN projects p ON p.project_id = s.project_id WHERE a.asset_id = ? AND a.image_id = ? AND p.owner_id = ?",
+                (asset_id, image_id, owner_id),
             ).fetchone()
         return dict(row) if row else None
 
