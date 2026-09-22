@@ -54,14 +54,19 @@
   line-height: 1.5;
 }
 
-.button-primary:focus,
-.button-primary:focus-visible {
-  outline: 3px solid var(--accent-strong);
-  outline-offset: 3px;
+.button-auth-primary {
+  background: var(--accent-button);
+  color: #fff;
+  box-shadow: 0 5px 13px color-mix(in srgb, var(--accent-button) 22%, transparent);
 }
 
-.auth-card .button-primary {
-  outline: 3px solid var(--accent-strong) !important;
+.button-auth-primary:hover {
+  background: var(--accent-button-strong);
+}
+
+.button-auth-primary:focus,
+.button-auth-primary:focus-visible {
+  outline: 3px solid var(--accent-strong);
   outline-offset: 3px;
 }
 

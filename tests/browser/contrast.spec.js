@@ -77,7 +77,10 @@ function probe(body) {
 
 async function effectiveBackground(page, selector) {
   return page.evaluate(probe(`
-    const el = document.querySelector(${JSON.stringify(selector)});
+    const el = Array.from(document.querySelectorAll(${JSON.stringify(selector)})).find((candidate) => {
+      const style = getComputedStyle(candidate);
+      return style.display !== 'none' && style.visibility !== 'hidden' && candidate.getClientRects().length > 0;
+    });
     if (!el) return null;
     // Walk up until a parent paints an opaque background; the text's backdrop
     // is that surface, not the element's own (usually transparent) one.
@@ -94,7 +97,10 @@ async function effectiveBackground(page, selector) {
 
 async function computedColor(page, selector) {
   return page.evaluate(probe(`
-    const el = document.querySelector(${JSON.stringify(selector)});
+    const el = Array.from(document.querySelectorAll(${JSON.stringify(selector)})).find((candidate) => {
+      const style = getComputedStyle(candidate);
+      return style.display !== 'none' && style.visibility !== 'hidden' && candidate.getClientRects().length > 0;
+    });
     if (!el) return null;
     return parseColor(getComputedStyle(el).color);
   `));
@@ -102,7 +108,10 @@ async function computedColor(page, selector) {
 
 async function focusRingColors(page, selector) {
   return page.evaluate(probe(`
-    const el = document.querySelector(${JSON.stringify(selector)});
+    const el = Array.from(document.querySelectorAll(${JSON.stringify(selector)})).find((candidate) => {
+      const style = getComputedStyle(candidate);
+      return style.display !== 'none' && style.visibility !== 'hidden' && candidate.getClientRects().length > 0;
+    });
     if (!el) return null;
     el.focus();
     const ring = parseColor(getComputedStyle(el).outlineColor);
