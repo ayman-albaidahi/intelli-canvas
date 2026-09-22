@@ -27,6 +27,40 @@ initDialogEscape();
 initDialogFocusTrap();
 renderImageContextSummary();
 
+function bindDrawingControls() {
+  const controls = [
+    ['brush-size', 'brush-size-value', (value) => value],
+    ['brush-opacity', 'brush-opacity-value', (value) => `${value}%`],
+    ['eraser-size', 'eraser-size-value', (value) => value],
+    ['eraser-opacity', 'eraser-opacity-value', (value) => `${value}%`],
+  ];
+  controls.forEach(([inputId, outputId, format]) => {
+    const input = document.querySelector(`#${inputId}`);
+    const output = document.querySelector(`#${outputId}`);
+    if (!input || !output) return;
+    const render = () => { output.value = input.value; output.textContent = format(input.value); };
+    input.addEventListener('input', render);
+    render();
+  });
+  document.querySelector('#brush-reset')?.addEventListener('click', () => {
+    const size = document.querySelector('#brush-size');
+    const opacity = document.querySelector('#brush-opacity');
+    size.value = '8';
+    opacity.value = '100';
+    size.dispatchEvent(new Event('input', { bubbles: true }));
+    opacity.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  document.querySelector('#eraser-reset')?.addEventListener('click', () => {
+    const size = document.querySelector('#eraser-size');
+    const opacity = document.querySelector('#eraser-opacity');
+    size.value = '8';
+    opacity.value = '100';
+    size.dispatchEvent(new Event('input', { bubbles: true }));
+    opacity.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+}
+bindDrawingControls();
+
 const fileInput = document.querySelector('#file-input');
 const emptyCanvas = document.querySelector('#empty-canvas');
 const statusMessage = document.querySelector('#status-message');

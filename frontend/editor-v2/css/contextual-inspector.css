@@ -65,6 +65,19 @@
   margin-top: var(--space-4);
 }
 
+.context-help {
+  margin: 0 0 var(--space-14);
+  color: var(--muted);
+  font-size: var(--fs-10);
+  line-height: 1.5;
+}
+
+.edit-context output {
+  color: var(--text);
+  font-size: var(--fs-10);
+  font-weight: 700;
+}
+
 .edit-context > .empty-panel {
   margin-top: var(--space-8);
 }

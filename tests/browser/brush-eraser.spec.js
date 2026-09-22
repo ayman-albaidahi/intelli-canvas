@@ -31,6 +31,40 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
+test('Brush and Eraser expose separate contextual controls', async ({ page }) => {
+  await page.goto('/editor-v2/');
+  await page.setInputFiles('#file-input', makePngPath(test.info(), 'context-tools.png'));
+  await waitForImageLoaded(page);
+
+  await page.locator('[data-tool="brush"]').click();
+  await expect(page.locator('body')).toHaveAttribute('data-inspector-context', 'brush');
+  await expect(page.locator('#edit-context-brush')).toBeVisible();
+  await expect(page.locator('#drawing-accordion')).toBeVisible();
+  await expect(page.locator('#eraser-accordion')).toBeHidden();
+  await page.locator('#brush-size').fill('24');
+  await expect(page.locator('#brush-size-value')).toHaveText('24');
+
+  await page.locator('[data-tool="eraser"]').click();
+  await expect(page.locator('body')).toHaveAttribute('data-inspector-context', 'eraser');
+  await expect(page.locator('#edit-context-eraser')).toBeVisible();
+  await expect(page.locator('#drawing-accordion')).toBeHidden();
+  await expect(page.locator('#eraser-accordion')).toBeVisible();
+  await expect(page.locator('#eraser-size')).toHaveValue('8');
+  await expect(page.locator('#eraser-opacity-value')).toHaveText('100%');
+});
+
+test('leaving Eraser returns to Image Context without retaining a layer selection', async ({ page }) => {
+  await page.goto('/editor-v2/');
+  await page.setInputFiles('#file-input', makePngPath(test.info(), 'context-transition.png'));
+  await waitForImageLoaded(page);
+  await page.locator('[data-tool="eraser"]').click();
+  await expect(page.locator('body')).toHaveAttribute('data-inspector-context', 'eraser');
+  await page.locator('[data-tool="select"]').click();
+  await expect(page.locator('body')).toHaveAttribute('data-inspector-context', 'image');
+  await expect(page.locator('#edit-context-image')).toBeVisible();
+  await expect(page.locator('#edit-context-eraser')).toBeHidden();
+});
+
 test('brush stroke lands under the cursor', async ({ page }) => {
   await page.goto('/editor-v2/');
   await page.setInputFiles('#file-input', makePngPath(test.info(), 'brush.png'));
