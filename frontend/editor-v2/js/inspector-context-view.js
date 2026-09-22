@@ -31,6 +31,22 @@ function createContextSection(context) {
           <div><span>Visibility</span><strong id="layer-context-visibility">—</strong></div>
           <button class="button button-secondary full-width" id="layer-context-toggle-visibility" type="button">Toggle visibility</button>
         </div>`
+      : context === 'crop'
+        ? `<div class="context-summary crop-context-summary" id="crop-context-summary" aria-live="polite">
+            <div><span>Selection</span><strong id="crop-context-size">Not started</strong></div>
+            <p>Use the handles on the canvas to frame the crop, then apply or cancel it below the canvas.</p>
+          </div>`
+        : context === 'processing'
+          ? `<div class="context-summary processing-context-summary" id="processing-context-summary" role="status" aria-live="polite">
+              <strong id="processing-operation">Working…</strong>
+              <p id="processing-progress">Please wait while the operation completes.</p>
+            </div>`
+          : context === 'error'
+            ? `<div class="context-summary error-context-summary" id="error-context-summary" role="alert" aria-live="assertive">
+                <strong id="error-operation">Action failed</strong>
+                <p id="error-message">The operation could not be completed.</p>
+                <div class="context-actions"><button class="button button-primary" id="error-retry" type="button">Retry</button><button class="button button-secondary" id="error-dismiss" type="button">Dismiss</button></div>
+              </div>`
       : '';
   section.innerHTML = `<div class="edit-context-heading"><span class="eyebrow">Inspector context</span><h3 id="edit-context-${context}-heading">${title}</h3><p>${copy}</p></div>${summary}`;
   return section;
@@ -105,4 +121,19 @@ export function renderLayerContextSummary(layer = null, root = document) {
   toggle.disabled = !layer || layer.locked;
   toggle.setAttribute('aria-pressed', String(Boolean(layer?.visible)));
   toggle.textContent = layer?.visible ? 'Hide layer' : 'Show layer';
+}
+
+export function renderTransientContext(state = {}, root = document) {
+  const operation = root.querySelector('#processing-operation');
+  const progress = root.querySelector('#processing-progress');
+  const errorOperation = root.querySelector('#error-operation');
+  const message = root.querySelector('#error-message');
+  const retry = root.querySelector('#error-retry');
+  if (operation) operation.textContent = state.processing?.operation ? `${state.processing.operation}…` : 'Working…';
+  if (progress) progress.textContent = state.processing?.progress == null
+    ? 'Please wait while the operation completes.'
+    : `${state.processing.progress}% complete`;
+  if (errorOperation) errorOperation.textContent = state.error?.operation || 'Action failed';
+  if (message) message.textContent = state.error?.message || 'The operation could not be completed.';
+  if (retry) retry.hidden = !state.error?.retryable;
 }

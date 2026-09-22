@@ -1,6 +1,7 @@
 import { appState, setState } from './app-state.js';
 import { deriveInspectorContext } from './inspector-context.js';
-import { mountInspectorContextContainers, renderInspectorContextContainers } from './inspector-context-view.js';
+import { mountInspectorContextContainers, renderInspectorContextContainers, renderTransientContext } from './inspector-context-view.js';
+import { beginOperation, completeOperation, dismissError, failOperation, retryOperation } from './operation-state.js';
 
 const toast = document.querySelector('#toast');
 let toastTimer;
@@ -25,11 +26,33 @@ export function getInspectorContext({ ready, activeTool = 'select', selectedObje
 export function renderInspectorContext(state = appState) {
   const context = deriveInspectorContext(state);
   document.body.dataset.inspectorContext = context;
+  document.body.dataset.processing = String(Boolean(state.processing?.active));
+  document.body.dataset.error = String(Boolean(state.error));
   renderInspectorContextContainers(context);
+  renderTransientContext(state);
+  updateTransientControls(state);
   document.querySelectorAll('[data-contextual-actions] [data-context]').forEach((action) => {
     action.hidden = action.dataset.context !== context && !(context === 'crop' && action.dataset.context === 'image');
   });
   return context;
+}
+
+function updateTransientControls(state) {
+  const busy = Boolean(state.processing?.active);
+  document.querySelectorAll('[data-tool], [data-action]').forEach((control) => {
+    if (control.id === 'error-retry' || control.id === 'error-dismiss') return;
+    if (busy) {
+      if (control.dataset.transientDisabled === undefined) {
+        control.dataset.transientDisabled = String(control.disabled);
+      }
+      control.disabled = true;
+      control.setAttribute('aria-disabled', 'true');
+    } else if (control.dataset.transientDisabled !== undefined) {
+      control.disabled = control.dataset.transientDisabled === 'true';
+      delete control.dataset.transientDisabled;
+      control.setAttribute('aria-disabled', String(control.disabled));
+    }
+  });
 }
 
 // The pre-upload hint is appended to the control's own tooltip rather than
@@ -66,6 +89,8 @@ export function setEditorReady(ready) {
 export function initUI() {
   mountInspectorContextContainers();
   document.addEventListener('appstatechange', ({ detail }) => renderInspectorContext(detail));
+  document.querySelector('#error-retry')?.addEventListener('click', () => retryOperation());
+  document.querySelector('#error-dismiss')?.addEventListener('click', () => dismissError());
   setEditorReady(false);
   renderInspectorContext(appState);
   document.querySelectorAll('[data-tool]').forEach((button) => {
@@ -280,8 +305,10 @@ export function confirmDialog({ title = 'Are you sure?', body = 'This cannot be 
 }
 
 export async function withBusy(button, message, fn, options = {}) {
-  const { label = null, status = null } = options;
+  const { label = null, status = null, operation = message, retry = null } = options;
   if (!button) return fn();
+  const token = beginOperation({ operation, retry });
+  if (token === null) return null;
   const original = label ?? button.textContent;
   const busyLabel = message;
   button.disabled = true;
@@ -289,13 +316,20 @@ export async function withBusy(button, message, fn, options = {}) {
   button.textContent = busyLabel;
   if (status) status.textContent = `${message}…`;
   try {
-    return await fn();
+    const result = await fn();
+    completeOperation(token);
+    return result;
+  } catch (error) {
+    failOperation(token, error, operation);
+    return null;
   } finally {
     button.disabled = false;
     button.classList.remove('is-busy');
     button.textContent = original;
   }
 }
+
+export { dismissError, retryOperation };
 
 export function showToast(message) {
   toast.textContent = message;
