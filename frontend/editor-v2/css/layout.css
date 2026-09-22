@@ -111,3 +111,14 @@ details.panel-accordion.is-flash .accordion-body{animation:ic-flash 1.1s var(--e
 .inspector-content .panel-heading{position:sticky;top:-22px;z-index:3;padding:var(--space-22) 0 var(--space-14);margin:0 -1px 12px;background:var(--surface)}
 .quick-actions-grid{grid-template-columns:repeat(3,minmax(68px,1fr))}
 @media (max-width:1180px){.inspector-tabs{gap:var(--space-12);padding-inline:14px}.inspector-tab{font-size:var(--fs-10)}.editor-frame{grid-template-columns:72px minmax(0,1fr) 276px}}
+
+/* PR-18: make all Inspector surfaces discoverable without sacrificing Canvas width. */
+.inspector-tab-strip{display:flex;align-items:stretch;min-width:0;border-bottom:1px solid var(--line)}
+.inspector-tab-strip .inspector-tabs{border-bottom:0;flex:1 1 auto;min-width:0}
+.tab-scroll-button{flex:0 0 28px;display:grid;place-items:center;background:var(--surface);color:var(--muted);font-size:18px;line-height:1;border:0;cursor:pointer}
+.tab-scroll-button:hover:not(:disabled),.tab-scroll-button:focus-visible{background:var(--surface-muted);color:var(--text);outline:none}
+.tab-scroll-button:disabled{opacity:.3;cursor:default}
+.inspector-tabs{scroll-behavior:smooth;overscroll-behavior-inline:contain}
+.inspector-tab{white-space:nowrap}
+.analysis-intro{margin:0 0 var(--space-13);color:var(--muted);font-size:var(--fs-11);line-height:1.55}
+@media (prefers-reduced-motion:reduce){.inspector-tabs{scroll-behavior:auto}}

@@ -45,6 +45,8 @@ export class AnalysisManager {
   setBusy(value) {
     this.busy = value;
     if (this.status) this.status.textContent = value ? 'جارٍ التحليل…' : this.status.textContent;
+    const button = document.querySelector('[data-action="analyze-image"]');
+    if (button) { button.disabled = value; button.classList.toggle('is-busy', value); }
   }
 
   async run() {
@@ -62,6 +64,8 @@ export class AnalysisManager {
       if (this.status) this.status.textContent = report.cache_hit ? 'جاهز — من الذاكرة المؤقتة' : 'اكتمل التحليل';
       if (report.suggestions?.length) this.showSuggestion(report.suggestions[0]);
     } catch (error) {
+      if (this.status) this.status.textContent = 'تعذر التحليل — حاول مرة أخرى';
+      if (this.findingsBox) { this.findingsBox.innerHTML = '<p class="applied-line">تعذر تحميل نتائج التحليل. تحقق من الاتصال ثم أعد المحاولة.</p>'; this.findingsBox.hidden = false; }
       this.showToast(error.message);
     } finally {
       this.setBusy(false);
