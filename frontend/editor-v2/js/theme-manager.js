@@ -1,4 +1,5 @@
 import { appState, setState } from './app-state.js';
+import { iconMarkup } from './icons.js';
 
 export function initThemeManager() {
   applyTheme(appState.theme);
@@ -13,5 +14,5 @@ export function initThemeManager() {
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
   const button = document.querySelector('[data-action="theme"]');
-  if (button) button.textContent = theme === 'light' ? '☾' : '☼';
+  if (button) button.innerHTML = iconMarkup(theme === 'light' ? 'moon' : 'sun');
 }

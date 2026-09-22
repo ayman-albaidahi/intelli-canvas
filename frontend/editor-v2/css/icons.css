@@ -1,0 +1,121 @@
+:root {
+  --icon-size: 18px;
+  --icon-stroke: 1.8;
+}
+
+.icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  line-height: 0;
+  vertical-align: middle;
+}
+
+.icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: var(--icon-stroke);
+}
+
+.button > .icon,
+.icon-button > .icon,
+.view-button > .icon,
+.toolbar-button > .icon,
+.mini-button > .icon,
+.list-action > .icon,
+.quick-action > .icon {
+  margin-inline-end: .42rem;
+}
+
+.icon-button > .icon,
+.toolbar-button > .icon,
+.tab-scroll-button > .icon,
+.more-button > .icon,
+.layer-vis > .icon,
+.layer-lock > .icon,
+.layer-more > .icon {
+  margin-inline-end: 0;
+}
+
+.tool-button {
+  gap: 5px;
+}
+
+.tool-button > span:first-child:not(.icon) {
+  display: none;
+}
+
+.tool-button .icon {
+  width: 20px;
+  height: 20px;
+  color: currentColor;
+}
+
+.tool-button small {
+  line-height: 1.1;
+}
+
+.quick-action > .icon {
+  width: 20px;
+  height: 20px;
+  margin-inline-end: 0;
+  color: var(--accent);
+}
+
+.quick-action > span:first-child:not(.icon) {
+  display: none;
+}
+
+.icon-button .icon,
+.view-button .icon,
+.toolbar-button .icon,
+.mini-button .icon,
+.list-action .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.button-large > .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.layer-vis .icon,
+.layer-lock .icon,
+.layer-more .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.layer-thumb .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.icon-button:hover .icon,
+.tool-button:hover .icon,
+.view-button:hover .icon,
+.quick-action:hover .icon {
+  transform: translateY(-.5px);
+}
+
+.icon,
+.icon svg {
+  transition: transform .16s ease, color .16s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon,
+  .icon svg {
+    transition: none;
+  }
+}

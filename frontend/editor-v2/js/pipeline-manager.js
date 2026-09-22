@@ -1,4 +1,5 @@
 import { escapeHtml } from './escape-html.js';
+import { iconMarkup } from './icons.js';
 
 const DEFAULT_PARAMETERS = {
   brightness: { value: 100 }, contrast: { value: 100 }, saturation: { value: 100 },
@@ -166,7 +167,7 @@ export class PipelineManager {
     if (!this.list) return;
     this.version.textContent = `v${this.pipeline.version || 1}`;
     if (!this.pipeline.nodes?.length) {
-      this.list.innerHTML = '<div class="empty-panel"><div class="panel-icon">≋</div><strong>No pipeline operations</strong><p>Add an operation to build a reusable processing sequence.</p></div>';
+      this.list.innerHTML = `<div class="empty-panel"><div class="panel-icon">${iconMarkup('pipeline')}</div><strong>No pipeline operations</strong><p>Add an operation to build a reusable processing sequence.</p></div>`;
       return;
     }
     this.list.innerHTML = this.pipeline.nodes.map((node, index) => {
@@ -175,7 +176,7 @@ export class PipelineManager {
         return `<label>${escapeHtml(key)}<input type="number" data-node-parameter="${escapeHtml(key)}" value="${escapeHtml(value)}" step="any" /></label>`;
       }).join('');
       const label = OPERATION_LABELS[node.operation] || node.operation;
-      return `<div class="pipeline-row${node.enabled ? '' : ' is-disabled'}" data-node-id="${escapeHtml(node.id)}" tabindex="0" role="listitem" aria-label="${escapeHtml(label)} operation, ${node.enabled ? 'enabled' : 'disabled'}"><div class="pipeline-row-head"><span class="pipeline-drag" aria-hidden="true">☰</span><strong>${escapeHtml(label)}</strong><span class="pipeline-order" aria-label="Order ${index + 1}">${index + 1}</span><button class="mini-button" data-pipeline-action="toggle" aria-label="${node.enabled ? 'Disable' : 'Enable'} ${escapeHtml(label)}" title="Enable or disable">${node.enabled ? 'On' : 'Off'}</button><button class="mini-button" data-pipeline-action="up" aria-label="Move ${escapeHtml(label)} up" title="Move up">↑</button><button class="mini-button" data-pipeline-action="down" aria-label="Move ${escapeHtml(label)} down" title="Move down">↓</button><button class="mini-button" data-pipeline-action="delete" aria-label="Delete ${escapeHtml(label)}" title="Delete">×</button></div><div class="pipeline-params">${parameters || '<span class="muted">No parameters</span>'}</div></div>`;
+      return `<div class="pipeline-row${node.enabled ? '' : ' is-disabled'}" data-node-id="${escapeHtml(node.id)}" tabindex="0" role="listitem" aria-label="${escapeHtml(label)} operation, ${node.enabled ? 'enabled' : 'disabled'}"><div class="pipeline-row-head"><span class="pipeline-drag" aria-hidden="true">${iconMarkup('move')}</span><strong>${escapeHtml(label)}</strong><span class="pipeline-order" aria-label="Order ${index + 1}">${index + 1}</span><button class="mini-button" data-pipeline-action="toggle" aria-label="${node.enabled ? 'Disable' : 'Enable'} ${escapeHtml(label)}" title="Enable or disable">${node.enabled ? 'On' : 'Off'}</button><button class="mini-button" data-pipeline-action="up" aria-label="Move ${escapeHtml(label)} up" title="Move up">${iconMarkup('chevronUp')}</button><button class="mini-button" data-pipeline-action="down" aria-label="Move ${escapeHtml(label)} down" title="Move down">${iconMarkup('chevronDown')}</button><button class="mini-button" data-pipeline-action="delete" aria-label="Delete ${escapeHtml(label)}" title="Delete">${iconMarkup('close')}</button></div><div class="pipeline-params">${parameters || '<span class="muted">No parameters</span>'}</div></div>`;
     }).join('');
   }
 }
