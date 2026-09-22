@@ -7,6 +7,7 @@ from .database import SQLiteSessionRepository
 from .errors import register_error_handlers
 from .routes import (
     analysis_bp,
+    auth_bp,
     background_bp,
     capabilities_bp,
     explain_bp,
@@ -19,6 +20,7 @@ from .routes import (
     suggestions_bp,
     transform_bp,
 )
+from .services.auth_service import AuthService
 from .services.file_service import FileStorageService
 from .services.image_session_service import ImageSessionService
 from .services.layer_compositor_service import LayerCompositorService
@@ -36,6 +38,9 @@ def create_app(database_path: str | None = None) -> Flask:
     app.config["JSON_SORT_KEYS"] = False
     app.config["DATABASE_PATH"] = database_path or app.config["DATABASE_PATH"]
     app.config["IMAGE_SESSIONS"] = SQLiteSessionRepository(app.config["DATABASE_PATH"])
+    app.config["AUTH_SERVICE"] = AuthService(
+        app.config["IMAGE_SESSIONS"], app.config["AUTH_SESSION_TTL_SECONDS"]
+    )
     app.config["IMAGE_SESSION_SERVICE"] = ImageSessionService(
         app.config["IMAGE_SESSIONS"]
     )
@@ -59,6 +64,7 @@ def create_app(database_path: str | None = None) -> Flask:
     app.register_blueprint(pipeline_bp)
     app.register_blueprint(analysis_bp)
     app.register_blueprint(explain_bp)
+    app.register_blueprint(auth_bp)
 
     @app.after_request
     def add_dev_cors_headers(response):

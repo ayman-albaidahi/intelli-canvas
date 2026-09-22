@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from flask import current_app
 
+from .services.auth_service import AuthService
 from .services.file_service import FileStorageService
 from .services.image_session_service import ImageSessionService
 from .services.layer_compositor_service import LayerCompositorService
@@ -49,3 +50,7 @@ def get_session_repository():
 
 def get_layer_compositor() -> LayerCompositorService:
     return current_app.config["LAYER_COMPOSITOR_SERVICE"]
+
+
+def get_auth_service() -> AuthService:
+    return current_app.config["AUTH_SERVICE"]

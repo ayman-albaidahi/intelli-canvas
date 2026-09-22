@@ -1,4 +1,5 @@
 from .analysis import analysis_bp
+from .auth import auth_bp
 from .background import background_bp
 from .capabilities import capabilities_bp
 from .explain import explain_bp
@@ -13,6 +14,7 @@ from .transform import transform_bp
 
 __all__ = [
     "analysis_bp",
+    "auth_bp",
     "background_bp",
     "capabilities_bp",
     "explain_bp",
