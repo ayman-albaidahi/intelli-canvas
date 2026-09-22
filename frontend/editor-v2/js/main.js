@@ -33,7 +33,7 @@ const apiClient = new ApiClient();
 bindTransformTools(canvasManager, apiClient, showToast);
 const cropTool = new CropTool(canvasManager, document.querySelector('#canvas-card'), apiClient, showToast);
 initResizeTool(canvasManager, apiClient, showToast);
-const objectManager = new ObjectManager(document.querySelector('#object-canvas'), showToast);
+const objectManager = new ObjectManager(document.querySelector('#object-canvas'), showToast, canvasManager);
 const layerManager = new LayerManager(objectManager, { list: document.querySelector('#layers-list'), empty: document.querySelector('#layers-empty'), count: document.querySelector('#layer-count'), showToast });
 const refreshLayerPanel = objectManager.onChange;
 let layerSaveTimer = null;

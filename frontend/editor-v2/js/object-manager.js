@@ -18,10 +18,11 @@ const TYPE_LABEL = { brush: 'Brush', shape: 'Shape', text: 'Text', image: 'Image
 export { BLEND_MODES, TYPE_GLYPH, TYPE_LABEL };
 
 export class ObjectManager {
-  constructor(canvas, showToast) {
+  constructor(canvas, showToast, canvasManager) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.showToast = showToast;
+    this.canvasManager = canvasManager || null;
     this.objects = [];
     this.selectedId = null;
     this.mode = null;          // 'move' | 'resize' | 'rotate' | 'draw'
@@ -36,7 +37,7 @@ export class ObjectManager {
     this.canvas.addEventListener('pointerdown', (e) => this.onPointerDown(e));
     this.canvas.addEventListener('pointermove', (e) => this.onPointerMove(e));
     this.canvas.addEventListener('pointerup', (e) => this.onPointerEnd(e));
-    this.canvas.addEventListener('pointercancel', (e) => this.onPointerEnd(e));
+    this.canvas.addEventListener('pointercancel', (e) => this.onPointerCancel(e));
     this.canvas.addEventListener('dblclick', (e) => this.onDoubleClick(e));
     // The text popover's own cancel buttons close it through the shared
     // closer so focus still returns to whatever opened it.
@@ -116,6 +117,13 @@ export class ObjectManager {
     this.counters = { brush: 0, shape: 0, text: 0, image: 0 };
     hydrated.forEach((layer) => {
       if (this.counters[layer.type] !== undefined) this.counters[layer.type] += 1;
+      // Brush points are already stored in image coordinates — converting them
+      // again here would shift every saved stroke on reload. Only the bounding
+      // box needs recomputing, since the stored box was normalised at save time
+      // and the points are the source of truth.
+      if (layer.type === 'brush' && layer.points && layer.points.length) {
+        this.normalizeBrush(layer);
+      }
     });
     this.render();
     if (this.onSelectionChange) this.onSelectionChange(null);
@@ -283,10 +291,18 @@ export class ObjectManager {
   startBrush(point) {
     const color = document.querySelector('#drawing-color')?.value || '#d95687';
     const width = Number(document.querySelector('#brush-size')?.value || 8);
+    const ip = this._screenToImage(point.x, point.y);
     this.drawing = {
       id: 'o' + Math.random().toString(36).slice(2, 9), type: 'brush', name: this.nextName('brush'),
-      color, strokeWidth: width, points: [[point.x, point.y]],
-      rotation: 0, opacity: 1, blend: appState.activeTool === 'eraser' ? 'destination-out' : 'source-over',
+      color, strokeWidth: width, points: [[ip.x, ip.y]],
+      rotation: 0, opacity: 1,
+      // The eraser is an erasing brush, not a new blend mode: it is stored with
+      // a supported blend so the backend accepts the layer, and flagged so the
+      // renderer punches a hole through the layers below it instead of painting
+      // over them. Sending "destination-out" as the stored blend is rejected by
+      // the API with "Layer blend mode is not supported".
+      blend: 'source-over',
+      erasing: appState.activeTool === 'eraser',
       visible: true, locked: false,
     };
   }
@@ -294,8 +310,9 @@ export class ObjectManager {
   extendBrush(point) {
     if (!this.drawing) return;
     const last = this.drawing.points[this.drawing.points.length - 1];
-    if (Math.hypot(point.x - last[0], point.y - last[1]) < 1.5) return;
-    this.drawing.points.push([point.x, point.y]);
+    const ip = this._screenToImage(point.x, point.y);
+    if (Math.hypot(ip.x - last[0], ip.y - last[1]) < 1.5) return;
+    this.drawing.points.push([ip.x, ip.y]);
     this.normalizeBrush(this.drawing);
     this.render();
   }
@@ -346,6 +363,39 @@ export class ObjectManager {
   /* ---------- geometry ---------- */
 
   centerOf(o) { return { x: o.x + o.w / 2, y: o.y + o.h / 2 }; }
+
+  // Screen pixels -> image pixels. The image coordinate origin is the centre
+  // of the document, so after undoing the pan, rotation and scale the result
+  // is re-centred by half the document size — this is the same convention
+  // canvas-manager.sampleImagePixel() uses, and the two must agree or a brush
+  // stroke lands half a document away from the cursor.
+  _screenToImage(px, py) {
+    if (!this.canvasManager || !this.canvasManager.hasImage()) return { x: px, y: py };
+    const cm = this.canvasManager;
+    const dx = px - cm.offset.x;
+    const dy = py - cm.offset.y;
+    const rad = -cm.rotation * Math.PI / 180;
+    return {
+      x: (dx * Math.cos(rad) - dy * Math.sin(rad)) / cm.scale / (cm.flipX || 1)
+        + cm.documentSize.width / 2,
+      y: (dx * Math.sin(rad) + dy * Math.cos(rad)) / cm.scale / (cm.flipY || 1)
+        + cm.documentSize.height / 2,
+    };
+  }
+
+  // Exact inverse of _screenToImage, used to place stored strokes back on
+  // screen at render time.
+  _imageToScreen(ix, iy) {
+    if (!this.canvasManager || !this.canvasManager.hasImage()) return { x: ix, y: iy };
+    const cm = this.canvasManager;
+    const rot = cm.rotation * Math.PI / 180;
+    const sx = (ix - cm.documentSize.width / 2) * cm.scale * (cm.flipX || 1);
+    const sy = (iy - cm.documentSize.height / 2) * cm.scale * (cm.flipY || 1);
+    return {
+      x: sx * Math.cos(rot) - sy * Math.sin(rot) + cm.offset.x,
+      y: sx * Math.sin(rot) + sy * Math.cos(rot) + cm.offset.y,
+    };
+  }
 
   toLocal(o, px, py) {
     const c = this.centerOf(o);
@@ -531,6 +581,25 @@ export class ObjectManager {
     }
   }
 
+  // A pointercancel is the browser saying the gesture was interrupted (a
+  // system gesture, a window blur, a tablet lift). It is not a completed
+  // stroke, so the in-flight brush is dropped instead of being committed as a
+  // partial layer — otherwise a cancelled drag leaves a fragment behind.
+  onPointerCancel(event) {
+    if (this.mode === 'draw') {
+      this.drawing = null;
+      this.render();
+    } else if (this.drag) {
+      this.drag = null;
+    }
+    this.mode = null;
+    this.shapeStart = null;
+    this.shapeCurrent = null;
+    this.angleReadout = null;
+    this.render();
+    if (this.onSelectionChange) this.onSelectionChange(this.selectedId);
+  }
+
   onPointerEnd(event) {
     if (this.mode === 'draw') { this.endBrush(); }
     else if (this.mode === 'shape-draw' && this.shapeStart && this.shapeCurrent) {
@@ -597,11 +666,21 @@ export class ObjectManager {
     const c = this.centerOf(o);
     ctx.save();
     ctx.globalAlpha = o.opacity;
+
+    // Brush strokes are stored in image coordinates and drawBrushStroke()
+    // projects them into screen coordinates. Keep them out of the generic
+    // object transform below; otherwise the center translation is applied a
+    // second time and the visible stroke is displaced from the pointer.
+    if (o.type === 'brush') {
+      this.drawBrushStroke({ ...o, points: o.pointsRel });
+      ctx.restore();
+      return;
+    }
+
     ctx.globalCompositeOperation = o.blend || 'source-over';
     ctx.translate(c.x, c.y);
     ctx.rotate((o.rotation * Math.PI) / 180);
-    if (o.type === 'brush') this.drawBrushStroke({ ...o, points: o.pointsRel });
-    else if (o.type === 'image') ctx.drawImage(o.img, -o.w / 2, -o.h / 2, o.w, o.h);
+    if (o.type === 'image') ctx.drawImage(o.img, -o.w / 2, -o.h / 2, o.w, o.h);
     else if (o.type === 'text') {
       ctx.font = `600 ${o.fontSize}px Inter, "Segoe UI", Tahoma, sans-serif`;
       ctx.fillStyle = o.color;
@@ -620,7 +699,7 @@ export class ObjectManager {
       const center = this.centerOf(object);
       ctx.save();
       ctx.globalAlpha = object.opacity;
-      ctx.globalCompositeOperation = object.blend || 'source-over';
+      ctx.globalCompositeOperation = object.erasing ? 'destination-out' : (object.blend || 'source-over');
       ctx.translate((center.x - imageRect.x) * scaleX, (center.y - imageRect.y) * scaleY);
       ctx.rotate((object.rotation * Math.PI) / 180);
       ctx.scale(scaleX, scaleY);
@@ -652,18 +731,26 @@ export class ObjectManager {
   drawBrushStroke(stroke) {
     const ctx = this.ctx;
     const c = stroke.x !== undefined ? this.centerOf(stroke) : { x: 0, y: 0 };
+    const screenC = this._imageToScreen(c.x, c.y);
     const points = stroke.pointsRel || stroke.points;
+    const screenPoints = points.map(([px, py]) => {
+      const s = this._imageToScreen(c.x + px, c.y + py);
+      return [s.x - screenC.x, s.y - screenC.y];
+    });
     ctx.save();
     ctx.globalAlpha = stroke.opacity;
-    ctx.globalCompositeOperation = stroke.blend || 'source-over';
-    ctx.translate(c.x, c.y);
-    ctx.rotate(((stroke.rotation || 0) * Math.PI) / 180);
+    // An erasing stroke composites a hole into everything drawn before it on
+    // this canvas. The stored blend stays a supported mode for the API; only
+    // the on-canvas composite uses destination-out.
+    ctx.globalCompositeOperation = stroke.erasing ? 'destination-out' : (stroke.blend || 'source-over');
+    ctx.translate(screenC.x, screenC.y);
+    ctx.rotate((stroke.rotation || 0) * Math.PI / 180);
     ctx.strokeStyle = stroke.color;
     ctx.lineWidth = stroke.strokeWidth;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.beginPath();
-    points.forEach(([px, py], i) => { if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); });
+    screenPoints.forEach(([px, py], i) => { if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); });
     ctx.stroke();
     ctx.restore();
   }
