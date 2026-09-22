@@ -117,7 +117,6 @@
   .button,
   .icon-button,
   .view-button,
-  .zoom-button,
   .toolbar-button,
   .mini-button,
   .inspector-tab,
@@ -125,7 +124,6 @@
   .more-button,
   .avatar,
   .list-action,
-  .bottom-link,
   .panel-accordion > summary {
     min-height: 44px;
     min-width: 44px;
@@ -144,7 +142,6 @@
      that could never clear 44px on their own. */
   .button.full-width,
   .list-action,
-  .bottom-link,
   .check-row,
   .property-field {
     min-height: 44px;

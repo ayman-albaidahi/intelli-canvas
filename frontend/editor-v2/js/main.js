@@ -27,7 +27,6 @@ initDialogFocusTrap();
 
 const fileInput = document.querySelector('#file-input');
 const emptyCanvas = document.querySelector('#empty-canvas');
-const mockArtboard = document.querySelector('#mock-artboard');
 const statusMessage = document.querySelector('#status-message');
 const canvasManager = new CanvasManager(document.querySelector('#image-canvas'), document.querySelector('#canvas-card'));
 const apiClient = new ApiClient();
@@ -124,7 +123,6 @@ async function uploadImageFile(file) {
     analysisManager.reset();
     smartCropManager.resetPreviewOnly();
     emptyCanvas.hidden = true;
-    mockArtboard.hidden = true;
     document.querySelector('#document-name').textContent = image.original_filename;
     document.querySelector('#canvas-size').textContent = `${image.width ?? canvasManager.getSourceDimensions().width} × ${image.height ?? canvasManager.getSourceDimensions().height}`;
     document.querySelector('#save-state').textContent = 'Saved in API session';
