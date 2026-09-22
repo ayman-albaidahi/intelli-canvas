@@ -9,7 +9,7 @@
 // viewport at either size.
 
 import { test, expect } from '@playwright/test';
-import { expectNoControlOutsideViewport } from './fixtures.js';
+import { expectNoControlOutsideViewport, makePngPath, waitForImageLoaded } from './fixtures.js';
 
 const MOBILE = { width: 390, height: 844 };
 const TABLET = { width: 1024, height: 900 };
@@ -20,6 +20,8 @@ test.describe('mobile interaction model', () => {
 
   test('the inspector drawer opens, shows panel content, and closes via the scrim', async ({ page }) => {
     await page.goto('/editor-v2/');
+    await page.setInputFiles('#file-input', makePngPath(test.info(), 'mobile-panels.png'));
+    await waitForImageLoaded(page);
 
     const toggle = page.locator('[data-action="inspector-toggle"]');
     const inspector = page.locator('#inspector');
@@ -73,6 +75,8 @@ test.describe('mobile interaction model', () => {
 
   test('a tool-rail panel button reveals the drawer rather than changing hidden state behind it', async ({ page }) => {
     await page.goto('/editor-v2/');
+    await page.setInputFiles('#file-input', makePngPath(test.info(), 'mobile-adjustments.png'));
+    await waitForImageLoaded(page);
 
     // The rail's Adjust button focuses the adjustments accordion. On mobile
     // that focus is invisible unless the drawer opens with it — the original

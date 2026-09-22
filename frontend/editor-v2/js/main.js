@@ -1,6 +1,6 @@
 import { appState, setState } from './app-state.js';
 import { initThemeManager } from './theme-manager.js';
-import { initUI, initDialogEscape, initDialogFocusTrap, showToast } from './ui-manager.js';
+import { initUI, initDialogEscape, initDialogFocusTrap, setEditorReady, showToast } from './ui-manager.js';
 import { CanvasManager } from './canvas-manager.js';
 import { bindTransformTools } from './transform-tools.js';
 import { CropTool } from './crop-tool.js';
@@ -126,6 +126,7 @@ async function uploadImageFile(file) {
     await restoreLayers();
     analysisManager.reset();
     smartCropManager.resetPreviewOnly();
+    setEditorReady(true);
     emptyCanvas.hidden = true;
     document.querySelector('#document-name').textContent = image.original_filename;
     document.querySelector('#canvas-size').textContent = `${image.width ?? canvasManager.getSourceDimensions().width} × ${image.height ?? canvasManager.getSourceDimensions().height}`;
@@ -133,6 +134,7 @@ async function uploadImageFile(file) {
     statusMessage.textContent = 'Image loaded — backend session ready';
     showToast(`${image.original_filename} uploaded successfully`);
   } catch (error) {
+    setEditorReady(false);
     statusMessage.textContent = error.message.startsWith('Could not reach') ? 'Backend offline' : 'Upload failed';
     showToast(error.message);
   } finally {

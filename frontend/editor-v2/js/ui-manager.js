@@ -16,7 +16,25 @@ const isMobile = () => mobileQuery()?.matches ?? false;
 
 const READY_PANELS = new Set(['adjustments', 'filters', 'background', 'smart-crop']);
 
+export function setEditorReady(ready) {
+  const isReady = Boolean(ready);
+  document.body.dataset.editorReady = String(isReady);
+  document.querySelectorAll('[data-requires-image]').forEach((control) => {
+    control.disabled = !isReady;
+    control.classList.toggle('is-disabled', !isReady);
+    control.setAttribute('aria-disabled', String(!isReady));
+    if (!isReady) control.title = `${(control.title || 'This action').split(' — ')[0]} — Upload an image first`;
+  });
+  document.querySelectorAll('[data-inspector]').forEach((tab) => {
+    const available = isReady || tab.dataset.inspector === 'properties';
+    tab.disabled = !available;
+    tab.classList.toggle('is-disabled', !available);
+    tab.setAttribute('aria-disabled', String(!available));
+  });
+}
+
 export function initUI() {
+  setEditorReady(false);
   document.querySelectorAll('[data-tool]').forEach((button) => {
     button.addEventListener('click', () => {
       document.querySelectorAll('[data-tool]').forEach((item) => {
@@ -168,6 +186,7 @@ function closeOtherAccordions(activeSection) {
 
 
 export function switchInspector(name) {
+  if (document.body.dataset.editorReady !== 'true' && name !== 'properties') return;
   setState({ activeInspector: name });
   document.querySelectorAll('[data-inspector]').forEach((tab) => {
     const active = tab.dataset.inspector === name;

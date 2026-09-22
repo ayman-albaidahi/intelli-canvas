@@ -8,6 +8,7 @@ const MARKUP = `
   <div class="inspector-tabs" role="tablist" aria-label="Editor surfaces">
     <button class="inspector-tab is-active" data-inspector="properties" role="tab">Properties</button>
     <button class="inspector-tab" data-inspector="layers" role="tab">Layers <span class="count-pill">0</span></button>
+    <button class="inspector-tab" data-inspector="analysis" role="tab">Intelligence</button>
   </div>
   <section class="inspector-content" id="properties-panel">properties</section>
   <section class="inspector-content" id="layers-panel" hidden>layers</section>
@@ -23,6 +24,7 @@ let toggleInspectorDrawer;
 let inspector;
 let scrim;
 let toggle;
+let setEditorReady;
 
 beforeAll(async () => {
   document.body.innerHTML = MARKUP;
@@ -31,6 +33,7 @@ beforeAll(async () => {
     openInspectorDrawer,
     closeInspectorDrawer,
     toggleInspectorDrawer,
+    setEditorReady,
   } = ui);
   inspector = document.querySelector('#inspector');
   scrim = document.querySelector('#inspector-scrim');
@@ -83,5 +86,34 @@ describe('inspector drawer', () => {
       closeInspectorDrawer();
       toggleInspectorDrawer();
     }).not.toThrow();
+  });
+});
+
+describe('pre-upload progressive disclosure', () => {
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <button data-inspector="properties"></button>
+      <button data-inspector="analysis"></button>
+      <button data-tool="brush" data-requires-image title="Brush (B)"></button>
+      <button data-action="zoom-in" data-requires-image title="Zoom in"></button>
+    `;
+  });
+
+  it('disables image tools and non-properties tabs before upload', () => {
+    setEditorReady(false);
+
+    expect(document.querySelector('[data-tool="brush"]').disabled).toBe(true);
+    expect(document.querySelector('[data-action="zoom-in"]').disabled).toBe(true);
+    expect(document.querySelector('[data-inspector="analysis"]').disabled).toBe(true);
+    expect(document.body.dataset.editorReady).toBe('false');
+  });
+
+  it('enables image tools and Intelligence after upload readiness', () => {
+    setEditorReady(true);
+
+    expect(document.querySelector('[data-tool="brush"]').disabled).toBe(false);
+    expect(document.querySelector('[data-action="zoom-in"]').disabled).toBe(false);
+    expect(document.querySelector('[data-inspector="analysis"]').disabled).toBe(false);
+    expect(document.body.dataset.editorReady).toBe('true');
   });
 });
