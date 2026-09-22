@@ -57,6 +57,18 @@ test.describe('inspector tabs', () => {
     await page.keyboard.press('Home');
     await expect(page.locator('[data-inspector="properties"]')).toBeFocused();
   });
+
+  test('quick action opens Intelligence and keeps its tab discoverable', async ({ page }, testInfo) => {
+    await page.setInputFiles('#file-input', makePngPath(testInfo, 'intelligence-tab.png'));
+    await waitForImageLoaded(page);
+
+    await expect(page.locator('.inspector-tab-strip')).toBeVisible();
+    await page.locator('.quick-action[data-panel="analysis"]').click();
+
+    await expect(page.locator('[data-inspector="analysis"]')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#analysis-panel')).toBeVisible();
+    await expect(page.locator('[data-inspector="analysis"]')).toContainText('Intelligence');
+  });
 });
 
 test.describe('status and tools', () => {

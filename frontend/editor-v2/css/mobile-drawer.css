@@ -83,6 +83,12 @@
     display: none;
   }
 
+  .tab-scroll-button {
+    flex-basis: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
   .inspector-content {
     flex: 1 1 auto;
     min-height: 0;

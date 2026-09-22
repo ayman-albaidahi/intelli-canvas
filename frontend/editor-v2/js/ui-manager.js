@@ -192,7 +192,9 @@ export function switchInspector(name) {
     const active = tab.dataset.inspector === name;
     tab.classList.toggle('is-active', active);
     tab.setAttribute('aria-selected', String(active));
+    if (active) tab.scrollIntoView?.({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest', inline: 'nearest' });
   });
+  updateInspectorTabScroller();
   document.querySelector('#properties-panel').hidden = name !== 'properties';
   document.querySelector('#layers-panel').hidden = name !== 'layers';
   const analysisPanel = document.querySelector('#analysis-panel');
@@ -342,6 +344,36 @@ export function initDialogFocusTrap() {
       first.focus();
     }
   });
+}
+
+function initInspectorTabScroller(tabs) {
+  const strip = document.querySelector('.inspector-tabs');
+  if (!strip) return;
+  document.querySelectorAll('[data-tab-scroll]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const amount = Math.max(strip.clientWidth * 0.75, 140) * (button.dataset.tabScroll === 'prev' ? -1 : 1);
+      strip.scrollBy({ left: amount, behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    });
+  });
+  strip.addEventListener('scroll', updateInspectorTabScroller, { passive: true });
+  window.addEventListener('resize', updateInspectorTabScroller);
+  updateInspectorTabScroller();
+  tabs.forEach((tab) => tab.setAttribute('tabindex', tab.dataset.inspector === 'properties' ? '0' : '-1'));
+}
+
+function updateInspectorTabScroller() {
+  const strip = document.querySelector('.inspector-tabs');
+  if (!strip) return;
+  const overflow = strip.scrollWidth > strip.clientWidth + 1;
+  const atStart = strip.scrollLeft <= 1;
+  const atEnd = strip.scrollLeft + strip.clientWidth >= strip.scrollWidth - 1;
+  const prev = document.querySelector('[data-tab-scroll="prev"]');
+  const next = document.querySelector('[data-tab-scroll="next"]');
+  if (prev) { prev.hidden = !overflow; prev.disabled = atStart; }
+  if (next) { next.hidden = !overflow; next.disabled = atEnd; }
+  strip.dataset.overflow = String(overflow);
+  strip.dataset.atStart = String(atStart);
+  strip.dataset.atEnd = String(atEnd);
 }
 
 function label(value) { return value.charAt(0).toUpperCase() + value.slice(1); }
