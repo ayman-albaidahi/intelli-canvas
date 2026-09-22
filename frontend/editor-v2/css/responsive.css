@@ -1,4 +1,9 @@
-@media(max-width:1240px){.editor-frame{grid-template-columns:72px minmax(480px,1fr) 260px}.tool-button{width:56px}.tool-button small{font-size:var(--fs-8)}.topbar{padding:0 var(--space-16)}.document-name{display:none}.inspector-content{padding:var(--space-18) var(--space-14)}}@media(max-width:900px){body{min-width:0}.editor-frame{grid-template-columns:68px 1fr}.inspector{display:none}.canvas-card{width:min(720px,82%)}}
+@media(max-width:1240px){.editor-frame{grid-template-columns:72px minmax(480px,1fr) 260px}.tool-button{width:56px}.topbar{padding:0 var(--space-16)}.document-name{display:none}.inspector-content{padding:var(--space-18) var(--space-14)}}@media(max-width:900px){body{min-width:0}.editor-frame{grid-template-columns:68px 1fr}.inspector{display:none}.canvas-card{width:min(720px,82%)}
+  /* On a phone the rail is 60px wide and every pixel of vertical room counts.
+     The visible "TOOLS" caption is decorative — the aside already names the
+     region through its aria-label — so it drops out on small screens, which
+     is also what keeps the full tool list inside a short viewport. */
+  .tool-rail-heading{display:none}}
 @media(max-width:1240px){.canvas-toolbar{bottom:12px;padding:var(--space-4)}.toolbar-button{min-width:26px;height:26px;font-size:var(--fs-10);padding:0 var(--space-6)}.zoom-display{min-width:46px}}
 @media(max-width:900px){.canvas-toolbar{max-width:calc(100% - 20px);overflow-x:auto}}
 
@@ -10,8 +15,9 @@
 @media(max-width:1240px){
   body{min-width:0}
   .editor-frame{grid-template-columns:64px minmax(280px,1fr) 250px}
-  .tool-button{width:52px;height:52px}
-  .tool-button span{font-size:var(--fs-18)}
+  .tool-button{width:52px;height:48px}
+  .tool-button span{font-size:var(--fs-19)}
+  .tool-button small{font-size:var(--fs-9)}
 }
 @media(max-width:1024px){
   .editor-frame{grid-template-columns:60px minmax(240px,1fr) 236px}
@@ -31,6 +37,14 @@
 @media(max-height:680px){
   .workspace-header{height:40px}
   .statusbar{display:none}
+  /* Very short windows also cost the rail: the heading and the collapse
+     affordance are the only pieces that are decorative rather than
+     functional, so they go first and every tool stays reachable. */
+  .tool-rail-heading{display:none}
+  .rail-collapse{display:none}
+  .tool-rail{padding:var(--space-6) var(--space-8);gap:var(--space-5)}
+  .tool-button{height:44px}
+  .tool-spacer{min-height:var(--space-2)}
   .canvas-toolbar{bottom:8px;padding:var(--space-3)}
   .toolbar-button{height:24px;min-width:24px;font-size:var(--fs-10);padding:0 var(--space-6)}
   .zoom-display{min-width:42px}
