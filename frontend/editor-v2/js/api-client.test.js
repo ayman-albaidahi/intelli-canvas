@@ -170,3 +170,39 @@ describe('ApiClient — revision tracking', () => {
     expect(c.revision).toBe(2);
   });
 });
+
+describe('ApiClient — authentication and request security', () => {
+  beforeEach(() => {
+    document.cookie = 'ic_csrf=test-csrf-token; path=/';
+    delete window.INTELLICANVAS_API_BASE;
+  });
+
+  afterEach(() => {
+    document.cookie = 'ic_csrf=; Max-Age=0; path=/';
+    vi.restoreAllMocks();
+  });
+
+  it('sends credentials and the CSRF header on logout', async () => {
+    jsonOnce({ success: true });
+    await client().logout();
+    const [, options] = global.fetch.mock.calls[0];
+    expect(options.credentials).toBe('include');
+    expect(options.headers.get('X-CSRF-Token')).toBe('test-csrf-token');
+  });
+
+  it('provides the current authenticated user from /auth/me', async () => {
+    jsonOnce({ success: true, authenticated: true, user: { email: 'user@example.com' } });
+    const result = await client().me();
+    expect(result.authenticated).toBe(true);
+    expect(result.user.email).toBe('user@example.com');
+  });
+
+  it('dispatches an auth-required event for expired sessions', async () => {
+    jsonOnce({ success: false, error: { code: 'AUTH_REQUIRED', message: 'required' } }, { status: 401 });
+    const listener = vi.fn();
+    window.addEventListener('ic-auth-required', listener);
+    await expect(client().me()).rejects.toThrow('Your session has expired');
+    expect(listener).toHaveBeenCalledOnce();
+    window.removeEventListener('ic-auth-required', listener);
+  });
+});

@@ -1,0 +1,103 @@
+.auth-gate {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-24);
+  background: var(--surface-muted);
+}
+
+.auth-card {
+  width: min(100%, 430px);
+  padding: clamp(var(--space-24), 6vw, var(--space-27));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-9);
+  margin-bottom: var(--space-27);
+  color: var(--text);
+  font-size: var(--fs-14);
+  font-weight: 800;
+}
+
+.auth-brand img {
+  width: 32px;
+  height: 32px;
+}
+
+.auth-card h1 {
+  margin: var(--space-5) 0 var(--space-8);
+  color: var(--text);
+  font-size: clamp(var(--fs-21), 4vw, var(--fs-26));
+  letter-spacing: -.04em;
+}
+
+.auth-copy {
+  margin: 0 0 var(--space-24);
+  color: var(--muted);
+  font-size: var(--fs-11);
+  line-height: 1.6;
+}
+
+.auth-error {
+  margin: var(--space-12) 0;
+  padding: var(--space-10) var(--space-12);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 45%, var(--line));
+  border-radius: var(--radius-sm);
+  color: var(--accent-strong);
+  font-size: var(--fs-10);
+  line-height: 1.5;
+}
+
+.button-primary:focus,
+.button-primary:focus-visible {
+  outline: 3px solid var(--accent-strong);
+  outline-offset: 3px;
+}
+
+.auth-card .button-primary {
+  outline: 3px solid var(--accent-strong) !important;
+  outline-offset: 3px;
+}
+
+.auth-loading {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: var(--space-7);
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: auth-spin .7s linear infinite;
+  vertical-align: -1px;
+}
+
+.account-label {
+  max-width: 150px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--fs-10);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.document-name {
+  max-width: 24%;
+  overflow: hidden;
+  pointer-events: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes auth-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-loading { animation: none; }
+}
