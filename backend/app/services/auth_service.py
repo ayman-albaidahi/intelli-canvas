@@ -8,8 +8,8 @@ import time
 import uuid
 from typing import Any
 
-from ..database import SQLiteSessionRepository
 from ..security import check_password_hash, generate_password_hash
+from .auth_store import AuthStore
 
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 MIN_PASSWORD_LENGTH = 10
@@ -40,7 +40,7 @@ def public_user(user: dict[str, Any]) -> dict[str, Any]:
 
 
 class AuthService:
-    def __init__(self, repository: SQLiteSessionRepository, session_ttl: int):
+    def __init__(self, repository: AuthStore, session_ttl: int):
         self.repository = repository
         self.session_ttl = session_ttl
 
