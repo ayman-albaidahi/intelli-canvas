@@ -77,7 +77,7 @@
 
 .button-auth-primary {
   background: var(--accent-button);
-  color: #fff;
+  color: var(--brand-ink);
   box-shadow: 0 5px 13px color-mix(in srgb, var(--accent-button) 22%, transparent);
 }
 

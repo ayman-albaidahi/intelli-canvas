@@ -208,7 +208,7 @@ for (const theme of ['light', 'dark']) {
   test.describe(`WCAG contrast — ${theme} theme`, () => {
     test.beforeEach(async ({ page }) => {
       await page.addInitScript((t) => {
-        localStorage.setItem('ic-theme', t);
+        localStorage.setItem('intelli-canvas-theme', t);
       }, theme);
       await page.goto('/editor-v2/');
       await page.waitForTimeout(300);
