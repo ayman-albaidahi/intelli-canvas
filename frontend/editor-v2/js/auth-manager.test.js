@@ -3,12 +3,13 @@ import { AuthManager } from './auth-manager.js';
 
 function fixture() {
   document.body.innerHTML = `
-    <section id="auth-gate"><form id="login-form"><input id="login-email"><input id="login-password"><button id="login-submit"></button><span id="auth-loading"></span><p id="login-error"></p></form></section>
+    <section id="auth-gate"><div id="login-view"></div><div id="register-view" hidden></div><form id="login-form"><input id="login-email"><input id="login-password"><button id="login-submit"></button><span id="auth-loading"></span><p id="login-error"></p></form><form id="register-form" hidden><input id="register-name"><input id="register-email"><input id="register-password"><input id="register-confirm-password"><button id="register-submit"></button><span id="register-loading"></span><p id="register-error"></p></form><button id="show-register"></button><button id="show-login" hidden></button></section>
     <div class="app-shell"><span id="account-label"></span><span id="account-avatar"></span><button id="logout-button"></button></div>
   `;
   const apiClient = {
     me: vi.fn(),
     login: vi.fn(),
+    register: vi.fn(),
     logout: vi.fn(),
     resetSession: vi.fn(),
   };
@@ -59,5 +60,41 @@ describe('AuthManager', () => {
     expect(document.querySelector('#login-error').textContent).toContain('Invalid email');
     expect(localStorage.length).toBe(0);
     expect(sessionStorage.length).toBe(0);
+  });
+
+  it('switches between sign in and create account views', () => {
+    const { manager } = fixture();
+    manager.showRegister();
+    expect(document.querySelector('#login-form').hidden).toBe(true);
+    expect(document.querySelector('#register-form').hidden).toBe(false);
+    document.querySelector('#show-login').click();
+    expect(document.querySelector('#login-form').hidden).toBe(false);
+    expect(document.querySelector('#register-form').hidden).toBe(true);
+  });
+
+  it('validates password confirmation before calling the API', async () => {
+    const { apiClient, manager } = fixture();
+    manager.showRegister();
+    document.querySelector('#register-email').value = 'new@example.com';
+    document.querySelector('#register-password').value = 'password123';
+    document.querySelector('#register-confirm-password').value = 'different123';
+    await manager.register();
+    expect(apiClient.register).not.toHaveBeenCalled();
+    expect(document.querySelector('#register-error').textContent).toContain('do not match');
+  });
+
+  it('registers the user and signs them in automatically', async () => {
+    const { apiClient, manager } = fixture();
+    apiClient.register.mockResolvedValue({ success: true, user: { email: 'new@example.com' } });
+    apiClient.login.mockResolvedValue({ user: { email: 'new@example.com', display_name: 'New User' } });
+    manager.showRegister();
+    document.querySelector('#register-name').value = 'New User';
+    document.querySelector('#register-email').value = 'new@example.com';
+    document.querySelector('#register-password').value = 'password123';
+    document.querySelector('#register-confirm-password').value = 'password123';
+    await manager.register();
+    expect(apiClient.register).toHaveBeenCalledWith('new@example.com', 'password123', 'New User');
+    expect(apiClient.login).toHaveBeenCalledWith('new@example.com', 'password123');
+    expect(document.querySelector('.app-shell').hidden).toBe(false);
   });
 });

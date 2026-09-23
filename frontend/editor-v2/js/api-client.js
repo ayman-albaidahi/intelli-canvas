@@ -77,6 +77,14 @@ export class ApiClient {
     });
   }
 
+  async register(email, password, displayName = '') {
+    return request(`${this.baseUrl}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, display_name: displayName || undefined }),
+    });
+  }
+
   async logout() {
     return request(`${this.baseUrl}/auth/logout`, { method: 'POST' });
   }

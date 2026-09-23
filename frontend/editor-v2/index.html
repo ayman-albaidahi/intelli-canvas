@@ -24,14 +24,29 @@
       <div class="auth-card">
         <div class="auth-brand"><img src="assets/intellicanvas-logo.png" alt="" /><span>IntelliCanvas</span></div>
         <span class="eyebrow">Private workspace</span>
-        <h1 id="login-heading">Sign in to your canvas</h1>
-        <p class="auth-copy">Your projects and editing sessions stay protected behind your account.</p>
+        <div id="login-view">
+          <h1 id="login-heading">Sign in to your canvas</h1>
+          <p class="auth-copy">Your projects and editing sessions stay protected behind your account.</p>
+        </div>
+        <div id="register-view" hidden>
+          <h1 id="register-heading">Create your account</h1>
+          <p class="auth-copy">Create a private workspace for your projects and editing sessions.</p>
+        </div>
         <form id="login-form" novalidate>
           <label class="property-field" for="login-email">Email<input id="login-email" name="email" type="email" autocomplete="username" required /></label>
           <label class="property-field" for="login-password">Password<input id="login-password" name="password" type="password" autocomplete="current-password" required /></label>
           <p id="login-error" class="auth-error" role="alert" hidden></p>
           <button id="login-submit" class="button button-auth-primary full-width" type="submit"><span id="auth-loading" class="auth-loading" hidden aria-hidden="true"></span>Sign in</button>
         </form>
+        <form id="register-form" novalidate hidden>
+          <label class="property-field" for="register-name">Display name <span class="field-optional">(optional)</span><input id="register-name" name="display_name" type="text" autocomplete="name" maxlength="80" /></label>
+          <label class="property-field" for="register-email">Email<input id="register-email" name="email" type="email" autocomplete="email" required /></label>
+          <label class="property-field" for="register-password">Password <span class="field-hint">(at least 8 characters)</span><input id="register-password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required /></label>
+          <label class="property-field" for="register-confirm-password">Confirm password<input id="register-confirm-password" name="confirm_password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required /></label>
+          <p id="register-error" class="auth-error" role="alert" hidden></p>
+          <button id="register-submit" class="button button-auth-primary full-width" type="submit"><span id="register-loading" class="auth-loading" hidden aria-hidden="true"></span>Create account</button>
+        </form>
+        <div class="auth-switch"><span id="auth-switch-copy">New to IntelliCanvas?</span><button id="show-register" class="button button-link" type="button">Create account</button><button id="show-login" class="button button-link" type="button" hidden>Back to sign in</button></div>
       </div>
     </section>
     <div class="app-shell" hidden>
