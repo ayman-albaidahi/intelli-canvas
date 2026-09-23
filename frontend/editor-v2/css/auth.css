@@ -44,6 +44,27 @@
   line-height: 1.6;
 }
 
+.auth-switch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+  margin-top: var(--space-18);
+  color: var(--muted);
+  font-size: var(--fs-10);
+}
+
+.button-link {
+  min-height: auto;
+  padding: 0;
+  color: var(--accent-strong);
+  font-size: inherit;
+  font-weight: 750;
+}
+
+.button-link:hover { color: var(--text); background: transparent; }
+.field-optional,.field-hint { color: var(--muted-2); font-size: var(--fs-9); font-weight: 500; }
+
 .auth-error {
   margin: var(--space-12) 0;
   padding: var(--space-10) var(--space-12);
