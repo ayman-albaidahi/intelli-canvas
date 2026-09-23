@@ -94,6 +94,42 @@
   margin-top: 0;
 }
 
+.advanced-disclosure {
+  margin: var(--space-12) 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+}
+
+.advanced-disclosure > summary {
+  padding: var(--space-10) var(--space-12);
+  cursor: pointer;
+  list-style: none;
+}
+
+.advanced-disclosure > summary::-webkit-details-marker { display: none; }
+
+.advanced-disclosure > summary::after {
+  content: '›';
+  float: right;
+  color: var(--muted-2);
+  transition: transform .18s var(--ease);
+}
+
+.advanced-disclosure[open] > summary::after { transform: rotate(90deg); }
+
+.advanced-body {
+  padding: 0 var(--space-12) var(--space-12);
+  border-top: 1px solid var(--line);
+}
+
+.advanced-help {
+  margin: var(--space-10) 0 var(--space-12);
+  color: var(--muted);
+  font-size: var(--fs-10);
+  line-height: 1.5;
+}
+
 .processing-context-summary,
 .error-context-summary {
   display: grid;
