@@ -121,14 +121,14 @@ describe('eraser layer hygiene', () => {
 
   it('never stores destination-out as the blend mode', () => {
     const mgr = makeManager(makeCanvasManager());
-    document.body.innerHTML = '<input id="brush-size" value="8"><input id="drawing-color" value="#d95687">';
+    document.body.innerHTML = '<input id="brush-size" value="8"><input id="drawing-color" value="#0e9c81">';
     mgr.startBrush({ x: 400, y: 300 });
     expect(mgr.drawing.blend).toBe('source-over');
   });
 
   it('flags erasing strokes while keeping a supported stored blend', () => {
     const mgr = makeManager(makeCanvasManager());
-    document.body.innerHTML = '<input id="brush-size" value="8"><input id="drawing-color" value="#d95687">';
+    document.body.innerHTML = '<input id="brush-size" value="8"><input id="drawing-color" value="#0e9c81">';
     mgr.startBrush({ x: 400, y: 300 });
     mgr.drawing.erasing = true;
     mgr.drawing.points.push([410, 310]);
@@ -140,7 +140,7 @@ describe('eraser layer hygiene', () => {
 
   it('survives a save/restore round-trip without re-converting stored points', () => {
     const mgr = makeManager(makeCanvasManager({ width: 100, height: 100 }));
-    document.body.innerHTML = '<input id="brush-size" value="8"><input id="drawing-color" value="#d95687">';
+    document.body.innerHTML = '<input id="brush-size" value="8"><input id="drawing-color" value="#0e9c81">';
     mgr.startBrush({ x: 400, y: 300 });
     mgr.drawing.points.push([420, 320]);
     mgr.endBrush();
@@ -169,7 +169,7 @@ describe('eraser layer hygiene', () => {
     mgr.objects = [{
       id: 'brush-1', type: 'brush', x: 10, y: 10, w: 20, h: 20,
       pointsRel: [[-10, -10], [10, 10]], strokeWidth: 8,
-      color: '#d95687', opacity: 1, rotation: 0, blend: 'source-over', visible: true,
+      color: '#0e9c81', opacity: 1, rotation: 0, blend: 'source-over', visible: true,
     }];
 
     mgr.drawObject(mgr.objects[0]);
@@ -195,7 +195,7 @@ describe('eraser layer hygiene', () => {
     mgr.objects = [{
       id: 'eraser-1', type: 'brush', x: 40, y: 40, w: 20, h: 20,
       pointsRel: [[-10, -10], [10, 10]], strokeWidth: 8,
-      color: '#d95687', opacity: 1, rotation: 0,
+      color: '#0e9c81', opacity: 1, rotation: 0,
       blend: 'source-over', erasing: true, visible: true,
     }];
 
