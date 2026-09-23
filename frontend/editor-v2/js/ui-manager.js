@@ -314,11 +314,13 @@ export async function withBusy(button, message, fn, options = {}) {
   if (!button) return fn();
   const token = beginOperation({ operation, retry });
   if (token === null) return null;
-  const original = label ?? button.textContent;
-  const busyLabel = message;
+  const originalHTML = button.innerHTML;
+  const originalLabel = button.getAttribute('aria-label');
   button.disabled = true;
   button.classList.add('is-busy');
-  button.textContent = busyLabel;
+  button.setAttribute('aria-busy', 'true');
+  button.setAttribute('aria-label', message);
+  button.innerHTML = `<span class="sr-only">${message}</span>`;
   if (status) status.textContent = `${message}…`;
   try {
     const result = await fn();
@@ -330,7 +332,10 @@ export async function withBusy(button, message, fn, options = {}) {
   } finally {
     button.disabled = false;
     button.classList.remove('is-busy');
-    button.textContent = original;
+    button.innerHTML = originalHTML;
+    button.removeAttribute('aria-busy');
+    if (originalLabel === null) button.removeAttribute('aria-label');
+    else button.setAttribute('aria-label', originalLabel);
   }
 }
 
