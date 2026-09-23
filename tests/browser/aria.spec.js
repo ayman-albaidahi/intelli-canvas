@@ -35,8 +35,20 @@ test.describe('inspector tabs', () => {
   test('the active tab is selected on first paint', async ({ page }) => {
     await expect(page.locator('[data-inspector="edit"]')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('[data-inspector="layers"]')).toHaveAttribute('aria-selected', 'false');
+    await expect(page.locator('[data-inspector="edit"]')).toHaveAttribute('tabindex', '0');
+    await expect(page.locator('[data-inspector="layers"]')).toHaveAttribute('tabindex', '-1');
     // The panel it controls is the visible one.
     await expect(page.locator('#edit-panel')).not.toHaveAttribute('hidden');
+  });
+
+  test('keeps the roving tab stop aligned with the active tab', async ({ page }) => {
+    await page.setInputFiles('#file-input', makePngPath(test.info(), 'roving-tab.png'));
+    await waitForImageLoaded(page);
+    await page.locator('[data-inspector="layers"]').click();
+
+    await expect(page.locator('[data-inspector="layers"]')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('[data-inspector="layers"]')).toHaveAttribute('tabindex', '0');
+    await expect(page.locator('[data-inspector="edit"]')).toHaveAttribute('tabindex', '-1');
   });
 
   test('arrow keys move between tabs and switch panels', async ({ page }) => {

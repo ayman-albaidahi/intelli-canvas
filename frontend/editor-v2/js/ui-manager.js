@@ -114,9 +114,8 @@ export function initUI() {
   });
 
   // A tablist is only operable from the keyboard if the arrows move between
-  // tabs and Home/End jump to the ends. All tabs stay in the tab order here
-  // rather than using roving tabindex, because the drawer pattern relies on
-  // every tab being a reachable focus target on mobile.
+  // tabs and Home/End jump to the ends. Roving tabindex keeps one predictable
+  // entry point while the arrow handlers retain access to every tab.
   const tablist = document.querySelector('.inspector-tabs');
   if (tablist && tabs.length) {
     tablist.addEventListener('keydown', (event) => {
@@ -133,6 +132,7 @@ export function initUI() {
       switchInspector(tabs[next].dataset.inspector);
     });
   }
+  initInspectorTabScroller(tabs);
 
   document.querySelectorAll('[data-panel]').forEach((button) => {
     const panel = button.dataset.panel;
@@ -255,6 +255,7 @@ export function switchInspector(name) {
     const active = tab.dataset.inspector === name;
     tab.classList.toggle('is-active', active);
     tab.setAttribute('aria-selected', String(active));
+    tab.setAttribute('tabindex', active ? '0' : '-1');
     if (active) tab.scrollIntoView?.({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest', inline: 'nearest' });
   });
   updateInspectorTabScroller();
@@ -435,7 +436,7 @@ function initInspectorTabScroller(tabs) {
   strip.addEventListener('scroll', updateInspectorTabScroller, { passive: true });
   window.addEventListener('resize', updateInspectorTabScroller);
   updateInspectorTabScroller();
-  tabs.forEach((tab) => tab.setAttribute('tabindex', tab.dataset.inspector === 'properties' ? '0' : '-1'));
+  tabs.forEach((tab) => tab.setAttribute('tabindex', tab.dataset.inspector === 'edit' ? '0' : '-1'));
 }
 
 function updateInspectorTabScroller() {
