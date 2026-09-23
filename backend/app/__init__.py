@@ -107,7 +107,8 @@ def create_app(database_path: str | None = None) -> Flask:
         )
         csp = (
             "default-src 'self'; img-src 'self' data: blob:; "
-            "style-src 'self' 'unsafe-inline'; script-src 'self'; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com data:; script-src 'self'; "
             "connect-src 'self'; object-src 'none'; base-uri 'self'"
         )
         response.headers.setdefault("Content-Security-Policy", csp)
@@ -122,8 +123,13 @@ def create_app(database_path: str | None = None) -> Flask:
 
     @app.get("/")
     def frontend_index():
-        # The legacy root frontend is retired; the editor is the product.
-        return app.send_static_file("editor-v2/index.html")
+        return app.send_static_file("index.html")
+
+    @app.get("/editor")
+    @app.get("/editor/")
+    def editor_index():
+        """Stable product entry point for the editor from the landing page."""
+        return send_from_directory(FRONTEND_DIR / "editor-v2", "index.html")
 
     @app.get("/editor-v2/")
     def editor_v2_index():
