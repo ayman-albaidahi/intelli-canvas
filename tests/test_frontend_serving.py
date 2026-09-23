@@ -1,14 +1,18 @@
 from backend.app import create_app
 
 
-def test_root_editor_assets_resolve_under_editor_v2_base_path():
+def test_root_serves_landing_page_and_editor_has_stable_entry_point():
     app = create_app()
     client = app.test_client()
 
     page = client.get("/")
 
     assert page.status_code == 200
-    assert b'<base href="/editor-v2/"' in page.data
+    assert b"IntelliCanvas" in page.data
+    assert b'href="/editor"' in page.data
+    editor = client.get("/editor")
+    assert editor.status_code == 200
+    assert b'<base href="/editor-v2/"' in editor.data
     assert client.get("/editor-v2/css/tokens.css").status_code == 200
     assert client.get("/editor-v2/js/main.js").status_code == 200
     assert client.get("/editor-v2/js/canvas-manager.js").status_code == 200

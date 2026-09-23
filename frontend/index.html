@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IntelliCanvas — محرر صور تفاعلي وذكي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #15161A;
+    --bg-elevated: #1D1F24;
+    --bg-panel: #22242A;
+    --line: #33363E;
+    --line-soft: #2A2C32;
+    --text: #ECEBE6;
+    --text-dim: #9A9DA6;
+    --text-faint: #63666F;
+    --accent: #2BD9B5;
+    --accent-dim: #1C8F78;
+    --accent-ink: #06110E;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --font-ar: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #F3F3F0;
+      --bg-elevated: #FFFFFF;
+      --bg-panel: #FAFAF8;
+      --line: #DEDDD6;
+      --line-soft: #E8E7E1;
+      --text: #17181B;
+      --text-dim: #55575F;
+      --text-faint: #8B8D94;
+      --accent: #0E9C81;
+      --accent-dim: #0B7A65;
+      --accent-ink: #FFFFFF;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #F3F3F0;
+    --bg-elevated: #FFFFFF;
+    --bg-panel: #FAFAF8;
+    --line: #DEDDD6;
+    --line-soft: #E8E7E1;
+    --text: #17181B;
+    --text-dim: #55575F;
+    --text-faint: #8B8D94;
+    --accent: #0E9C81;
+    --accent-dim: #0B7A65;
+    --accent-ink: #FFFFFF;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: calc(76px + env(safe-area-inset-top, 0px)); }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ar);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+
+  a { color: inherit; }
+  img, svg { max-width: 100%; }
+
+  .wrap {
+    width: 100%;
+    max-width: 1160px;
+    margin: 0 auto;
+    padding-inline: 24px;
+  }
+
+  /* ---------- background grid texture ---------- */
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(var(--line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size: 48px 48px;
+    -webkit-mask-image: radial-gradient(ellipse 70% 55% at 50% 0%, black 0%, transparent 75%);
+            mask-image: radial-gradient(ellipse 70% 55% at 50% 0%, black 0%, transparent 75%);
+    opacity: 0.5;
+  }
+
+  /* ---------- nav ---------- */
+  header.nav {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 20;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-block: 16px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+  }
+  .logo-mark {
+    width: 28px; height: 28px;
+    flex-shrink: 0;
+  }
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    font-size: 0.92rem;
+    color: var(--text-dim);
+  }
+  .nav-links a { text-decoration: none; transition: color .15s; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 9px 18px;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 20px -6px color-mix(in srgb, var(--accent) 60%, transparent); }
+  .nav-toggle { display: none; }
+
+  /* ---------- hero ---------- */
+  .hero {
+    position: relative;
+    z-index: 1;
+    padding-top: 88px;
+    padding-bottom: 72px;
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 56px;
+    align-items: center;
+  }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    padding: 5px 11px;
+    border-radius: 100px;
+    margin-bottom: 22px;
+  }
+  .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+  h1.hero-title {
+    font-size: clamp(2.1rem, 4.4vw, 3.4rem);
+    line-height: 1.18;
+    font-weight: 700;
+    margin: 0 0 20px;
+    max-width: 15ch;
+  }
+  h1.hero-title .accent-word { color: var(--accent); }
+
+  .hero-desc {
+    font-size: 1.05rem;
+    color: var(--text-dim);
+    max-width: 46ch;
+    margin: 0 0 34px;
+  }
+
+  .hero-ctas {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 44px;
+  }
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 600;
+    font-size: 0.98rem;
+    padding: 13px 24px;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 26px -8px color-mix(in srgb, var(--accent) 55%, transparent); }
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--text);
+    border: 1px solid var(--line);
+    font-weight: 500;
+    font-size: 0.98rem;
+    padding: 12px 22px;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    transition: border-color .15s, background .15s;
+  }
+  .btn-secondary:hover { border-color: var(--text-dim); background: var(--bg-elevated); }
+
+  .hero-stats {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .stat { min-width: 110px; }
+  .stat-num {
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .stat-label {
+    font-size: 0.8rem;
+    color: var(--text-faint);
+    margin-top: 2px;
+  }
+
+  /* ---------- hero mock canvas visual ---------- */
+  .mock {
+    position: relative;
+    background: var(--bg-elevated);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: 0 30px 70px -30px rgba(0,0,0,0.5);
+  }
+  .mock-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line-soft);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text-faint);
+  }
+  .mock-dots { display: flex; gap: 6px; }
+  .mock-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+  .mock-body {
+    display: grid;
+    grid-template-columns: 1fr 118px;
+  }
+  .mock-canvas {
+    position: relative;
+    aspect-ratio: 4 / 3.1;
+    background:
+      repeating-conic-gradient(color-mix(in srgb, var(--text) 6%, transparent) 0% 25%, transparent 0% 50%) 50% / 16px 16px,
+      var(--bg-panel);
+    border-left: 1px solid var(--line-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .photo-frame {
+    position: relative;
+    width: 78%;
+    height: 74%;
+    background: linear-gradient(135deg, #3A6B78, #234450 55%, #17242B);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .photo-frame svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .crop-box {
+    position: absolute;
+    inset: 14% 20%;
+    border: 1.5px dashed var(--accent);
+  }
+  .handle {
+    position: absolute;
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 1px;
+  }
+  .h-tl { top: -4px; left: -4px; } .h-tr { top: -4px; right: -4px; }
+  .h-bl { bottom: -4px; left: -4px; } .h-br { bottom: -4px; right: -4px; }
+  .dim-tag {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    background: color-mix(in srgb, var(--bg) 75%, transparent);
+    color: var(--accent);
+    padding: 3px 8px;
+    border-radius: 3px;
+    letter-spacing: 0.02em;
+  }
+  .mock-side {
+    border-right: 1px solid var(--line-soft);
+    padding: 12px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .side-label {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    color: var(--text-faint);
+    margin-bottom: 2px;
+  }
+  .layer-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--bg-panel);
+    border: 1px solid var(--line-soft);
+    border-radius: 3px;
+    padding: 6px 7px;
+    font-size: 0.68rem;
+    color: var(--text-dim);
+  }
+  .layer-row.active { border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--text); }
+  .layer-swatch { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+
+  /* ---------- section shell ---------- */
+  section { position: relative; z-index: 1; padding-block: 88px; }
+  .section-head { max-width: 56ch; margin-bottom: 48px; }
+  .section-head h2 {
+    font-size: clamp(1.5rem, 2.6vw, 2rem);
+    font-weight: 700;
+    margin: 0 0 12px;
+  }
+  .section-head p { color: var(--text-dim); font-size: 1rem; margin: 0; }
+
+  /* ---------- features bento ---------- */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1px;
+    background: var(--line-soft);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .feature-card {
+    background: var(--bg-elevated);
+    padding: 26px 24px;
+    grid-column: span 2;
+  }
+  .feature-card.wide { grid-column: span 3; }
+  .feature-card h3 {
+    font-size: 1.02rem;
+    font-weight: 600;
+    margin: 14px 0 8px;
+  }
+  .feature-card p { font-size: 0.88rem; color: var(--text-dim); margin: 0; }
+  .feature-icon {
+    width: 30px; height: 30px;
+    color: var(--accent);
+  }
+
+  /* ---------- how it works ---------- */
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    position: relative;
+  }
+  .step { padding-inline-end: 32px; position: relative; }
+  .step:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 22px;
+    inset-inline-end: 0;
+    width: 32px;
+    height: 1px;
+    background: var(--line);
+    display: none;
+  }
+  @media (min-width: 800px) { .step:not(:last-child)::after { display: block; } }
+  .step-num {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    margin-bottom: 18px;
+  }
+  .step h3 { font-size: 1rem; font-weight: 600; margin: 0 0 8px; }
+  .step p { font-size: 0.88rem; color: var(--text-dim); margin: 0; }
+
+  /* ---------- team ---------- */
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    max-width: 640px;
+  }
+  .team-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-md);
+    padding: 22px;
+  }
+  .avatar {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+  .team-card h3 { font-size: 0.98rem; font-weight: 600; margin: 0 0 3px; }
+  .team-card .role { font-size: 0.82rem; color: var(--accent); margin: 0 0 10px; }
+  .team-card p.bio { font-size: 0.85rem; color: var(--text-dim); margin: 0; }
+
+  /* ---------- final cta ---------- */
+  .cta-band {
+    border: 1px solid var(--line);
+    background: var(--bg-elevated);
+    border-radius: var(--radius-md);
+    padding: 56px 40px;
+    text-align: center;
+  }
+  .cta-band h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); margin: 0 0 14px; font-weight: 700; }
+  .cta-band p { color: var(--text-dim); margin: 0 0 28px; }
+
+  /* ---------- footer ---------- */
+  footer {
+    border-top: 1px solid var(--line-soft);
+    padding-block: 32px;
+    position: relative; z-index: 1;
+  }
+  .footer-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 0.85rem;
+    color: var(--text-faint);
+  }
+  .footer-links { display: flex; gap: 22px; }
+  .footer-links a { text-decoration: none; color: var(--text-dim); }
+  .footer-links a:hover { color: var(--text); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 880px) {
+    .hero-grid { grid-template-columns: 1fr; }
+    .hero-title { max-width: none; }
+    .nav-links { display: none; }
+    .features-grid { grid-template-columns: repeat(2, 1fr); }
+    .feature-card, .feature-card.wide { grid-column: span 2; }
+    .steps { grid-template-columns: 1fr; gap: 28px; }
+    .team-grid { grid-template-columns: 1fr; }
+    .mock-body { grid-template-columns: 1fr; }
+    .mock-side { flex-direction: row; overflow-x: auto; border-right: none; border-top: 1px solid var(--line-soft); }
+    .layer-row { flex-shrink: 0; }
+  }
+
+  /* ---------- reveal on load ---------- */
+  .reveal { opacity: 0; transform: translateY(10px); animation: revealUp .7s ease forwards; }
+  .reveal.d1 { animation-delay: .05s; }
+  .reveal.d2 { animation-delay: .15s; }
+  .reveal.d3 { animation-delay: .25s; }
+  @keyframes revealUp { to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a href="#top" class="logo">
+      <svg class="logo-mark" viewBox="0 0 28 28" fill="none">
+        <rect x="1" y="1" width="26" height="26" rx="3" stroke="var(--accent)" stroke-width="1.4"/>
+        <path d="M7 20L7 8L11 8" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round"/>
+        <path d="M21 8L21 20L17 20" stroke="var(--text)" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+      IntelliCanvas
+    </a>
+    <nav class="nav-links">
+      <a href="#features">الميزات</a>
+      <a href="#how">كيف يعمل</a>
+      <a href="#team">الفريق</a>
+      <a href="https://github.com/ayman-albaidahi/intelli-canvas">GitHub</a>
+    </nav>
+    <a href="/editor" class="nav-cta">افتح المحرر</a>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="eyebrow reveal"><span class="dot"></span>مفتوح المصدر · قيد التطوير النشط</span>
+        <h1 class="hero-title reveal d1">حرّر صورك، <span class="accent-word">وافهم</span> كل عملية تجري عليها</h1>
+        <p class="hero-desc reveal d1">
+          IntelliCanvas محرر صور تفاعلي يعمل من المتصفح مباشرة: قصّ وتحجيم وطبقات ومعالجة بكسلات،
+          مع شرح واضح لما تفعله كل أداة بدل التعامل معها كصندوق أسود.
+        </p>
+        <div class="hero-ctas reveal d2">
+          <a href="/editor" class="btn-primary">
+            افتح المحرر الآن
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <a href="https://github.com/ayman-albaidahi/intelli-canvas" class="btn-secondary">استعرض الكود المصدري</a>
+        </div>
+        <div class="hero-stats reveal d3">
+          <div class="stat"><div class="stat-num">15+</div><div class="stat-label">عملية معالجة صور</div></div>
+          <div class="stat"><div class="stat-num">4</div><div class="stat-label">صيغ ملفات مدعومة</div></div>
+          <div class="stat"><div class="stat-num">MIT</div><div class="stat-label">رخصة مفتوحة</div></div>
+        </div>
+      </div>
+
+      <div class="mock reveal d2">
+        <div class="mock-topbar">
+          <span>editor · image_2026.png</span>
+          <div class="mock-dots"><span></span><span></span><span></span></div>
+        </div>
+        <div class="mock-body">
+          <div class="mock-canvas">
+            <div class="photo-frame">
+              <svg viewBox="0 0 200 150" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#4A8C99"/>
+                    <stop offset="1" stop-color="#1D3941"/>
+                  </linearGradient>
+                </defs>
+                <rect width="200" height="150" fill="url(#sky)"/>
+                <polygon points="0,150 40,80 70,120 100,60 140,110 170,90 200,150" fill="#132227" opacity="0.85"/>
+                <circle cx="160" cy="35" r="14" fill="#EFE2B0" opacity="0.9"/>
+              </svg>
+              <div class="crop-box">
+                <span class="handle h-tl"></span><span class="handle h-tr"></span>
+                <span class="handle h-bl"></span><span class="handle h-br"></span>
+              </div>
+              <span class="dim-tag">1920 × 1080 · PNG</span>
+            </div>
+          </div>
+          <div class="mock-side">
+            <div class="side-label">الطبقات</div>
+            <div class="layer-row active"><span class="layer-swatch" style="background:var(--accent)"></span>الخلفية</div>
+            <div class="layer-row"><span class="layer-swatch" style="background:#6E8FD4"></span>نص</div>
+            <div class="layer-row"><span class="layer-swatch" style="background:#D48E6E"></span>شكل</div>
+            <div class="layer-row"><span class="layer-swatch" style="background:#8D8D8D"></span>فرشاة</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>كل ما تحتاجه للتحرير، في مكان واحد</h2>
+        <p>من التحويلات الأساسية إلى المعالجة المتقدمة وتركيب الطبقات — أدوات مبنية لتكون واضحة ودقيقة.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card wide">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none"><path d="M6 3V18C6 19.1 6.9 20 8 20H21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 21V6C18 4.9 17.1 4 16 4H3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.4"/></svg>
+          <h3>القص والتحويل</h3>
+          <p>قص، تحجيم مع قفل النسب، تدوير، وانعكاس — بمعاينة فورية قبل أي تطبيق نهائي على الصورة.</p>
+        </div>
+        <div class="feature-card">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none"><rect x="4" y="7" width="13" height="13" rx="1" stroke="currentColor" stroke-width="1.6"/><rect x="8" y="3" width="13" height="13" rx="1" stroke="currentColor" stroke-width="1.6" opacity="0.5"/></svg>
+          <h3>الطبقات والتركيب</h3>
+          <p>طبقات صور ونصوص وأشكال، بترتيب وشفافية ومزج قابل للتحكم.</p>
+        </div>
+        <div class="feature-card">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.6"/><path d="M12 8V16M8 12H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <h3>معالجة البكسلات</h3>
+          <p>سطوع، تباين، تدرج رمادي، ضبابية، وحدة، مع رسم بياني (Histogram) حي للنتيجة.</p>
+        </div>
+        <div class="feature-card">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none"><path d="M4 12C4 7.6 7.6 4 12 4C16.4 4 20 7.6 20 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M4 12C4 16.4 7.6 20 12 20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity="0.4"/></svg>
+          <h3>استوديو الخلفية</h3>
+          <p>إزالة الخلفية واستبدالها من مكتبة خلفيات جاهزة، أو رفع خلفية خاصة بك.</p>
+        </div>
+        <div class="feature-card">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none"><path d="M12 4V12L17 15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/></svg>
+          <h3>سجل غير محدود</h3>
+          <p>تراجع وإعادة لأي خطوة، مع مقارنة قبل/بعد لكل عملية تحرير.</p>
+        </div>
+        <div class="feature-card wide">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none"><path d="M12 3V15M12 15L8 11M12 15L16 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 17V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <h3>تصدير وتحويل الصيغ</h3>
+          <p>صدّر بصيغة PNG أو JPEG أو WEBP بجودة كاملة، مع الحفاظ على كل تعديل طبّقته أثناء التحرير.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>ثلاث خطوات، من الرفع إلى التصدير</h2>
+        <p>بدون تسجيل، وبدون تثبيت — كل شيء يعمل داخل المتصفح.</p>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <h3>ارفع صورتك</h3>
+          <p>اسحب وأفلت أي ملف PNG أو JPEG أو WEBP، أو اخترها من جهازك مباشرة.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <h3>عدّل بحرية</h3>
+          <p>استخدم أدوات القص والطبقات والمعالجة، مع معاينة فورية لكل تغيير.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <h3>صدّر النتيجة</h3>
+          <p>احفظ الصورة النهائية بالصيغة التي تناسبك، بنفس الجودة التي عملت بها.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="team">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>فريق العمل</h2>
+        <p>شخصان يبنيان المشروع علنًا على GitHub، PR بعد PR.</p>
+      </div>
+      <div class="team-grid">
+        <div class="team-card">
+          <div class="avatar">أ</div>
+          <h3>أيمن البيدحي</h3>
+          <p class="role">مؤسس ومطوّر المشروع</p>
+          <p class="bio">يعمل على بنية المشروع الكاملة، من الخادم (Flask) إلى خدمات معالجة الصور.</p>
+        </div>
+        <div class="team-card">
+          <div class="avatar">ع</div>
+          <h3>عبدالله حمود</h3>
+          <p class="role">مؤسس ومطوّر المشروع</p>
+          <p class="bio">يعمل على بنية المشروع الكاملة، من واجهة المحرر إلى تجربة الاستخدام.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="cta-band">
+        <h2>جاهز تجرب المحرر بنفسك؟</h2>
+        <p>لا يحتاج تسجيل دخول — افتحه وابدأ بالتحرير مباشرة.</p>
+        <a href="/editor" class="btn-primary">افتح المحرر الآن</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap footer-inner">
+    <span>© 2026 IntelliCanvas — مشروع مفتوح المصدر برخصة MIT</span>
+    <div class="footer-links">
+      <a href="https://github.com/ayman-albaidahi/intelli-canvas">GitHub</a>
+      <a href="#features">الميزات</a>
+      <a href="#team">الفريق</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
