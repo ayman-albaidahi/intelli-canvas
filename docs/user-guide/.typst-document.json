@@ -1,0 +1,10 @@
+{
+  "entry": "main.typ",
+  "metadata": {
+    "author": "IntelliCanvas",
+    "subtitle": "مرجع عملي لتحرير الصور داخل مساحة العمل",
+    "title": "دليل استخدام IntelliCanvas"
+  },
+  "mode": "report",
+  "theme": "report-theme.typ"
+}
