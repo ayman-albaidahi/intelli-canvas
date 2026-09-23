@@ -168,6 +168,11 @@ export function initUI() {
 
   document.querySelector('[data-action="new"]')?.addEventListener('click', () => showToast('New project workspace is ready'));
   document.querySelector('[data-action="add-layer"]')?.addEventListener('click', () => showToast('Layer creation will be enabled in the layers stage'));
+  document.querySelector('[data-action="help"]')?.addEventListener('click', () => {
+    openDialog(document.querySelector('#help-dialog'), { focus: '#help-cancel-secondary' });
+  });
+  document.querySelector('#help-cancel')?.addEventListener('click', () => closeDialog(document.querySelector('#help-dialog')));
+  document.querySelector('#help-cancel-secondary')?.addEventListener('click', () => closeDialog(document.querySelector('#help-dialog')));
   document.querySelectorAll('#edit-panel details.panel-accordion').forEach((section) => {
     section.addEventListener('toggle', () => { if (section.open) closeOtherAccordions(section); });
   });

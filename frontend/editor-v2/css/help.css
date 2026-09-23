@@ -1,0 +1,20 @@
+.help-dialog-card {
+  max-width: 520px;
+}
+
+.help-dialog-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  margin-top: var(--space-18);
+}
+
+.help-dialog-links .button {
+  text-decoration: none;
+}
+
+@media (max-width: 560px) {
+  .help-dialog-links .button {
+    width: 100%;
+  }
+}
