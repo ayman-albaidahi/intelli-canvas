@@ -55,14 +55,14 @@ function iconMarkup(name, label = '') {
 
 const EXACT = new Map([
   ['↺', ['rotateLeft', '']], ['↻', ['rotateRight', '']], ['⇋', ['flipHorizontal', '']], ['⇵', ['flipVertical', '']], ['⤢', ['resize', '']],
-  ['↶', ['undo', '']], ['↷', ['redo', '']], ['☼', ['sun', '']], ['−', ['minus', '']], ['+', ['plus', '']], ['⛶', ['fit', '']], ['‹', ['chevronLeft', '']], ['›', ['chevronRight', '']], ['•••', ['more', '']], ['⋯', ['more', '']], ['🗑', ['trash', '']], ['👁', ['eye', '']], ['🚫', ['eyeOff', '']], ['🔒', ['lock', '']], ['🔓', ['unlock', '']],
+  ['↶', ['undo', '']], ['↷', ['redo', '']], ['☼', ['sun', '']], ['−', ['minus', '']], ['+', ['plus', '']], ['⛶', ['fit', '']], ['‹', ['chevronLeft', '']], ['›', ['chevronRight', '']], ['•••', ['more', '']], ['⋯', ['more', '']], ['🗑', ['trash', '']], ['👁', ['eye', '']], ['🚫', ['eyeOff', '']], ['🔒', ['lock', '']], ['🔓', ['unlock', '']], ['×', ['close', '']], ['⌁', ['layers', '']],
 ]);
 const PREFIX = new Map([
-  ['↖', 'select'], ['✥', 'move'], ['⌗', 'crop'], ['╱', 'brush'], ['⌫', 'eraser'], ['◇', 'shapes'], ['T', 'text'], ['◐', 'adjust'], ['✧', 'sparkles'], ['▧', 'backdrop'], ['⌘', 'keyboard'], ['▦', 'panels'], ['≋', 'pipeline'], ['◌', 'intelligence'], ['💧', 'droplet'], ['⬆', 'upload'], ['🔬', 'microscope'], ['🖼', 'image'], ['▭', 'shape']
+  ['↖', 'select'], ['✥', 'move'], ['⌗', 'crop'], ['╱', 'brush'], ['⌫', 'eraser'], ['◇', 'shapes'], ['T', 'text'], ['◐', 'adjust'], ['✧', 'sparkles'], ['✦', 'sparkles'], ['▧', 'backdrop'], ['⌘', 'keyboard'], ['▦', 'panels'], ['≋', 'pipeline'], ['◌', 'intelligence'], ['💧', 'droplet'], ['⬆', 'upload'], ['🔬', 'microscope'], ['🖼', 'image'], ['▭', 'shape']
 ]);
 
 function enhanceIcons(root = document) {
-  root.querySelectorAll('button, .list-action, .quick-action, .view-button, .mini-button, .toolbar-button').forEach((element) => {
+  root.querySelectorAll('button, .list-action, .quick-action, .view-button, .mini-button, .toolbar-button, .empty-icon, .panel-icon').forEach((element) => {
     if (element.querySelector('.icon')) return;
     const text = element.textContent.trim();
     const embedded = [['↗', 'download'], ['↑', 'upload'], ['💧', 'droplet'], ['🔬', 'microscope']].find(([token]) => text.includes(token));
@@ -83,6 +83,14 @@ function enhanceIcons(root = document) {
         break;
       }
     }
+  });
+  root.querySelectorAll('details.panel-accordion > summary').forEach((summary) => {
+    if (summary.querySelector('.disclosure-icon')) return;
+    summary.insertAdjacentHTML('beforeend', `<span class="disclosure-icon" aria-hidden="true">${iconMarkup('chevronRight')}</span>`);
+  });
+  root.querySelectorAll('.muted, .list-action b').forEach((element) => {
+    const text = element.textContent.trim();
+    if (!element.querySelector('.icon') && EXACT.has(text)) element.innerHTML = iconMarkup(EXACT.get(text)[0]);
   });
   root.querySelectorAll('[data-icon]').forEach((element) => {
     if (!element.querySelector('.icon')) element.innerHTML = iconMarkup(element.dataset.icon);

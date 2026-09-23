@@ -197,6 +197,16 @@ describe('ApiClient — authentication and request security', () => {
     expect(result.user.email).toBe('user@example.com');
   });
 
+  it('registers a user with the display name and CSRF protection', async () => {
+    jsonOnce({ success: true, user: { email: 'new@example.com' } }, { status: 201 });
+    await client().register('new@example.com', 'password123', 'New User');
+    const [url, options] = global.fetch.mock.calls[0];
+    expect(url).toBe(`${SAMPLE_BASE}/auth/register`);
+    expect(options.credentials).toBe('include');
+    expect(options.headers.get('X-CSRF-Token')).toBe('test-csrf-token');
+    expect(JSON.parse(options.body)).toEqual({ email: 'new@example.com', password: 'password123', display_name: 'New User' });
+  });
+
   it('dispatches an auth-required event for expired sessions', async () => {
     jsonOnce({ success: false, error: { code: 'AUTH_REQUIRED', message: 'required' } }, { status: 401 });
     const listener = vi.fn();

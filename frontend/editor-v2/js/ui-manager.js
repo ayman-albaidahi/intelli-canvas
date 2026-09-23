@@ -168,6 +168,11 @@ export function initUI() {
 
   document.querySelector('[data-action="new"]')?.addEventListener('click', () => showToast('New project workspace is ready'));
   document.querySelector('[data-action="add-layer"]')?.addEventListener('click', () => showToast('Layer creation will be enabled in the layers stage'));
+  document.querySelector('[data-action="help"]')?.addEventListener('click', () => {
+    openDialog(document.querySelector('#help-dialog'), { focus: '#help-cancel-secondary' });
+  });
+  document.querySelector('#help-cancel')?.addEventListener('click', () => closeDialog(document.querySelector('#help-dialog')));
+  document.querySelector('#help-cancel-secondary')?.addEventListener('click', () => closeDialog(document.querySelector('#help-dialog')));
   document.querySelectorAll('#edit-panel details.panel-accordion').forEach((section) => {
     section.addEventListener('toggle', () => { if (section.open) closeOtherAccordions(section); });
   });
@@ -309,11 +314,13 @@ export async function withBusy(button, message, fn, options = {}) {
   if (!button) return fn();
   const token = beginOperation({ operation, retry });
   if (token === null) return null;
-  const original = label ?? button.textContent;
-  const busyLabel = message;
+  const originalHTML = button.innerHTML;
+  const originalLabel = button.getAttribute('aria-label');
   button.disabled = true;
   button.classList.add('is-busy');
-  button.textContent = busyLabel;
+  button.setAttribute('aria-busy', 'true');
+  button.setAttribute('aria-label', message);
+  button.innerHTML = `<span class="sr-only">${message}</span>`;
   if (status) status.textContent = `${message}…`;
   try {
     const result = await fn();
@@ -325,7 +332,10 @@ export async function withBusy(button, message, fn, options = {}) {
   } finally {
     button.disabled = false;
     button.classList.remove('is-busy');
-    button.textContent = original;
+    button.innerHTML = originalHTML;
+    button.removeAttribute('aria-busy');
+    if (originalLabel === null) button.removeAttribute('aria-label');
+    else button.setAttribute('aria-label', originalLabel);
   }
 }
 

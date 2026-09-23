@@ -17,20 +17,36 @@
     <link rel="stylesheet" href="css/icons.css" />
     <link rel="stylesheet" href="css/contextual-inspector.css" />
     <link rel="stylesheet" href="css/auth.css" />
+    <link rel="stylesheet" href="css/help.css" />
   </head>
   <body>
     <section id="auth-gate" class="auth-gate" aria-labelledby="login-heading">
       <div class="auth-card">
         <div class="auth-brand"><img src="assets/intellicanvas-logo.png" alt="" /><span>IntelliCanvas</span></div>
         <span class="eyebrow">Private workspace</span>
-        <h1 id="login-heading">Sign in to your canvas</h1>
-        <p class="auth-copy">Your projects and editing sessions stay protected behind your account.</p>
+        <div id="login-view">
+          <h1 id="login-heading">Sign in to your canvas</h1>
+          <p class="auth-copy">Your projects and editing sessions stay protected behind your account.</p>
+        </div>
+        <div id="register-view" hidden>
+          <h1 id="register-heading">Create your account</h1>
+          <p class="auth-copy">Create a private workspace for your projects and editing sessions.</p>
+        </div>
         <form id="login-form" novalidate>
           <label class="property-field" for="login-email">Email<input id="login-email" name="email" type="email" autocomplete="username" required /></label>
           <label class="property-field" for="login-password">Password<input id="login-password" name="password" type="password" autocomplete="current-password" required /></label>
           <p id="login-error" class="auth-error" role="alert" hidden></p>
-          <button id="login-submit" class="button button-primary full-width" type="submit"><span id="auth-loading" class="auth-loading" hidden aria-hidden="true"></span>Sign in</button>
+          <button id="login-submit" class="button button-auth-primary full-width" type="submit"><span id="auth-loading" class="auth-loading" hidden aria-hidden="true"></span>Sign in</button>
         </form>
+        <form id="register-form" novalidate hidden>
+          <label class="property-field" for="register-name">Display name <span class="field-optional">(optional)</span><input id="register-name" name="display_name" type="text" autocomplete="name" maxlength="80" /></label>
+          <label class="property-field" for="register-email">Email<input id="register-email" name="email" type="email" autocomplete="email" required /></label>
+          <label class="property-field" for="register-password">Password <span class="field-hint">(at least 8 characters)</span><input id="register-password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required /></label>
+          <label class="property-field" for="register-confirm-password">Confirm password<input id="register-confirm-password" name="confirm_password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required /></label>
+          <p id="register-error" class="auth-error" role="alert" hidden></p>
+          <button id="register-submit" class="button button-auth-primary full-width" type="submit"><span id="register-loading" class="auth-loading" hidden aria-hidden="true"></span>Create account</button>
+        </form>
+        <div class="auth-switch"><span id="auth-switch-copy">New to IntelliCanvas?</span><button id="show-register" class="button button-link" type="button">Create account</button><button id="show-login" class="button button-link" type="button" hidden>Back to sign in</button></div>
       </div>
     </section>
     <div class="app-shell" hidden>
@@ -52,6 +68,7 @@
           <button class="icon-button" data-action="resize" aria-label="Resize canvas" title="Resize canvas">⤢</button>
           <button class="icon-button" data-action="undo" aria-label="Undo" title="Undo">↶</button>
           <button class="icon-button" data-action="redo" aria-label="Redo" title="Redo">↷</button>
+          <button class="button button-ghost" data-action="help" aria-label="Open Help">Help</button>
           <button class="icon-button theme-toggle" data-action="theme" aria-label="Toggle color theme" title="Toggle theme">☼</button>
           <span class="account-label" id="account-label">Account</span><button class="button button-ghost" id="logout-button" type="button" hidden>Sign out</button><button class="avatar" id="account-avatar" aria-label="Current account">AC</button>
         </nav>
@@ -61,25 +78,25 @@
         <aside class="tool-rail" aria-label="Editor tools">
           <p class="tool-rail-heading" aria-hidden="true">Tools</p>
           <div class="tool-group">
-            <button class="tool-button is-active" aria-pressed="true" data-tool="select" data-requires-image title="Select (V)"><span>↖</span><small>Select</small></button>
-            <button class="tool-button" aria-pressed="false" data-tool="move" data-requires-image title="Move (M)"><span>✥</span><small>Move</small></button>
-            <button class="tool-button" aria-pressed="false" data-tool="crop" data-requires-image title="Crop (C)"><span>⌗</span><small>Crop</small></button>
+            <button class="tool-button is-active" aria-label="Select" aria-pressed="true" data-tool="select" data-requires-image title="Select (V)"><span>↖</span></button>
+            <button class="tool-button" aria-label="Move" aria-pressed="false" data-tool="move" data-requires-image title="Move (M)"><span>✥</span></button>
+            <button class="tool-button" aria-label="Crop" aria-pressed="false" data-tool="crop" data-requires-image title="Crop (C)"><span>⌗</span></button>
           </div>
           <div class="tool-divider"></div>
           <div class="tool-group">
-            <button class="tool-button" aria-pressed="false" data-tool="brush" data-requires-image title="Brush (B)"><span>╱</span><small>Brush</small></button>
-            <button class="tool-button" aria-pressed="false" data-tool="eraser" data-requires-image title="Eraser (E)"><span>⌫</span><small>Eraser</small></button>
-            <button class="tool-button" aria-pressed="false" data-tool="shape" data-requires-image title="Shapes (U)"><span>◇</span><small>Shapes</small></button>
-            <button class="tool-button" aria-pressed="false" data-tool="text" data-requires-image title="Text (T)"><span>T</span><small>Text</small></button>
+            <button class="tool-button" aria-label="Brush" aria-pressed="false" data-tool="brush" data-requires-image title="Brush (B)"><span>╱</span></button>
+            <button class="tool-button" aria-label="Eraser" aria-pressed="false" data-tool="eraser" data-requires-image title="Eraser (E)"><span>⌫</span></button>
+            <button class="tool-button" aria-label="Shapes" aria-pressed="false" data-tool="shape" data-requires-image title="Shapes (U)"><span>◇</span></button>
+            <button class="tool-button" aria-label="Text" aria-pressed="false" data-tool="text" data-requires-image title="Text (T)"><span>T</span></button>
           </div>
           <div class="tool-divider"></div>
           <div class="tool-group">
-            <button class="tool-button" data-panel="adjustments" data-requires-image title="Adjustments"><span>◐</span><small>Adjust</small></button>
-            <button class="tool-button" data-panel="filters" data-requires-image title="Filters"><span>✧</span><small>Filters</small></button>
-            <button class="tool-button" data-panel="background" data-requires-image title="Background"><span>▧</span><small>Backdrop</small></button>
+            <button class="tool-button" aria-label="Adjustments" data-panel="adjustments" data-requires-image title="Adjustments"><span>◐</span></button>
+            <button class="tool-button" aria-label="Filters" data-panel="filters" data-requires-image title="Filters"><span>✧</span></button>
+            <button class="tool-button" aria-label="Background" data-panel="background" data-requires-image title="Background"><span>▧</span></button>
           </div>
           <div class="tool-spacer"></div>
-          <button class="tool-button" data-panel="shortcuts" title="Keyboard shortcuts"><span>⌘</span><small>Keys</small></button>
+          <button class="tool-button" aria-label="Keyboard shortcuts" data-panel="shortcuts" title="Keyboard shortcuts"><span>⌘</span></button>
           <div class="rail-collapse" aria-hidden="true">‹</div>
         </aside>
 
@@ -125,7 +142,7 @@
             <button class="toolbar-button" data-action="fullscreen" title="Fullscreen canvas">⛶</button>
           </div>
           </section>
-          <footer class="statusbar"><div><span class="status-led"></span><span id="status-message" role="status" aria-live="polite">Ready for your next idea</span></div><div><span>RGB / 8-bit</span><span>•</span><span id="canvas-size">No image</span><span>•</span><span>Local draft</span></div></footer>
+          <footer class="statusbar"><div><span class="status-led"></span><span id="status-message" class="muted" role="status" aria-live="polite">Ready for your next idea</span></div><div><span>RGB / 8-bit</span><span>•</span><span id="canvas-size">No image</span><span>•</span><span>Local draft</span></div></footer>
         </main>
 
         <div id="inspector-scrim" class="inspector-scrim" hidden></div>
@@ -142,6 +159,7 @@
     <div id="layer-menu" class="layer-menu" hidden></div>
     <div id="confirm-dialog" class="dialog-backdrop" hidden><div class="dialog-card" role="alertdialog" aria-modal="true" aria-labelledby="confirm-dialog-heading" aria-describedby="confirm-dialog-body"><div class="dialog-heading"><div><span class="eyebrow">Careful</span><h2 id="confirm-dialog-heading">Are you sure?</h2></div><button type="button" id="confirm-cancel" class="icon-button" aria-label="Close">×</button></div><p class="dialog-copy" id="confirm-dialog-body">This cannot be undone.</p><div class="dialog-actions"><button type="button" id="confirm-cancel-secondary" class="button button-secondary">Cancel</button><button type="button" id="confirm-accept" class="button button-primary">Confirm</button></div></div></div>
     <div id="shortcuts-dialog" class="dialog-backdrop" hidden><div class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="shortcuts-dialog-heading"><div class="dialog-heading"><div><span class="eyebrow">Keyboard</span><h2 id="shortcuts-dialog-heading">Shortcuts</h2></div><button type="button" id="shortcuts-cancel" class="icon-button" aria-label="Close">×</button></div><ul class="shortcuts-list"><li><kbd>V</kbd><span>Select tool</span></li><li><kbd>M</kbd><span>Move tool</span></li><li><kbd>C</kbd><span>Crop tool</span></li><li><kbd>B</kbd><span>Brush tool</span></li><li><kbd>E</kbd><span>Eraser tool</span></li><li><kbd>U</kbd><span>Shapes tool</span></li><li><kbd>T</kbd><span>Text tool</span></li><li><kbd>Ctrl</kbd>+<kbd>Z</kbd><span>Undo last step</span></li><li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd><span>Redo step</span></li><li><kbd>0</kbd><span>Fit canvas to workspace</span></li><li><kbd>1</kbd><span>Zoom to 100%</span></li><li><kbd>+</kbd> / <kbd>-</kbd><span>Zoom in and out</span></li><li><kbd>Esc</kbd><span>Close dialogs and menus</span></li></ul><div class="dialog-actions"><button type="button" id="shortcuts-cancel-secondary" class="button button-secondary">Close</button></div></div></div>
+    <div id="help-dialog" class="dialog-backdrop" hidden><div class="dialog-card help-dialog-card" role="dialog" aria-modal="true" aria-labelledby="help-dialog-heading" aria-describedby="help-dialog-copy"><div class="dialog-heading"><div><span class="eyebrow">Help</span><h2 id="help-dialog-heading">Learn IntelliCanvas</h2></div><button type="button" id="help-cancel" class="icon-button" aria-label="Close">×</button></div><p class="dialog-copy" id="help-dialog-copy">اقرأ الدليل الكامل لفهم أدوات المحرر، Inspector، الطبقات، التصدير، الاختصارات، وحل المشكلات الشائعة.</p><div class="help-dialog-links"><a class="button button-primary" href="assets/intellicanvas-user-guide-ar.pdf" download>Download user guide</a><a class="button button-secondary" href="assets/intellicanvas-user-guide-ar.pdf" target="_blank" rel="noopener">Open PDF</a></div><div class="dialog-actions"><button type="button" id="help-cancel-secondary" class="button button-secondary">Close</button></div></div></div>
     <div id="text-popover" class="dialog-backdrop" hidden><form class="text-popover-card" role="dialog" aria-modal="true" aria-labelledby="text-popover-heading"><div class="dialog-heading"><div><span class="eyebrow">Canvas objects</span><h2 id="text-popover-heading">Add text</h2></div><button type="button" id="text-popover-cancel" class="icon-button" aria-label="Close">×</button></div><label class="property-field" for="text-popover-input">Text</label><input id="text-popover-input" type="text" placeholder="Type something…" autocomplete="off" aria-describedby="text-popover-hint" /><p class="dialog-copy" id="text-popover-hint">Press Enter to add, Esc to cancel. Arabic and Hebrew text is detected automatically.</p><div class="dialog-actions"><button type="button" id="text-popover-cancel-secondary" class="button button-secondary">Cancel</button><button type="submit" class="button button-primary" id="text-popover-submit">Add text</button></div></form></div>
     <div id="export-dialog" class="dialog-backdrop" hidden><form id="export-form" class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="export-dialog-heading"><div class="dialog-heading"><div><span class="eyebrow">Deliver</span><h2 id="export-dialog-heading">Export image</h2></div><button type="button" id="export-cancel" class="icon-button" aria-label="Close">×</button></div><label class="property-field">Format<select id="export-format"><option value="png">PNG · transparency</option><option value="jpeg">JPEG</option><option value="webp">WEBP</option></select></label><label class="property-field" id="export-quality-field" hidden>Quality · <span id="export-quality-val">90</span><input id="export-quality" type="range" min="1" max="100" value="90" /></label><div class="obj-grid"><label>Width<input id="export-width" type="number" min="1" max="20000" /></label><label>Height<input id="export-height" type="number" min="1" max="20000" /></label></div><label class="check-row compact"><input id="export-ratio" type="checkbox" checked /> Maintain aspect ratio</label><label class="property-field">File name<input id="export-name" type="text" value="intellicanvas" /></label><div class="dialog-actions"><button type="button" id="export-cancel-secondary" class="button button-secondary">Cancel</button><button type="submit" class="button button-primary" id="export-submit">Export</button></div></form></div>
     <script type="module" src="js/icons.js"></script>
