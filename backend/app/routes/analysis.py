@@ -2,6 +2,7 @@ import io
 
 from flask import Blueprint, jsonify, request, send_file
 
+from ..auth import require_owned_image
 from ..dependencies import get_session_service, get_storage_service
 from ..error_codes import ErrorCodes
 from ..errors import error_response
@@ -40,10 +41,9 @@ def _session_image(image_id: str):
 def analyze_image():
     payload = request.get_json(silent=True) or {}
     image_id = payload.get("image_id")
-    if not isinstance(image_id, str) or not image_id.strip():
-        return error_response(
-            ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
-        )
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return ownership_error
     source = _session_image(image_id)
     if source is None:
         return error_response(
@@ -70,10 +70,9 @@ def analyze_image():
 def export_report():
     payload = request.get_json(silent=True) or {}
     image_id = payload.get("image_id")
-    if not isinstance(image_id, str) or not image_id.strip():
-        return error_response(
-            ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
-        )
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return ownership_error
     source = _session_image(image_id)
     if source is None:
         return error_response(

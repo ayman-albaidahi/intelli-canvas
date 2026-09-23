@@ -1,8 +1,8 @@
 from flask import Blueprint, jsonify, request, send_file
 
+from ..auth import require_owned_image
 from ..dependencies import (
     get_geometry_service,
-    get_session_service,
     get_smart_crop_service,
 )
 from ..error_codes import ErrorCodes
@@ -24,10 +24,9 @@ def _image_id_from_payload(payload):
     image_id = require_str(
         payload.get("image_id"), name="image_id", empty_code="INVALID_IMAGE_ID"
     )
-    if get_session_service().get_session(image_id) is None:
-        return None, error_response(
-            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
-        )
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return None, ownership_error
     return image_id, None
 
 
@@ -102,11 +101,9 @@ def resize_image():
             400,
         )
 
-    session_service = get_session_service()
-    if session_service.get_session(image_id) is None:
-        return error_response(
-            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
-        )
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return ownership_error
 
     try:
         result = _geometry_service().resize(

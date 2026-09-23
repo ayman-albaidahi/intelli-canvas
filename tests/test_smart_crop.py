@@ -2,6 +2,7 @@ import io
 import time
 
 import pytest
+from auth_helpers import legacy_owner_id
 from PIL import Image, ImageDraw
 
 from backend.app import create_app
@@ -24,6 +25,7 @@ def smart_crop_context(tmp_path):
     image.save(buffer, format="PNG")
     buffer.seek(0)
     source_path = storage_service.save_file(buffer, "salient.png")
+    app.test_client()
     session = app.config["IMAGE_SESSION_SERVICE"].create_session(
         {
             "original_filename": "salient.png",
@@ -31,7 +33,8 @@ def smart_crop_context(tmp_path):
             "format": "png",
             "mime_type": "image/png",
             "size": source_path.stat().st_size,
-        }
+        },
+        owner_id=legacy_owner_id(app),
     )
     return app, storage_service, session, source_path
 
@@ -169,6 +172,7 @@ def test_saliency_search_is_bounded_for_large_image(tmp_path):
     image.save(buffer, format="JPEG", quality=85)
     buffer.seek(0)
     source_path = storage_service.save_file(buffer, "large.jpg")
+    app.test_client()
     session = app.config["IMAGE_SESSION_SERVICE"].create_session(
         {
             "original_filename": "large.jpg",
@@ -176,7 +180,8 @@ def test_saliency_search_is_bounded_for_large_image(tmp_path):
             "format": "jpeg",
             "mime_type": "image/jpeg",
             "size": source_path.stat().st_size,
-        }
+        },
+        owner_id=legacy_owner_id(app),
     )
 
     started = time.perf_counter()

@@ -1,9 +1,9 @@
 from flask import Blueprint, jsonify, request, send_file
 
+from ..auth import require_owned_image
 from ..dependencies import (
     get_pipeline_execution_service,
     get_pipeline_service,
-    get_session_service,
 )
 from ..error_codes import ErrorCodes
 from ..errors import error_response
@@ -22,14 +22,9 @@ def _image_id(payload=None):
         payload if isinstance(payload, dict) else request.get_json(silent=True) or {}
     )
     image_id = payload.get("image_id")
-    if not isinstance(image_id, str) or not image_id.strip():
-        return None, error_response(
-            ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
-        )
-    if get_session_service().get_session(image_id) is None:
-        return None, error_response(
-            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
-        )
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return None, ownership_error
     return image_id, None
 
 

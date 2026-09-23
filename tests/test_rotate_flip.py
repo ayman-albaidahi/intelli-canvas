@@ -1,6 +1,7 @@
 import io
 
 import pytest
+from auth_helpers import legacy_owner_id
 from PIL import Image
 
 from backend.app import create_app
@@ -28,6 +29,7 @@ def transform_context(tmp_path):
     source.save(source_buffer, format="PNG")
     source_buffer.seek(0)
     source_path = storage_service.save_file(source_buffer, "source.png")
+    app.test_client()
     session = app.config["IMAGE_SESSION_SERVICE"].create_session(
         {
             "original_filename": "source.png",
@@ -35,7 +37,8 @@ def transform_context(tmp_path):
             "format": "png",
             "mime_type": "image/png",
             "size": source_path.stat().st_size,
-        }
+        },
+        owner_id=legacy_owner_id(app),
     )
     return app, storage_service, session, source_path
 

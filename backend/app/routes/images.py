@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, send_file
 
-from ..auth import current_user
+from ..auth import current_user, require_owned_image
 from ..dependencies import (
     get_image_io_service,
     get_image_upload_service,
@@ -89,10 +89,9 @@ def convert_image():
         return error_response(
             ErrorCodes.INVALID_FORMAT, "A target format is required.", 400
         )
-    if image_id not in get_session_repository():
-        return error_response(
-            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
-        )
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return ownership_error
 
     try:
         result = get_image_io_service().convert(image_id, target_format)
@@ -111,6 +110,9 @@ def convert_image():
 
 @images_bp.get("/<image_id>/content")
 def image_content(image_id: str):
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return ownership_error
     session = get_session_service().get_session(image_id)
     if session is None:
         return error_response(
@@ -162,10 +164,9 @@ def export_image():
         return error_response(
             ErrorCodes.INVALID_FORMAT, "A target format is required.", 400
         )
-    if image_id not in get_session_repository():
-        return error_response(
-            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
-        )
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return ownership_error
 
     quality = payload.get("quality")
     if quality is not None:

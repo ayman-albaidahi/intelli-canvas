@@ -2,6 +2,7 @@ import io
 import sqlite3
 import time
 
+import pytest
 from auth_helpers import authenticated_client
 from PIL import Image
 
@@ -11,6 +12,60 @@ from backend.app.database import (
     SYSTEM_OWNER_USER_ID,
     SQLiteSessionRepository,
 )
+
+# Endpoints that take an image_id and mutate or read session state. Before the
+# ownership guard, any authenticated user could point these at another user's
+# image_id and read or change it; each must now answer 404.
+PROTECTED_IMAGE_ROUTES = [
+    ("/api/process/grayscale", "post", {"image_id": "{id}"}),
+    ("/api/transform/resize", "post", {"image_id": "{id}", "width": 100}),
+    ("/api/history", "get", None),
+    ("/api/history/undo", "post", {"image_id": "{id}"}),
+    ("/api/layers", "get", None),
+    ("/api/pipeline", "get", None),
+    ("/api/analysis", "post", {"image_id": "{id}"}),
+    ("/api/suggestions", "post", {"image_id": "{id}"}),
+]
+
+
+@pytest.mark.parametrize("route,method,body", PROTECTED_IMAGE_ROUTES)
+def test_user_cannot_access_another_users_image(route, method, body):
+    """The gap this guards: ownership was recorded at upload and checked
+    nowhere else. A second user could quote the first user's image_id on any
+    processing, history, layers, pipeline, analysis or suggestions endpoint
+    and read or mutate it."""
+    app = create_app(":memory:")
+    owner = authenticated_client(app, "owner-a@example.com")
+
+    created = _upload(owner)
+    assert created.status_code == 200
+    image_id = created.get_json()["image"]["image_id"]
+
+    intruder = authenticated_client(app, "intruder@example.com")
+    if method == "get":
+        response = intruder.get(f"{route}?image_id={image_id}")
+    else:
+        payload = {
+            key: (value.replace("{id}", image_id) if isinstance(value, str) else value)
+            for key, value in (body or {}).items()
+        }
+        response = intruder.post(route, json=payload)
+
+    assert response.status_code == 404
+    assert response.get_json()["error"]["code"] == "IMAGE_SESSION_NOT_FOUND"
+
+
+def test_anonymous_request_to_a_protected_image_is_rejected():
+    app = create_app(":memory:")
+    owner = authenticated_client(app, "owner-a@example.com")
+    image_id = _upload(owner).get_json()["image"]["image_id"]
+
+    response = (
+        create_app(":memory:").test_client().get(f"/api/history?image_id={image_id}")
+    )
+
+    assert response.status_code == 401
+    assert response.get_json()["error"]["code"] == "AUTH_REQUIRED"
 
 
 def _png_bytes():
