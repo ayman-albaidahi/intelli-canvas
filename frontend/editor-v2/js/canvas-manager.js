@@ -1,5 +1,6 @@
 import { appState, setState } from './app-state.js';
 import { clampCropSelection } from './transform-logic.js';
+import { DEFAULT_ACCENT_STRONG, themeColor } from './theme-colors.js';
 
 const MIN_SCALE = 0.05;
 const MAX_SCALE = 8;
@@ -385,9 +386,11 @@ export class CanvasManager {
       this.ctx.globalAlpha = 1;
     }
     this.ctx.filter = 'none';
-    this.ctx.strokeStyle = 'rgba(217, 86, 135, 0.65)';
+    this.ctx.strokeStyle = themeColor('--accent-strong', DEFAULT_ACCENT_STRONG);
+    this.ctx.globalAlpha = 0.65;
     this.ctx.lineWidth = 1;
     this.ctx.strokeRect(-width / 2 + 0.5, -height / 2 + 0.5, width - 1, height - 1);
+    this.ctx.globalAlpha = 1;
     this.ctx.restore();
   }
 }

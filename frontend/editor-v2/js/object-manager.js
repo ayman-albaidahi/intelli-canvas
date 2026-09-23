@@ -1,4 +1,5 @@
 import { appState } from './app-state.js';
+import { DEFAULT_ACCENT, DEFAULT_ACCENT_STRONG, themeColor } from './theme-colors.js';
 import { openDialog, closeDialog, confirmDialog } from './ui-manager.js';
 
 const HANDLE_SIZE = 9;
@@ -210,7 +211,7 @@ export class ObjectManager {
   /* ---------- creation ---------- */
 
   addShape(type, start, end) {
-    const color = document.querySelector('#drawing-color')?.value || '#d95687';
+    const color = document.querySelector('#drawing-color')?.value || themeColor('--accent', DEFAULT_ACCENT);
     const x = Math.min(start.x, end.x);
     const y = Math.min(start.y, end.y);
     const w = Math.max(MIN_SIZE, Math.abs(end.x - start.x));
@@ -254,7 +255,7 @@ export class ObjectManager {
   }
 
   addText(point) {
-    const color = document.querySelector('#drawing-color')?.value || '#d95687';
+    const color = document.querySelector('#drawing-color')?.value || themeColor('--accent', DEFAULT_ACCENT);
     const size = 26;
     this.openTextPopover({
       onSubmit: (text) => {
@@ -295,7 +296,7 @@ export class ObjectManager {
 
   startBrush(point) {
     const tool = appState.activeTool === 'eraser' ? 'eraser' : 'brush';
-    const color = document.querySelector('#drawing-color')?.value || '#d95687';
+    const color = document.querySelector('#drawing-color')?.value || themeColor('--accent', DEFAULT_ACCENT);
     const width = Number(drawingControl(tool, 'size')?.value || 8);
     const opacity = Number(drawingControl(tool, 'opacity')?.value ?? 100) / 100;
     const ip = this._screenToImage(point.x, point.y);
@@ -788,7 +789,7 @@ export class ObjectManager {
     const ctx = this.ctx;
     const a = this.shapeStart;
     const b = this.shapeCurrent;
-    const color = document.querySelector('#drawing-color')?.value || '#d95687';
+    const color = document.querySelector('#drawing-color')?.value || themeColor('--accent', DEFAULT_ACCENT);
     ctx.save();
     ctx.strokeStyle = color;
     ctx.lineWidth = 3;
@@ -803,7 +804,7 @@ export class ObjectManager {
     ctx.save();
     ctx.translate(c.x, c.y);
     ctx.rotate((o.rotation * Math.PI) / 180);
-    ctx.strokeStyle = '#d95687';
+    ctx.strokeStyle = themeColor('--accent-strong', DEFAULT_ACCENT_STRONG);
     ctx.lineWidth = 1.5;
     ctx.setLineDash([6, 4]);
     ctx.strokeRect(-o.w / 2 - 2, -o.h / 2 - 2, o.w + 4, o.h + 4);
@@ -831,7 +832,7 @@ export class ObjectManager {
       const rot = this.rotateHandle(o);
       ctx.save();
       ctx.font = '600 12px Inter, sans-serif';
-      ctx.fillStyle = '#d95687';
+      ctx.fillStyle = themeColor('--accent-strong', DEFAULT_ACCENT_STRONG);
       ctx.fillText(this.angleReadout, rot.x + 12, rot.y);
       ctx.restore();
     }
