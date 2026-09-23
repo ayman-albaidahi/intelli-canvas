@@ -43,8 +43,11 @@ details.panel-accordion{border-bottom:1px solid var(--line);padding:var(--space-
 details.panel-accordion:first-of-type{padding-top:0}
 details.panel-accordion>summary{cursor:pointer;list-style:none;user-select:none}
 details.panel-accordion>summary::-webkit-details-marker{display:none}
-details.panel-accordion>summary::after{content:"›";float:right;color:var(--muted-2);transition:transform .18s var(--ease)}
-details.panel-accordion[open]>summary::after{transform:rotate(90deg)}
+details.panel-accordion>summary::after{display:none}
+details.panel-accordion>summary{position:relative;padding-right:var(--space-18)}
+details.panel-accordion .disclosure-icon{position:absolute;right:0;top:50%;display:inline-flex;width:14px;height:14px;color:var(--muted-2);transform:translateY(-50%);transition:transform .18s var(--ease)}
+details.panel-accordion .disclosure-icon svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}
+details.panel-accordion[open]>summary .disclosure-icon{transform:translateY(-50%) rotate(90deg)}
 details.panel-accordion:not([open]) .accordion-body{display:none}
 details.panel-accordion .accordion-body{padding-top:var(--space-13)}
 details.panel-accordion.is-flash .accordion-body{animation:ic-flash 1.1s var(--ease)}
