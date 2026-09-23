@@ -71,4 +71,41 @@ test.describe('accordion disclosure', () => {
     await expect(page.locator('#smart-crop-accordion')).not.toHaveAttribute('open');
     expect((await bodyDisplay(page, 'smart-crop-accordion')).display).toBe('none');
   });
+
+  test('technical parameters stay behind closed Advanced disclosures', async ({ page }, testInfo) => {
+    await page.goto('/editor-v2/');
+    await page.setInputFiles('#file-input', makePngPath(testInfo, 'advanced.png'));
+    await waitForImageLoaded(page);
+
+    await page.locator('.quick-action[data-panel="filters"]').click();
+    await expect(page.locator('#filters-accordion')).toBeVisible();
+    await expect(page.locator('#filters-detail-advanced')).not.toHaveAttribute('open');
+    await expect(page.locator('#filters-noise-advanced')).not.toHaveAttribute('open');
+    await expect(page.locator('#filters-texture-advanced')).not.toHaveAttribute('open');
+    await expect(page.locator('#filters-tone-advanced')).not.toHaveAttribute('open');
+    await expect(page.locator('[data-action="apply-median-filter"]')).toBeVisible();
+
+    await page.locator('#filters-tone-advanced summary').click();
+    await page.locator('#gamma-value').fill('1.4');
+    await page.locator('#filters-tone-advanced summary').click();
+    await expect(page.locator('#filters-tone-advanced')).not.toHaveAttribute('open');
+    await page.locator('#filters-tone-advanced summary').click();
+    await expect(page.locator('#gamma-value')).toHaveValue('1.4');
+  });
+
+  test('background tuning is available on demand without changing defaults', async ({ page }, testInfo) => {
+    await page.goto('/editor-v2/');
+    await page.setInputFiles('#file-input', makePngPath(testInfo, 'background-advanced.png'));
+    await waitForImageLoaded(page);
+
+    await page.locator('.quick-action[data-panel="background"]').click();
+    await expect(page.locator('#background-mask-advanced')).not.toHaveAttribute('open');
+    await expect(page.locator('#background-tuning-advanced')).not.toHaveAttribute('open');
+    await expect(page.locator('[data-action="remove-background"]')).toBeVisible();
+
+    await page.locator('#background-mask-advanced summary').click();
+    await expect(page.locator('#bg-tolerance-val')).toHaveText('25');
+    await expect(page.locator('#bg-feather-val')).toHaveText('2');
+    await expect(page.locator('#bg-smooth-val')).toHaveText('1');
+  });
 });
