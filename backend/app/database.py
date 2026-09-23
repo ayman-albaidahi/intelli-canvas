@@ -6,6 +6,8 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+from .services.session_store import SessionStore
+
 SYSTEM_OWNER_USER_ID = "system-owner"
 SYSTEM_OWNER_EMAIL = "system-owner@internal.invalid"
 
@@ -108,7 +110,7 @@ CREATE INDEX IF NOT EXISTS idx_pipeline_nodes_pipeline_id ON pipeline_nodes(pipe
 """
 
 
-class SQLiteSessionRepository:
+class SQLiteSessionRepository(SessionStore):
     def __init__(self, database_path: str | Path):
         self.database_path = str(database_path)
         self._memory_connection = (

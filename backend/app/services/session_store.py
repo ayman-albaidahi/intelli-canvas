@@ -1,36 +1,44 @@
 from __future__ import annotations
 
-from copy import deepcopy
 from typing import Any, Protocol
 
 
 class SessionStore(Protocol):
-    """Minimal persistence seam required by image-session consumers."""
+    """The persistence seam an ImageSessionService is wired against.
 
-    def get(self, image_id: str) -> dict[str, Any] | None: ...
+    Declares the methods the service actually calls. The previous version
+    advertised get/set/delete/list_ids — a narrower dict-store shape the
+    service never used — so the annotation did not describe the real
+    contract and a stand-in implementing only those four could not satisfy
+    it. Keeping this in sync with SQLiteSessionRepository is what makes the
+    repository substitutable at the seam; drift here silently breaks it.
+    """
 
-    def set(self, image_id: str, data: dict[str, Any]) -> None: ...
+    def create_session(self, payload: dict[str, Any]) -> dict[str, Any]: ...
 
-    def delete(self, image_id: str) -> None: ...
+    def get_session(self, image_id: str) -> dict[str, Any] | None: ...
 
     def list_ids(self) -> list[str]: ...
 
+    def list_sessions(self) -> list[dict[str, Any]]: ...
 
-class InMemorySessionStore:
-    """Small dict-backed store useful for isolated tests and future adapters."""
+    def update_current_image(
+        self,
+        image_id: str,
+        filename: str,
+        storage: str,
+        operation: str | None,
+        now: int,
+    ) -> dict[str, Any]: ...
 
-    def __init__(self, initial: dict[str, dict[str, Any]] | None = None):
-        self._sessions = deepcopy(initial or {})
+    def set_current_history(
+        self, image_id: str, index: int, now: int
+    ) -> dict[str, Any]: ...
 
-    def get(self, image_id: str) -> dict[str, Any] | None:
-        value = self._sessions.get(image_id)
-        return deepcopy(value) if value is not None else None
+    def clear_history(self, image_id: str, now: int) -> dict[str, Any]: ...
 
-    def set(self, image_id: str, data: dict[str, Any]) -> None:
-        self._sessions[image_id] = deepcopy(data)
+    def save_layers(
+        self, image_id: str, layers: list[dict[str, Any]], now: int
+    ) -> list[dict[str, Any]]: ...
 
-    def delete(self, image_id: str) -> None:
-        self._sessions.pop(image_id, None)
-
-    def list_ids(self) -> list[str]:
-        return list(self._sessions)
+    def get_layers(self, image_id: str) -> list[dict[str, Any]]: ...
