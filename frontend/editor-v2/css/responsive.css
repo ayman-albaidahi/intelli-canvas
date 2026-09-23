@@ -32,7 +32,7 @@
   .inspector-content{padding:var(--space-14) var(--space-14)}
   .panel-heading{margin-bottom:var(--space-16)}
   .canvas-toolbar{bottom:10px}
-  .brand-logo{width:96px;height:34px}
+  .brand-logo{width:30px;height:30px;max-width:30px}
 }
 @media(max-height:680px){
   .workspace-header{height:40px}
