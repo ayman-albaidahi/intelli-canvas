@@ -1,9 +1,12 @@
 from flask import Blueprint, jsonify, request, send_file
 
-from ..dependencies import get_session_service, get_storage_service
+from ..dependencies import (
+    get_pipeline_execution_service,
+    get_pipeline_service,
+    get_session_service,
+)
 from ..error_codes import ErrorCodes
 from ..errors import error_response
-from ..services.pipeline_execution_service import PipelineExecutionService
 from ..services.pipeline_service import PipelineParamError, PipelineService
 from ..views import public_image
 
@@ -11,7 +14,7 @@ pipeline_bp = Blueprint("pipeline", __name__, url_prefix="/api/pipeline")
 
 
 def _service() -> PipelineService:
-    return PipelineService(get_session_service())
+    return get_pipeline_service()
 
 
 def _image_id(payload=None):
@@ -44,10 +47,9 @@ def _execution(payload, persist):
             if isinstance(payload.get("nodes"), list)
             else _service().get(image_id)
         )
-        result = PipelineExecutionService(
-            get_session_service(),
-            get_storage_service(),
-        ).execute(image_id, pipeline, persist=persist)
+        result = get_pipeline_execution_service().execute(
+            image_id, pipeline, persist=persist
+        )
         if not persist:
             return send_file(result.path, mimetype="image/png", max_age=0)
         return jsonify(success=True, image=public_image(result))

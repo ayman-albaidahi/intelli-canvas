@@ -2,7 +2,7 @@ import io
 
 from flask import Blueprint, jsonify, request, send_file
 
-from ..dependencies import get_session_service, get_storage_service
+from ..dependencies import get_background_service, get_session_service
 from ..error_codes import ErrorCodes
 from ..errors import error_response
 from ..services.background_service import BackgroundParamError, BackgroundService
@@ -17,10 +17,7 @@ background_bp = Blueprint(
 
 
 def _service() -> BackgroundService:
-    return BackgroundService(
-        get_session_service(),
-        get_storage_service(),
-    )
+    return get_background_service()
 
 
 def _image_id_and_params():

@@ -4,15 +4,14 @@ import pytest
 from PIL import Image
 
 from backend.app import create_app
-from backend.app.routes import transform
 from backend.app.services.file_service import FileStorageService
 
 
 @pytest.fixture
-def resize_context(tmp_path, monkeypatch):
-    app = create_app()
-    storage_service = FileStorageService(storage_root=tmp_path / "storage")
-    monkeypatch.setattr(transform, "FileStorageService", lambda: storage_service)
+def resize_context(tmp_path):
+    storage_root = tmp_path / "storage"
+    app = create_app(storage_root=storage_root)
+    storage_service = FileStorageService(storage_root=storage_root)
 
     source = Image.new("RGB", (1600, 1200), color="red")
     source_buffer = io.BytesIO()

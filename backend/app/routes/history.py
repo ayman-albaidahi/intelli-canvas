@@ -2,7 +2,11 @@ import io
 
 from flask import Blueprint, jsonify, request, send_file
 
-from ..dependencies import get_session_service, get_storage_service
+from ..dependencies import (
+    get_history_comparison_service,
+    get_session_service,
+    get_storage_service,
+)
 from ..error_codes import ErrorCodes
 from ..errors import error_response
 from ..services.history_comparison_service import HistoryComparisonService
@@ -19,10 +23,7 @@ def _session_service():
 
 
 def _comparison_service() -> HistoryComparisonService:
-    return HistoryComparisonService(
-        get_session_service(),
-        get_storage_service(),
-    )
+    return get_history_comparison_service()
 
 
 def _parse_index(value):

@@ -24,14 +24,23 @@ from .routes import (
     transform_bp,
 )
 from .services.auth_service import AuthService
+from .services.background_service import BackgroundService
 from .services.file_service import FileStorageService
+from .services.geometry_service import GeometryService
+from .services.history_comparison_service import HistoryComparisonService
+from .services.image_io_service import ImageIOService
 from .services.image_session_service import ImageSessionService
+from .services.image_upload_service import ImageUploadService
 from .services.layer_compositor_service import LayerCompositorService
+from .services.pipeline_execution_service import PipelineExecutionService
+from .services.pipeline_service import PipelineService
+from .services.process_service import ProcessService
+from .services.smart_crop_service import SmartCropService
 
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
 
 
-def create_app(database_path: str | None = None) -> Flask:
+def create_app(database_path: str | None = None, storage_root=None) -> Flask:
     """Application factory for the IntelliCanvas backend."""
     app = Flask(__name__, static_folder=str(FRONTEND_DIR), static_url_path="")
     app.config.from_object(Config)
@@ -49,11 +58,30 @@ def create_app(database_path: str | None = None) -> Flask:
     app.config["IMAGE_SESSION_SERVICE"] = ImageSessionService(
         app.config["IMAGE_SESSIONS"]
     )
-    app.config["FILE_STORAGE_SERVICE"] = FileStorageService()
+    app.config["FILE_STORAGE_SERVICE"] = FileStorageService(storage_root=storage_root)
+
+    # Every service is constructed exactly once, here, and handed its
+    # collaborators explicitly. A service built anywhere else used to silently
+    # bind its own default storage root, which meant two services in the same
+    # request could read and write through different roots; making storage a
+    # required constructor argument keeps that from recurring.
+    storage = app.config["FILE_STORAGE_SERVICE"]
+    sessions = app.config["IMAGE_SESSION_SERVICE"]
+    app.config["IMAGE_IO_SERVICE"] = ImageIOService(sessions, storage)
+    app.config["PROCESS_SERVICE"] = ProcessService(sessions, storage)
+    app.config["GEOMETRY_SERVICE"] = GeometryService(sessions, storage)
+    app.config["BACKGROUND_SERVICE"] = BackgroundService(sessions, storage)
+    app.config["SMART_CROP_SERVICE"] = SmartCropService(sessions, storage)
+    app.config["PIPELINE_SERVICE"] = PipelineService(sessions)
+    app.config["PIPELINE_EXECUTION_SERVICE"] = PipelineExecutionService(
+        sessions, storage
+    )
+    app.config["HISTORY_COMPARISON_SERVICE"] = HistoryComparisonService(
+        sessions, storage
+    )
+    app.config["IMAGE_UPLOAD_SERVICE"] = ImageUploadService(sessions, storage)
     app.config["LAYER_COMPOSITOR_SERVICE"] = LayerCompositorService(
-        app.config["IMAGE_SESSION_SERVICE"],
-        app.config["FILE_STORAGE_SERVICE"],
-        app.config["IMAGE_SESSIONS"],
+        sessions, storage, app.config["IMAGE_SESSIONS"]
     )
     app.extensions["rate_limiter"] = InMemoryRateLimiter()
     register_error_handlers(app)

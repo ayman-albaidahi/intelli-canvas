@@ -5,15 +5,16 @@ import pytest
 from PIL import Image, ImageDraw
 
 from backend.app import create_app
-from backend.app.routes import transform
 from backend.app.services.file_service import FileStorageService
 
 
 @pytest.fixture
-def smart_crop_context(tmp_path, monkeypatch):
-    app = create_app(database_path=str(tmp_path / "sessions.sqlite3"))
-    storage_service = FileStorageService(storage_root=tmp_path / "storage")
-    monkeypatch.setattr(transform, "FileStorageService", lambda: storage_service)
+def smart_crop_context(tmp_path):
+    storage_root = tmp_path / "storage"
+    app = create_app(
+        database_path=str(tmp_path / "sessions.sqlite3"), storage_root=storage_root
+    )
+    storage_service = FileStorageService(storage_root=storage_root)
 
     image = Image.new("RGB", (1200, 800), (20, 20, 20))
     draw = ImageDraw.Draw(image)
@@ -155,10 +156,12 @@ def test_missing_session_is_rejected(smart_crop_context):
     assert response.get_json()["error"]["code"] == "IMAGE_SESSION_NOT_FOUND"
 
 
-def test_saliency_search_is_bounded_for_large_image(tmp_path, monkeypatch):
-    app = create_app(database_path=str(tmp_path / "sessions.sqlite3"))
-    storage_service = FileStorageService(storage_root=tmp_path / "storage")
-    monkeypatch.setattr(transform, "FileStorageService", lambda: storage_service)
+def test_saliency_search_is_bounded_for_large_image(tmp_path):
+    storage_root = tmp_path / "storage"
+    app = create_app(
+        database_path=str(tmp_path / "sessions.sqlite3"), storage_root=storage_root
+    )
+    storage_service = FileStorageService(storage_root=storage_root)
     image = Image.new("RGB", (4000, 3000), (80, 80, 80))
     draw = ImageDraw.Draw(image)
     draw.rectangle((2800, 1000, 3600, 1800), fill=(255, 0, 0))

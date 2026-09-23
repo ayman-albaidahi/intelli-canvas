@@ -2,12 +2,14 @@
 
 Route modules resolve their collaborators through these helpers instead of
 reaching into ``current_app.config`` directly. Centralizing the lookups keeps
-the wiring names in one place and gives tests a single seam to swap a service.
+the wiring names in one place and gives tests a single seam to swap a service:
+overwrite the ``app.config`` entry, or patch the accessor, and every route
+picks up the replacement.
 
-The storage accessor deliberately keeps the module-name identity check: tests
-monkeypatch the ``FileStorageService`` name on a route module, and the check
-detects that swap and returns the replacement instead of the configured
-instance.
+Services are constructed only in :func:`create_app`; these accessors never
+build a fallback instance. A service that could supply its own default storage
+root used to be able to silently disagree with the configured one, so those
+constructor fallbacks were removed and this accessor became a plain lookup.
 """
 
 from __future__ import annotations
@@ -15,28 +17,21 @@ from __future__ import annotations
 from flask import current_app
 
 from .services.auth_service import AuthService
+from .services.background_service import BackgroundService
 from .services.file_service import FileStorageService
+from .services.geometry_service import GeometryService
+from .services.history_comparison_service import HistoryComparisonService
+from .services.image_io_service import ImageIOService
 from .services.image_session_service import ImageSessionService
+from .services.image_upload_service import ImageUploadService
 from .services.layer_compositor_service import LayerCompositorService
+from .services.pipeline_execution_service import PipelineExecutionService
+from .services.pipeline_service import PipelineService
+from .services.process_service import ProcessService
+from .services.smart_crop_service import SmartCropService
 
-# Captured at import time so tests can swap the module-level name via
-# monkeypatch; the identity check in get_storage_service detects the swap.
-_DEFAULT_FILE_STORAGE_SERVICE = FileStorageService
 
-
-def get_storage_service(module=None) -> FileStorageService:
-    """Return the configured file-storage service.
-
-    ``module`` is the route module performing the lookup. Tests monkeypatch its
-    ``FileStorageService`` name to substitute an isolated storage root; the
-    identity check against the pristine reference detects that swap. Passing
-    ``None`` skips the check and returns the configured instance.
-    """
-    if (
-        module is not None
-        and module.FileStorageService is not _DEFAULT_FILE_STORAGE_SERVICE
-    ):
-        return module.FileStorageService(**{})
+def get_storage_service() -> FileStorageService:
     return current_app.config["FILE_STORAGE_SERVICE"]
 
 
@@ -46,6 +41,42 @@ def get_session_service() -> ImageSessionService:
 
 def get_session_repository():
     return current_app.config["IMAGE_SESSIONS"]
+
+
+def get_image_io_service() -> ImageIOService:
+    return current_app.config["IMAGE_IO_SERVICE"]
+
+
+def get_process_service() -> ProcessService:
+    return current_app.config["PROCESS_SERVICE"]
+
+
+def get_geometry_service() -> GeometryService:
+    return current_app.config["GEOMETRY_SERVICE"]
+
+
+def get_background_service() -> BackgroundService:
+    return current_app.config["BACKGROUND_SERVICE"]
+
+
+def get_smart_crop_service() -> SmartCropService:
+    return current_app.config["SMART_CROP_SERVICE"]
+
+
+def get_pipeline_service() -> PipelineService:
+    return current_app.config["PIPELINE_SERVICE"]
+
+
+def get_pipeline_execution_service() -> PipelineExecutionService:
+    return current_app.config["PIPELINE_EXECUTION_SERVICE"]
+
+
+def get_history_comparison_service() -> HistoryComparisonService:
+    return current_app.config["HISTORY_COMPARISON_SERVICE"]
+
+
+def get_image_upload_service() -> ImageUploadService:
+    return current_app.config["IMAGE_UPLOAD_SERVICE"]
 
 
 def get_layer_compositor() -> LayerCompositorService:
