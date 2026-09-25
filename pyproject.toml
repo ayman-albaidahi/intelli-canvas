@@ -1,3 +1,18 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "intellicanvas"
+version = "0.9.1"
+description = "Privacy-first, explainable image editor."
+requires-python = ">=3.11"
+# Runtime dependencies stay pinned in backend/requirements.txt; the lockfile
+# (quality-gate phase) will be the reproducible source of truth.
+
+[tool.setuptools.packages.find]
+include = ["backend*"]
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
@@ -8,3 +23,15 @@ line-length = 88
 
 [tool.ruff.lint]
 select = ["F", "I", "BLE"]
+
+[tool.coverage.run]
+source = ["backend"]
+omit = ["backend/run.py", "backend/wsgi.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]
+show_missing = true

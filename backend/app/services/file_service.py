@@ -45,10 +45,14 @@ class FileStorageService:
         storage_root: str | os.PathLike[str] | None = None,
         max_file_size: int | None = None,
     ):
-        project_root = Path(__file__).resolve().parents[2]
-        root = (
-            Path(storage_root) if storage_root is not None else project_root / "storage"
-        )
+        # This module lives at backend/app/services/, so parents[3] is the
+        # repository root. Runtime artifacts live under the Flask-style
+        # instance/ directory, next to the SQLite database; INTELLICANVAS_STORAGE_ROOT
+        # overrides the location for deployments and tests.
+        repo_root = Path(__file__).resolve().parents[3]
+        default_root = repo_root / "instance" / "storage"
+        configured = os.environ.get("INTELLICANVAS_STORAGE_ROOT", str(default_root))
+        root = Path(storage_root) if storage_root is not None else Path(configured)
         self.storage_root = root.resolve()
         self.max_file_size = (
             max_file_size if max_file_size is not None else Config.MAX_FILE_SIZE

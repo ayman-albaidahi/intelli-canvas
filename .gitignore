@@ -65,17 +65,10 @@ db.sqlite3-journal
 instance/
 .webassets-cache
 
-# IntelliCanvas runtime storage
-backend/storage/uploads/*
-backend/storage/processed/*
-backend/storage/backgrounds/*
-backend/storage/analysis-cache/*
-backend/storage/backgrounds.json
-backend/storage/background-thumbnails/*
-backend/storage/layer-assets/*
-!backend/storage/uploads/.gitkeep
-!backend/storage/processed/.gitkeep
-!backend/storage/backgrounds/.gitkeep
+# IntelliCanvas runtime storage lives under instance/ (see above), so all
+# uploads, processed images, background assets, thumbnails and analysis
+# caches stay untracked. The location is configurable via
+# INTELLICANVAS_STORAGE_ROOT and the directories are created on demand.
 
 # Scrapy stuff:
 .scrapy
