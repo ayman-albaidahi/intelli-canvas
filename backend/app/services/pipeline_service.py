@@ -5,6 +5,7 @@ import time
 import uuid
 from typing import Any
 
+from ..domain.pipeline import Pipeline
 from ..errors import InvalidRequestError
 from ..validation import require_int, require_number, require_odd_int
 from .image_session_service import ImageSessionService
@@ -52,64 +53,60 @@ class PipelineService:
         self.session_service = session_service
         self.repository = session_service.repository
 
-    def get(self, image_id: str) -> dict[str, Any]:
+    def get(self, image_id: str) -> Pipeline:
         if self.session_service.get_session(image_id) is None:
             raise FileNotFoundError("Image session was not found.")
         pipeline = self.repository.get_pipeline(image_id)
         if pipeline is not None:
             return pipeline
-        return {
-            "pipeline_id": None,
-            "image_id": image_id,
-            "version": 1,
-            "created_at": None,
-            "updated_at": None,
-            "nodes": [],
-        }
+        return Pipeline(pipeline_id=None, image_id=image_id)
 
-    def save(self, image_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    def save(self, image_id: str, payload: dict[str, Any]) -> Pipeline:
         nodes = self.validate_nodes(payload.get("nodes"))
         version = payload.get("version", 1)
         if isinstance(version, bool) or not isinstance(version, int) or version < 1:
             raise PipelineParamError("version must be a positive integer.")
         return self.repository.save_pipeline(image_id, nodes, version, int(time.time()))
 
-    def add(self, image_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    def add(self, image_id: str, payload: dict[str, Any]) -> Pipeline:
         pipeline = self.get(image_id)
-        nodes = list(pipeline["nodes"])
+        nodes = [node.to_storage_dict() for node in pipeline.nodes]
         nodes.append(self.validate_node(payload))
         return self.repository.save_pipeline(
-            image_id, nodes, pipeline["version"] + 1, int(time.time())
+            image_id, nodes, pipeline.version + 1, int(time.time())
         )
 
-    def patch(
-        self, image_id: str, node_id: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    def patch(self, image_id: str, node_id: str, payload: dict[str, Any]) -> Pipeline:
         pipeline = self.get(image_id)
-        nodes = list(pipeline["nodes"])
+        nodes = [node.to_storage_dict() for node in pipeline.nodes]
         node = next((item for item in nodes if item["id"] == node_id), None)
         if node is None:
             raise KeyError("Pipeline node was not found.")
         candidate = {**node, **payload, "id": node_id}
+        # validate_node rebuilds the node from the request contract and drops
+        # created_at; to_storage_dict already carried the original timestamp
+        # into candidate, so re-apply it after validation.
+        created_at = node["created_at"]
         updated = self.validate_node(candidate)
-        updated["created_at"] = node.get("created_at")
+        updated["created_at"] = created_at
         nodes[nodes.index(node)] = updated
         return self.repository.save_pipeline(
-            image_id, nodes, pipeline["version"] + 1, int(time.time())
+            image_id, nodes, pipeline.version + 1, int(time.time())
         )
 
-    def delete(self, image_id: str, node_id: str) -> dict[str, Any]:
+    def delete(self, image_id: str, node_id: str) -> Pipeline:
         pipeline = self.get(image_id)
-        nodes = [node for node in pipeline["nodes"] if node["id"] != node_id]
-        if len(nodes) == len(pipeline["nodes"]):
+        nodes = [node.to_storage_dict() for node in pipeline.nodes]
+        kept = [node for node in nodes if node["id"] != node_id]
+        if len(kept) == len(nodes):
             raise KeyError("Pipeline node was not found.")
         return self.repository.save_pipeline(
-            image_id, nodes, pipeline["version"] + 1, int(time.time())
+            image_id, kept, pipeline.version + 1, int(time.time())
         )
 
-    def toggle(self, image_id: str, node_id: str) -> dict[str, Any]:
+    def toggle(self, image_id: str, node_id: str) -> Pipeline:
         pipeline = self.get(image_id)
-        nodes = list(pipeline["nodes"])
+        nodes = [node.to_storage_dict() for node in pipeline.nodes]
         node = next((item for item in nodes if item["id"] == node_id), None)
         if node is None:
             raise KeyError("Pipeline node was not found.")
@@ -118,13 +115,13 @@ class PipelineService:
         return self.repository.save_pipeline(
             image_id,
             self.validate_nodes(nodes),
-            pipeline["version"] + 1,
+            pipeline.version + 1,
             int(time.time()),
         )
 
-    def reorder(self, image_id: str, node_id: str, order: int) -> dict[str, Any]:
+    def reorder(self, image_id: str, node_id: str, order: int) -> Pipeline:
         pipeline = self.get(image_id)
-        nodes = list(pipeline["nodes"])
+        nodes = [node.to_storage_dict() for node in pipeline.nodes]
         node = next((item for item in nodes if item["id"] == node_id), None)
         if node is None:
             raise KeyError("Pipeline node was not found.")
@@ -139,7 +136,7 @@ class PipelineService:
         return self.repository.save_pipeline(
             image_id,
             self.validate_nodes(nodes),
-            pipeline["version"] + 1,
+            pipeline.version + 1,
             int(time.time()),
         )
 

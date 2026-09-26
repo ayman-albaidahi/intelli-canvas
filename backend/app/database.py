@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .domain.history import HistoryEntry
+from .domain.pipeline import Pipeline, PipelineNode
 from .services.auth_store import AuthStore
 from .services.session_store import SessionStore
 
@@ -635,7 +636,7 @@ class SQLiteSessionRepository(SessionStore, AuthStore):
             ).fetchall()
         return [json.loads(row[0]) for row in rows]
 
-    def get_pipeline(self, image_id: str) -> dict[str, Any] | None:
+    def get_pipeline(self, image_id: str) -> Pipeline | None:
         with self._connect() as connection:
             pipeline = connection.execute(
                 "SELECT * FROM image_pipelines WHERE image_id = ?", (image_id,)
@@ -646,29 +647,29 @@ class SQLiteSessionRepository(SessionStore, AuthStore):
                 "SELECT node_id, operation, parameters_json, enabled, order_index, created_at, updated_at FROM pipeline_nodes WHERE pipeline_id = ? ORDER BY order_index",
                 (pipeline["pipeline_id"],),
             ).fetchall()
-        return {
-            "pipeline_id": pipeline["pipeline_id"],
-            "image_id": pipeline["image_id"],
-            "version": pipeline["version"],
-            "created_at": pipeline["created_at"],
-            "updated_at": pipeline["updated_at"],
-            "nodes": [
-                {
-                    "id": row["node_id"],
-                    "operation": row["operation"],
-                    "parameters": json.loads(row["parameters_json"] or "{}"),
-                    "enabled": bool(row["enabled"]),
-                    "order": row["order_index"],
-                    "created_at": row["created_at"],
-                    "updated_at": row["updated_at"],
-                }
+        return Pipeline(
+            pipeline_id=pipeline["pipeline_id"],
+            image_id=pipeline["image_id"],
+            version=int(pipeline["version"]),
+            created_at=int(pipeline["created_at"]),
+            updated_at=int(pipeline["updated_at"]),
+            nodes=tuple(
+                PipelineNode(
+                    id=row["node_id"],
+                    operation=row["operation"],
+                    parameters=json.loads(row["parameters_json"] or "{}"),
+                    enabled=bool(row["enabled"]),
+                    order=int(row["order_index"]),
+                    created_at=int(row["created_at"]),
+                    updated_at=int(row["updated_at"]),
+                )
                 for row in nodes
-            ],
-        }
+            ),
+        )
 
     def save_pipeline(
         self, image_id: str, nodes: list[dict[str, Any]], version: int, now: int
-    ) -> dict[str, Any]:
+    ) -> Pipeline:
         with self._connect() as connection:
             if (
                 connection.execute(
@@ -682,7 +683,7 @@ class SQLiteSessionRepository(SessionStore, AuthStore):
                 (image_id,),
             ).fetchone()
             pipeline_id = pipeline["pipeline_id"] if pipeline else uuid.uuid4().hex
-            created_at = pipeline["created_at"] if pipeline else now
+            created_at = int(pipeline["created_at"]) if pipeline else now
             connection.execute(
                 "INSERT INTO image_pipelines (pipeline_id, image_id, version, created_at, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(image_id) DO UPDATE SET version = excluded.version, updated_at = excluded.updated_at",
                 (pipeline_id, image_id, version, created_at, now),
@@ -704,7 +705,10 @@ class SQLiteSessionRepository(SessionStore, AuthStore):
                         now,
                     ),
                 )
-        return self.get_pipeline(image_id)  # type: ignore[return-value]
+        result = self.get_pipeline(image_id)
+        if result is None:
+            raise FileNotFoundError("Image session was not found.")
+        return result
 
     def _history(
         self, connection: sqlite3.Connection, image_id: str

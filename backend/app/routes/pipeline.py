@@ -29,7 +29,7 @@ def _image_id(payload=None):
 
 
 def _response(pipeline):
-    return jsonify(success=True, pipeline=pipeline)
+    return jsonify(success=True, pipeline=pipeline.to_public_dict())
 
 
 def _execution(payload, persist):

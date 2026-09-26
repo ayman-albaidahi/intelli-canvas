@@ -7,6 +7,7 @@ from typing import Any
 
 from PIL import Image
 
+from ..domain.pipeline import Pipeline
 from ..domain.results import OperationResult
 from ..operations.registry import OPERATIONS
 from .file_service import FileStorageService
@@ -25,13 +26,13 @@ class PipelineExecutionService:
     def execute(
         self,
         image_id: str,
-        pipeline: dict[str, Any],
+        pipeline: Pipeline | dict[str, Any],
         *,
         persist: bool,
         metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         source_path = self._source_path(image_id)
-        nodes = PipelineService.validate_nodes(pipeline.get("nodes", []))
+        nodes = self._nodes_of(pipeline)
         active_nodes = [node for node in nodes if node.get("enabled", True)]
         cache_hash = self.cache_hash(source_path, nodes)
         cache_path = (
@@ -75,6 +76,20 @@ class PipelineExecutionService:
                 "persisted": persist,
             },
         )
+
+    @staticmethod
+    def _nodes_of(pipeline: Pipeline | dict[str, Any]) -> list[dict[str, Any]]:
+        """Accept the stored pipeline shape or a raw request payload.
+
+        Preview requests send an ad-hoc node list; apply requests send the
+        pipeline loaded from the repository. Normalizing both here keeps the
+        route and the validator free of isinstance branches.
+        """
+        if isinstance(pipeline, Pipeline):
+            return PipelineService.validate_nodes(
+                [node.to_storage_dict() for node in pipeline.nodes]
+            )
+        return PipelineService.validate_nodes(pipeline.get("nodes", []))
 
     @staticmethod
     def cache_hash(source_path: Path, nodes: list[dict[str, Any]]) -> str:

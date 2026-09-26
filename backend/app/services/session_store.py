@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Protocol
 
 from backend.app.domain.history import HistoryEntry
+from backend.app.domain.pipeline import Pipeline
 
 
 class SessionStore(Protocol):
@@ -46,3 +47,9 @@ class SessionStore(Protocol):
     def get_layers(self, image_id: str) -> list[dict[str, Any]]: ...
 
     def get_history_entry(self, image_id: str, index: int) -> HistoryEntry | None: ...
+
+    def get_pipeline(self, image_id: str) -> Pipeline | None: ...
+
+    def save_pipeline(
+        self, image_id: str, nodes: list[dict[str, Any]], version: int, now: int
+    ) -> Pipeline: ...
