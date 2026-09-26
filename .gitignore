@@ -50,6 +50,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+coverage/
 
 # Translations
 *.mo
@@ -69,6 +70,9 @@ instance/
 # uploads, processed images, background assets, thumbnails and analysis
 # caches stay untracked. The location is configurable via
 # INTELLICANVAS_STORAGE_ROOT and the directories are created on demand.
+# backend/storage/ is the pre-instance layout and must stay ignored even if
+# a stale run recreates it — a runtime file there must never reach a PR.
+backend/storage/
 
 # Scrapy stuff:
 .scrapy

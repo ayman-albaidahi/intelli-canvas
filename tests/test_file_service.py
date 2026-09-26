@@ -122,3 +122,29 @@ def test_generated_filename_does_not_overwrite_existing_file(storage_service):
     assert first_path != second_path
     assert first_path.exists()
     assert second_path.exists()
+
+
+def test_default_storage_root_is_the_instance_directory(monkeypatch, tmp_path):
+    """The pre-instance layout wrote into backend/storage/.
+
+    That path was a repository directory that could ship runtime files into a
+    PR by accident. Relocation to instance/ is only trustworthy if a
+    regression cannot silently move the default back, so this pins the
+    resolved default root and asserts it is never the legacy location.
+    """
+    monkeypatch.delenv("INTELLICANVAS_STORAGE_ROOT", raising=False)
+    repo_root = Path(__file__).resolve().parents[1]
+    service = FileStorageService()
+    legacy = (repo_root / "backend" / "storage").resolve()
+    expected = (repo_root / "instance" / "storage").resolve()
+
+    assert service.storage_root == expected
+    assert service.storage_root != legacy
+    # Every write target derives from storage_root, so pinning the root is
+    # enough to keep the whole tree out of backend/storage.
+    for directory in (
+        service.uploads_dir,
+        service.processed_dir,
+        service.backgrounds_dir,
+    ):
+        assert legacy not in directory.parents

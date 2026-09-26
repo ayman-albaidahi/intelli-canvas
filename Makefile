@@ -9,7 +9,7 @@
 PYTHON ?= python
 NPM    ?= npx
 
-.PHONY: help install dev test test-py test-js test-e2e lint format audit check clean
+.PHONY: help install dev test test-py test-js test-e2e lint format audit coverage check clean
 
 help:  ## Show the available targets
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | \
@@ -45,6 +45,11 @@ format:  ## Format the backend in place (Ruff)
 audit:  ## Scan Python dependencies for known vulnerabilities (pip-audit)
 	$(PYTHON) -m pip-audit -r backend/requirements.txt --strict
 
+coverage:  ## Generate HTML coverage reports (backend + frontend)
+	$(PYTHON) -m pytest -q --cov=backend --cov-report=html:coverage/backend
+	$(NPM) vitest run --coverage
+	@echo "Open coverage/backend/index.html or coverage/index.html"
+
 # Mirrors the CI backend + frontend jobs. Browser tests are separate
 # (`make test-e2e`) because they need the Playwright browser download.
 check:  ## Full quality gate: compile + lint + format-check + unit tests + coverage
@@ -56,5 +61,5 @@ check:  ## Full quality gate: compile + lint + format-check + unit tests + cover
 	$(NPM) vitest run
 
 clean:  ## Remove generated caches and test artifacts
-	rm -rf .pytest_cache .ruff_cache .mypy_cache test-results
+	rm -rf .pytest_cache .ruff_cache .mypy_cache test-results coverage
 	find . -type d -name '__pycache__' -prune -exec rm -rf {} +
