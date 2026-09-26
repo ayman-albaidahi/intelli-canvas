@@ -6,6 +6,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+from .domain.history import HistoryEntry
 from .services.auth_store import AuthStore
 from .services.session_store import SessionStore
 
@@ -707,24 +708,24 @@ class SQLiteSessionRepository(SessionStore, AuthStore):
 
     def _history(
         self, connection: sqlite3.Connection, image_id: str
-    ) -> list[dict[str, Any]]:
+    ) -> list[HistoryEntry]:
         rows = connection.execute(
             "SELECT history_index, operation, filename, storage, created_at, parameters_json FROM image_history WHERE image_id = ? ORDER BY history_index",
             (image_id,),
         ).fetchall()
         return [
-            {
-                "index": row["history_index"],
-                "operation": row["operation"],
-                "filename": row["filename"],
-                "time": row["created_at"],
-                "storage": row["storage"],
-                "parameters": json.loads(row["parameters_json"] or "{}"),
-            }
+            HistoryEntry(
+                index=int(row["history_index"]),
+                operation=row["operation"],
+                filename=row["filename"],
+                storage=row["storage"],
+                created_at=int(row["created_at"]),
+                parameters=json.loads(row["parameters_json"] or "{}"),
+            )
             for row in rows
         ]
 
-    def get_history_entry(self, image_id: str, index: int) -> dict[str, Any] | None:
+    def get_history_entry(self, image_id: str, index: int) -> HistoryEntry | None:
         with self._connect() as connection:
             row = connection.execute(
                 "SELECT history_index, operation, filename, storage, created_at, parameters_json FROM image_history WHERE image_id = ? AND history_index = ?",
@@ -732,9 +733,14 @@ class SQLiteSessionRepository(SessionStore, AuthStore):
             ).fetchone()
         if row is None:
             return None
-        entry = dict(row)
-        entry["parameters"] = json.loads(entry.pop("parameters_json") or "{}")
-        return entry
+        return HistoryEntry(
+            index=int(row["history_index"]),
+            operation=row["operation"],
+            filename=row["filename"],
+            storage=row["storage"],
+            created_at=int(row["created_at"]),
+            parameters=json.loads(row["parameters_json"] or "{}"),
+        )
 
     def _layers(
         self, connection: sqlite3.Connection, image_id: str

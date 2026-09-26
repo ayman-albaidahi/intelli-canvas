@@ -5,6 +5,7 @@ from pathlib import Path
 
 from PIL import Image, ImageChops, ImageOps
 
+from ..domain.history import HistoryEntry
 from .file_service import FileStorageService
 from .image_session_service import ImageSessionService
 
@@ -16,7 +17,7 @@ class HistoryComparisonService:
         self.session_service = session_service
         self.storage_service = storage_service
 
-    def entry(self, image_id: str, index: int) -> dict:
+    def entry(self, image_id: str, index: int) -> HistoryEntry:
         if self.session_service.get_session(image_id) is None:
             raise FileNotFoundError("Image session was not found.")
         result = self.session_service.repository.get_history_entry(image_id, index)
@@ -26,8 +27,8 @@ class HistoryComparisonService:
 
     def path_for(self, image_id: str, index: int) -> Path:
         entry = self.entry(image_id, index)
-        directory = self.storage_service.resolve_storage_dir(entry["storage"])
-        path = (directory / entry["filename"]).resolve()
+        directory = self.storage_service.resolve_storage_dir(entry.storage)
+        path = (directory / entry.filename).resolve()
         try:
             path.relative_to(directory.resolve())
         except ValueError as exc:
@@ -107,10 +108,5 @@ class HistoryComparisonService:
             return buffer.getvalue()
 
     @staticmethod
-    def _public_entry(entry: dict) -> dict:
-        return {
-            "index": entry["history_index"],
-            "operation": entry["operation"],
-            "time": entry["created_at"],
-            "parameters": entry.get("parameters", {}),
-        }
+    def _public_entry(entry: HistoryEntry) -> dict:
+        return entry.to_public_dict()

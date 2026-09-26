@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any, Protocol
 
+from backend.app.domain.history import HistoryEntry
+
 
 class SessionStore(Protocol):
     """The persistence seam an ImageSessionService is wired against.
@@ -42,3 +44,5 @@ class SessionStore(Protocol):
     ) -> list[dict[str, Any]]: ...
 
     def get_layers(self, image_id: str) -> list[dict[str, Any]]: ...
+
+    def get_history_entry(self, image_id: str, index: int) -> HistoryEntry | None: ...

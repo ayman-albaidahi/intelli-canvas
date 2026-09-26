@@ -91,8 +91,8 @@ class PipelineExecutionService:
         entry = self.session_service.repository.get_history_entry(image_id, 0)
         if entry is None:
             raise ValueError("Pipeline source history state was not found.")
-        directory = self.storage_service.resolve_storage_dir(entry["storage"])
-        path = (directory / entry["filename"]).resolve()
+        directory = self.storage_service.resolve_storage_dir(entry.storage)
+        path = (directory / entry.filename).resolve()
         try:
             path.relative_to(directory.resolve())
         except ValueError as exc:

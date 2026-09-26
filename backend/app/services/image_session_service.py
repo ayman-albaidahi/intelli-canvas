@@ -84,10 +84,7 @@ class ImageSessionService:
             "total": len(entries),
             "entries": [
                 {
-                    "index": i,
-                    "operation": entry["operation"],
-                    "time": entry["time"],
-                    "parameters": entry.get("parameters", {}),
+                    **entry.to_public_dict(),
                     "current": i == index,
                 }
                 for i, entry in enumerate(entries)
