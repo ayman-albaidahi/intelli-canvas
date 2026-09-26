@@ -6,6 +6,7 @@ import uuid
 
 from flask import Blueprint, jsonify, request, send_file
 
+from ..auth import require_owned_image
 from ..dependencies import (
     get_layer_compositor,
     get_session_repository,
@@ -153,10 +154,9 @@ def _store_data_url(image_id, layer, storage, repository):
 @layers_bp.get("")
 def get_layers():
     image_id = request.args.get("image_id", "")
-    if not image_id.strip():
-        return error_response(
-            ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
-        )
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return ownership_error
     try:
         layers = _session_service().get_layers(image_id)
     except FileNotFoundError:
@@ -170,10 +170,9 @@ def get_layers():
 def compose_layers():
     payload = request.get_json(silent=True) or {}
     image_id = payload.get("image_id")
-    if not isinstance(image_id, str) or not image_id.strip():
-        return error_response(
-            ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
-        )
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return ownership_error
     try:
         result = get_layer_compositor().compose(image_id)
     except FileNotFoundError:
@@ -195,13 +194,12 @@ def save_layers():
             ErrorCodes.INVALID_REQUEST, "A JSON request body is required.", 400
         )
     image_id = payload.get("image_id")
-    if not isinstance(image_id, str) or not image_id.strip():
-        return error_response(
-            ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
-        )
     layers, error = _validate_layers(payload.get("layers"), image_id)
     if error is not None:
         return error
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return ownership_error
     service = _session_service()
     try:
         service.get_layers(image_id)
@@ -223,6 +221,9 @@ def save_layers():
 @layers_bp.get("/assets/<asset_id>")
 def get_layer_asset(asset_id):
     image_id = request.args.get("image_id", "")
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return ownership_error
     asset = get_session_repository().get_asset_for_image(asset_id, image_id)
     if asset is None:
         return error_response(

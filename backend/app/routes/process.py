@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from flask import Blueprint, jsonify, request
 
-from ..dependencies import get_session_service, get_storage_service
+from ..auth import require_owned_image
+from ..dependencies import get_process_service, get_session_service
 from ..error_codes import ErrorCodes
 from ..errors import InvalidRequestError, error_response
 from ..operations.registry import OPERATIONS
@@ -15,10 +16,7 @@ process_bp = Blueprint("process", __name__, url_prefix="/api/process")
 
 
 def _process_service() -> ProcessService:
-    return ProcessService(
-        get_session_service(),
-        get_storage_service(),
-    )
+    return get_process_service()
 
 
 def _image_id_from_payload():
@@ -32,14 +30,9 @@ def _image_id_from_payload():
             ),
         )
     image_id = payload.get("image_id")
-    if not isinstance(image_id, str) or not image_id.strip():
-        return (
-            None,
-            None,
-            error_response(
-                ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
-            ),
-        )
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return None, None, ownership_error
     session = get_session_service().get_session(image_id)
     if session is None:
         return (

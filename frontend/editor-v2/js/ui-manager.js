@@ -220,14 +220,6 @@ export function toggleInspectorDrawer() {
   else openInspectorDrawer();
 }
 
-function markNotReady(selector, name) {
-  const button = document.querySelector(selector);
-  if (!button) return;
-  button.classList.add('is-disabled');
-  button.setAttribute('aria-disabled', 'true');
-  button.title = `${name} arrives in a later stage`;
-}
-
 function focusPanel(panel) {
   switchInspector('edit');
   const section = document.querySelector(`#${panel}-accordion`);
@@ -311,7 +303,7 @@ export function confirmDialog({ title = 'Are you sure?', body = 'This cannot be 
 }
 
 export async function withBusy(button, message, fn, options = {}) {
-  const { label = null, status = null, operation = message, retry = null } = options;
+  const { status = null, operation = message, retry = null } = options;
   if (!button) return fn();
   const token = beginOperation({ operation, retry });
   if (token === null) return null;

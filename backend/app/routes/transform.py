@@ -1,19 +1,15 @@
-import sys
-
 from flask import Blueprint, jsonify, request, send_file
 
-from ..dependencies import get_session_service, get_storage_service
+from ..auth import require_owned_image
+from ..dependencies import (
+    get_geometry_service,
+    get_smart_crop_service,
+)
 from ..error_codes import ErrorCodes
 from ..errors import error_response
-
-# Imported for the test monkeypatch seam: tests swap this module-level name to
-# inject an isolated storage root, and get_storage_service detects the change.
-from ..services.file_service import (  # noqa: F401
-    FileStorageService,
-    FileValidationError,
-)
+from ..services.file_service import FileValidationError
 from ..services.geometry_service import GeometryService
-from ..services.smart_crop_service import SmartCropError, SmartCropService
+from ..services.smart_crop_service import SmartCropError
 from ..validation import require_choice, require_dict, require_int, require_str
 from ..views import public_image
 
@@ -28,10 +24,9 @@ def _image_id_from_payload(payload):
     image_id = require_str(
         payload.get("image_id"), name="image_id", empty_code="INVALID_IMAGE_ID"
     )
-    if get_session_service().get_session(image_id) is None:
-        return None, error_response(
-            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
-        )
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return None, ownership_error
     return image_id, None
 
 
@@ -51,9 +46,7 @@ def _smart_crop_payload():
 
 
 def _geometry_service() -> GeometryService:
-    return GeometryService(
-        get_session_service(), get_storage_service(sys.modules[__name__])
-    )
+    return get_geometry_service()
 
 
 @transform_bp.post("/crop")
@@ -108,11 +101,9 @@ def resize_image():
             400,
         )
 
-    session_service = get_session_service()
-    if session_service.get_session(image_id) is None:
-        return error_response(
-            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
-        )
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return ownership_error
 
     try:
         result = _geometry_service().resize(
@@ -184,9 +175,9 @@ def smart_crop_preview():
     if error:
         return error
     try:
-        output_path, proposal = SmartCropService(
-            get_session_service(), get_storage_service(sys.modules[__name__])
-        ).preview(payload["image_id"], payload["aspect_ratio"])
+        output_path, proposal = get_smart_crop_service().preview(
+            payload["image_id"], payload["aspect_ratio"]
+        )
     except SmartCropError as exc:
         return error_response(ErrorCodes.INVALID_SMART_CROP, str(exc), 400)
     except (FileNotFoundError, FileValidationError) as exc:
@@ -213,9 +204,9 @@ def smart_crop_apply():
     if error:
         return error
     try:
-        result = SmartCropService(
-            get_session_service(), get_storage_service(sys.modules[__name__])
-        ).apply(payload["image_id"], payload["aspect_ratio"])
+        result = get_smart_crop_service().apply(
+            payload["image_id"], payload["aspect_ratio"]
+        )
     except SmartCropError as exc:
         return error_response(ErrorCodes.INVALID_SMART_CROP, str(exc), 400)
     except (FileNotFoundError, FileValidationError) as exc:

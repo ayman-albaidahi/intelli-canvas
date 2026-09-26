@@ -1,4 +1,4 @@
-import { appState, setState } from './app-state.js';
+import { setState } from './app-state.js';
 import { clampCropSelection } from './transform-logic.js';
 import { DEFAULT_ACCENT_STRONG, themeColor } from './theme-colors.js';
 

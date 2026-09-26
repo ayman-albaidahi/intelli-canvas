@@ -1,24 +1,25 @@
 import io
 
 import pytest
+from auth_helpers import legacy_owner_id
 from PIL import Image
 
 from backend.app import create_app
-from backend.app.routes import images
 from backend.app.services.file_service import FileStorageService
 
 
 @pytest.fixture
-def conversion_context(tmp_path, monkeypatch):
-    app = create_app()
-    storage_service = FileStorageService(storage_root=tmp_path / "storage")
-    monkeypatch.setattr(images, "FileStorageService", lambda: storage_service)
+def conversion_context(tmp_path):
+    storage_root = tmp_path / "storage"
+    app = create_app(storage_root=storage_root)
+    storage_service = FileStorageService(storage_root=storage_root)
 
     source = Image.new("RGB", (4, 3), color="red")
     source_buffer = io.BytesIO()
     source.save(source_buffer, format="PNG")
     source_buffer.seek(0)
     source_path = storage_service.save_file(source_buffer, "source.png")
+    app.test_client()
     session = app.config["IMAGE_SESSION_SERVICE"].create_session(
         {
             "original_filename": "source.png",
@@ -26,7 +27,8 @@ def conversion_context(tmp_path, monkeypatch):
             "format": "png",
             "mime_type": "image/png",
             "size": source_path.stat().st_size,
-        }
+        },
+        owner_id=legacy_owner_id(app),
     )
     return app, storage_service, session, source_path
 
@@ -76,6 +78,7 @@ def test_supported_source_and_target_formats_convert(
     source_path = storage_service.save_file(
         source_buffer, f"{extension}-source.{extension}"
     )
+    app.test_client()
     session = app.config["IMAGE_SESSION_SERVICE"].create_session(
         {
             "original_filename": source_path.name,
@@ -85,7 +88,8 @@ def test_supported_source_and_target_formats_convert(
                 "image/jpeg" if source_format == "JPEG" else f"image/{extension}"
             ),
             "size": source_path.stat().st_size,
-        }
+        },
+        owner_id=legacy_owner_id(app),
     )
 
     response = app.test_client().post(

@@ -23,10 +23,10 @@ class ImageIOService:
     def __init__(
         self,
         session_service: ImageSessionService,
-        storage_service: FileStorageService | None = None,
+        storage_service: FileStorageService,
     ):
         self.session_service = session_service
-        self.storage_service = storage_service or FileStorageService()
+        self.storage_service = storage_service
 
     def convert(
         self,

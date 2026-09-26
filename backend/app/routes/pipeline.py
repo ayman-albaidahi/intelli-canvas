@@ -1,9 +1,12 @@
 from flask import Blueprint, jsonify, request, send_file
 
-from ..dependencies import get_session_service, get_storage_service
+from ..auth import require_owned_image
+from ..dependencies import (
+    get_pipeline_execution_service,
+    get_pipeline_service,
+)
 from ..error_codes import ErrorCodes
 from ..errors import error_response
-from ..services.pipeline_execution_service import PipelineExecutionService
 from ..services.pipeline_service import PipelineParamError, PipelineService
 from ..views import public_image
 
@@ -11,7 +14,7 @@ pipeline_bp = Blueprint("pipeline", __name__, url_prefix="/api/pipeline")
 
 
 def _service() -> PipelineService:
-    return PipelineService(get_session_service())
+    return get_pipeline_service()
 
 
 def _image_id(payload=None):
@@ -19,14 +22,9 @@ def _image_id(payload=None):
         payload if isinstance(payload, dict) else request.get_json(silent=True) or {}
     )
     image_id = payload.get("image_id")
-    if not isinstance(image_id, str) or not image_id.strip():
-        return None, error_response(
-            ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
-        )
-    if get_session_service().get_session(image_id) is None:
-        return None, error_response(
-            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
-        )
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return None, ownership_error
     return image_id, None
 
 
@@ -44,10 +42,9 @@ def _execution(payload, persist):
             if isinstance(payload.get("nodes"), list)
             else _service().get(image_id)
         )
-        result = PipelineExecutionService(
-            get_session_service(),
-            get_storage_service(),
-        ).execute(image_id, pipeline, persist=persist)
+        result = get_pipeline_execution_service().execute(
+            image_id, pipeline, persist=persist
+        )
         if not persist:
             return send_file(result.path, mimetype="image/png", max_age=0)
         return jsonify(success=True, image=public_image(result))

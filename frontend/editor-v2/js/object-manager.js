@@ -1,4 +1,12 @@
 import { appState } from './app-state.js';
+import {
+  centerOf,
+  handles,
+  hitObject,
+  rotateHandle,
+  rotateOffset,
+  toLocal,
+} from './object-geometry.js';
 import { DEFAULT_ACCENT, DEFAULT_ACCENT_STRONG, themeColor } from './theme-colors.js';
 import { openDialog, closeDialog, confirmDialog } from './ui-manager.js';
 
@@ -141,7 +149,7 @@ export class ObjectManager {
     const from = this.objects.findIndex((o) => o.id === id);
     if (from < 0) return;
     const [item] = this.objects.splice(from, 1);
-    let to = this.objects.findIndex((o) => o.id === targetId);
+    const to = this.objects.findIndex((o) => o.id === targetId);
     if (to < 0) { this.objects.splice(from, 0, item); return; }
     this.objects.splice(below ? to : to + 1, 0, item);
     this.changed();
@@ -370,7 +378,10 @@ export class ObjectManager {
 
   /* ---------- geometry ---------- */
 
-  centerOf(o) { return { x: o.x + o.w / 2, y: o.y + o.h / 2 }; }
+  // The pure coordinate math lives in object-geometry.js so it can be tested
+  // without a canvas; these forward to it to keep the existing call sites.
+
+  centerOf(o) { return centerOf(o); }
 
   // Screen pixels -> image pixels. The image coordinate origin is the centre
   // of the document, so after undoing the pan, rotation and scale the result
@@ -405,45 +416,15 @@ export class ObjectManager {
     };
   }
 
-  toLocal(o, px, py) {
-    const c = this.centerOf(o);
-    const rad = -o.rotation * Math.PI / 180;
-    const dx = px - c.x;
-    const dy = py - c.y;
-    return { x: dx * Math.cos(rad) - dy * Math.sin(rad), y: dx * Math.sin(rad) + dy * Math.cos(rad) };
-  }
+  toLocal(o, px, py) { return toLocal(o, px, py); }
 
-  rotateOffset(o, lx, ly) {
-    const rad = o.rotation * Math.PI / 180;
-    return { x: lx * Math.cos(rad) - ly * Math.sin(rad), y: lx * Math.sin(rad) + ly * Math.cos(rad) };
-  }
+  rotateOffset(o, lx, ly) { return rotateOffset(o, lx, ly); }
 
-  hitObject(px, py) {
-    for (let i = this.objects.length - 1; i >= 0; i--) {
-      const o = this.objects[i];
-      if (!o.visible || o.locked) continue;
-      const local = this.toLocal(o, px, py);
-      if (Math.abs(local.x) <= o.w / 2 + 2 && Math.abs(local.y) <= o.h / 2 + 2) return o;
-    }
-    return null;
-  }
+  hitObject(px, py) { return hitObject(this.objects, px, py); }
 
-  handles(o) {
-    if (!o) return [];
-    const signs = [[-1, -1, 'nw'], [0, -1, 'n'], [1, -1, 'ne'], [1, 0, 'e'], [1, 1, 'se'], [0, 1, 's'], [-1, 1, 'sw'], [-1, 0, 'w']];
-    return signs.map(([sx, sy, key]) => {
-      const local = { x: (sx * o.w) / 2, y: (sy * o.h) / 2 };
-      const screen = this.rotateOffset(o, local.x, local.y);
-      const c = this.centerOf(o);
-      return { key, sx, sy, x: c.x + screen.x, y: c.y + screen.y };
-    });
-  }
+  handles(o) { return handles(o); }
 
-  rotateHandle(o) {
-    const c = this.centerOf(o);
-    const top = this.rotateOffset(o, 0, -o.h / 2 - 24);
-    return { x: c.x + top.x, y: c.y + top.y };
-  }
+  rotateHandle(o) { return rotateHandle(o); }
 
   hitHandle(px, py) {
     const o = this.selected;
@@ -593,7 +574,7 @@ export class ObjectManager {
   // system gesture, a window blur, a tablet lift). It is not a completed
   // stroke, so the in-flight brush is dropped instead of being committed as a
   // partial layer — otherwise a cancelled drag leaves a fragment behind.
-  onPointerCancel(event) {
+  onPointerCancel(_event) {
     if (this.mode === 'draw') {
       this.drawing = null;
       this.render();
@@ -608,7 +589,7 @@ export class ObjectManager {
     if (this.onSelectionChange) this.onSelectionChange(this.selectedId);
   }
 
-  onPointerEnd(event) {
+  onPointerEnd(_event) {
     if (this.mode === 'draw') { this.endBrush(); }
     else if (this.mode === 'shape-draw' && this.shapeStart && this.shapeCurrent) {
       const shapeType = document.querySelector('#shape-type')?.value || 'rect';

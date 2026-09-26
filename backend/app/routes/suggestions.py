@@ -1,11 +1,15 @@
 from flask import Blueprint, jsonify, request, send_file
 
-from ..dependencies import get_session_service, get_storage_service
+from ..auth import require_owned_image
+from ..dependencies import (
+    get_pipeline_execution_service,
+    get_session_service,
+    get_storage_service,
+)
 from ..error_codes import ErrorCodes
 from ..errors import error_response
 from ..services.analysis_service import ANALYZER_VERSION, analyze_cached
 from ..services.explainability_service import explain_finding
-from ..services.pipeline_execution_service import PipelineExecutionService
 from ..services.pipeline_service import PipelineParamError, PipelineService
 from ..services.resource_guard import ResourceExceededError
 from ..services.suggestion_service import build_suggestions
@@ -72,10 +76,9 @@ _dismissed: dict[str, set[str]] = {}
 def list_suggestions():
     payload = request.get_json(silent=True) or {}
     image_id = payload.get("image_id")
-    if not isinstance(image_id, str) or not image_id.strip():
-        return error_response(
-            ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
-        )
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return ownership_error
     report, error = _analysis_findings(image_id)
     if error:
         return error
@@ -103,18 +106,21 @@ def preview_suggestion():
     payload = request.get_json(silent=True) or {}
     image_id = payload.get("image_id")
     sug_type = payload.get("type")
-    if not isinstance(image_id, str) or not isinstance(sug_type, str):
+    if not isinstance(sug_type, str):
         return error_response(
             ErrorCodes.INVALID_REQUEST, "image_id and type are required.", 400
         )
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return ownership_error
     suggestion, error = _suggestion_for(image_id, sug_type)
     if error:
         return error
     try:
         PipelineService.validate_nodes(suggestion["pipeline"]["nodes"])
-        result = PipelineExecutionService(
-            get_session_service(), get_storage_service()
-        ).execute(image_id, suggestion["pipeline"], persist=False)
+        result = get_pipeline_execution_service().execute(
+            image_id, suggestion["pipeline"], persist=False
+        )
         with result.path.open("rb") as rendered:
             png_bytes = rendered.read()
     except PipelineParamError as exc:
@@ -137,18 +143,19 @@ def apply_suggestion():
     payload = request.get_json(silent=True) or {}
     image_id = payload.get("image_id")
     sug_type = payload.get("type")
-    if not isinstance(image_id, str) or not isinstance(sug_type, str):
+    if not isinstance(sug_type, str):
         return error_response(
             ErrorCodes.INVALID_REQUEST, "image_id and type are required.", 400
         )
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return ownership_error
     suggestion, error = _suggestion_for(image_id, sug_type)
     if error:
         return error
     try:
         PipelineService.validate_nodes(suggestion["pipeline"]["nodes"])
-        result = PipelineExecutionService(
-            get_session_service(), get_storage_service()
-        ).execute(
+        result = get_pipeline_execution_service().execute(
             image_id,
             suggestion["pipeline"],
             persist=True,

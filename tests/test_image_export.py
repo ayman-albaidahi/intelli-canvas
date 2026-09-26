@@ -1,24 +1,26 @@
 import io
 
 import pytest
+from auth_helpers import legacy_owner_id
 from PIL import Image
 
 from backend.app import create_app
-from backend.app.routes import images
 from backend.app.services.file_service import FileStorageService
+from backend.app.services.image_io_service import ImageIOService
 
 
 @pytest.fixture
-def export_context(tmp_path, monkeypatch):
-    app = create_app()
-    storage_service = FileStorageService(storage_root=tmp_path / "storage")
-    monkeypatch.setattr(images, "FileStorageService", lambda: storage_service)
+def export_context(tmp_path):
+    storage_root = tmp_path / "storage"
+    app = create_app(storage_root=storage_root)
+    storage_service = FileStorageService(storage_root=storage_root)
 
     source = Image.new("RGB", (4, 3), color="red")
     source_buffer = io.BytesIO()
     source.save(source_buffer, format="PNG")
     source_buffer.seek(0)
     source_path = storage_service.save_file(source_buffer, "source.png")
+    app.test_client()
     session = app.config["IMAGE_SESSION_SERVICE"].create_session(
         {
             "original_filename": "source.png",
@@ -26,7 +28,8 @@ def export_context(tmp_path, monkeypatch):
             "format": "png",
             "mime_type": "image/png",
             "size": source_path.stat().st_size,
-        }
+        },
+        owner_id=legacy_owner_id(app),
     )
     return app, storage_service, session, source_path
 
@@ -118,7 +121,7 @@ def test_export_failure_returns_json_error(export_context, monkeypatch):
     def fail_convert(*args, **kwargs):
         raise OSError("conversion failed")
 
-    monkeypatch.setattr(images.ImageIOService, "convert", fail_convert)
+    monkeypatch.setattr(ImageIOService, "convert", fail_convert)
     response = app.test_client().post(
         "/api/images/export",
         json={"image_id": session["image_id"], "format": "png"},

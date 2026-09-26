@@ -2,18 +2,20 @@ import io
 import time
 
 import pytest
+from auth_helpers import legacy_owner_id
 from PIL import Image, ImageDraw
 
 from backend.app import create_app
-from backend.app.routes import transform
 from backend.app.services.file_service import FileStorageService
 
 
 @pytest.fixture
-def smart_crop_context(tmp_path, monkeypatch):
-    app = create_app(database_path=str(tmp_path / "sessions.sqlite3"))
-    storage_service = FileStorageService(storage_root=tmp_path / "storage")
-    monkeypatch.setattr(transform, "FileStorageService", lambda: storage_service)
+def smart_crop_context(tmp_path):
+    storage_root = tmp_path / "storage"
+    app = create_app(
+        database_path=str(tmp_path / "sessions.sqlite3"), storage_root=storage_root
+    )
+    storage_service = FileStorageService(storage_root=storage_root)
 
     image = Image.new("RGB", (1200, 800), (20, 20, 20))
     draw = ImageDraw.Draw(image)
@@ -23,6 +25,7 @@ def smart_crop_context(tmp_path, monkeypatch):
     image.save(buffer, format="PNG")
     buffer.seek(0)
     source_path = storage_service.save_file(buffer, "salient.png")
+    app.test_client()
     session = app.config["IMAGE_SESSION_SERVICE"].create_session(
         {
             "original_filename": "salient.png",
@@ -30,7 +33,8 @@ def smart_crop_context(tmp_path, monkeypatch):
             "format": "png",
             "mime_type": "image/png",
             "size": source_path.stat().st_size,
-        }
+        },
+        owner_id=legacy_owner_id(app),
     )
     return app, storage_service, session, source_path
 
@@ -155,10 +159,12 @@ def test_missing_session_is_rejected(smart_crop_context):
     assert response.get_json()["error"]["code"] == "IMAGE_SESSION_NOT_FOUND"
 
 
-def test_saliency_search_is_bounded_for_large_image(tmp_path, monkeypatch):
-    app = create_app(database_path=str(tmp_path / "sessions.sqlite3"))
-    storage_service = FileStorageService(storage_root=tmp_path / "storage")
-    monkeypatch.setattr(transform, "FileStorageService", lambda: storage_service)
+def test_saliency_search_is_bounded_for_large_image(tmp_path):
+    storage_root = tmp_path / "storage"
+    app = create_app(
+        database_path=str(tmp_path / "sessions.sqlite3"), storage_root=storage_root
+    )
+    storage_service = FileStorageService(storage_root=storage_root)
     image = Image.new("RGB", (4000, 3000), (80, 80, 80))
     draw = ImageDraw.Draw(image)
     draw.rectangle((2800, 1000, 3600, 1800), fill=(255, 0, 0))
@@ -166,6 +172,7 @@ def test_saliency_search_is_bounded_for_large_image(tmp_path, monkeypatch):
     image.save(buffer, format="JPEG", quality=85)
     buffer.seek(0)
     source_path = storage_service.save_file(buffer, "large.jpg")
+    app.test_client()
     session = app.config["IMAGE_SESSION_SERVICE"].create_session(
         {
             "original_filename": "large.jpg",
@@ -173,7 +180,8 @@ def test_saliency_search_is_bounded_for_large_image(tmp_path, monkeypatch):
             "format": "jpeg",
             "mime_type": "image/jpeg",
             "size": source_path.stat().st_size,
-        }
+        },
+        owner_id=legacy_owner_id(app),
     )
 
     started = time.perf_counter()

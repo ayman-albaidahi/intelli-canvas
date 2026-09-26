@@ -38,7 +38,7 @@ function makeManager(options = {}) {
   };
   const canvasManager = options.canvasManager || {
     setAdjustments: (values) => { calls.setAdjustments += 1; canvasManager.lastAdjustments = values; },
-    setPreview: (on) => { calls.setPreview += 1; },
+    setPreview: () => { calls.setPreview += 1; },
     loadFromUrl: async () => { calls.loadFromUrl += 1; },
     adjustmentSummary: () => 'no adjustments',
   };

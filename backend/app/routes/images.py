@@ -1,9 +1,9 @@
-import sys
-
 from flask import Blueprint, jsonify, request, send_file
 
-from ..auth import current_user
+from ..auth import current_user, require_owned_image
 from ..dependencies import (
+    get_image_io_service,
+    get_image_upload_service,
     get_layer_compositor,
     get_session_repository,
     get_session_service,
@@ -11,15 +11,7 @@ from ..dependencies import (
 )
 from ..error_codes import ErrorCodes
 from ..errors import error_response
-
-# Imported for the test monkeypatch seam: tests swap this module-level name to
-# inject an isolated storage root, and get_storage_service detects the change.
-from ..services.file_service import (  # noqa: F401
-    FileStorageService,
-    FileValidationError,
-)
-from ..services.image_io_service import ImageIOService
-from ..services.image_upload_service import ImageUploadService
+from ..services.file_service import FileValidationError
 from ..validation import require_int
 from ..views import public_image
 
@@ -64,9 +56,7 @@ def upload_image():
                 "The requested project was not found.",
                 404,
             )
-        public_image = ImageUploadService(
-            get_session_service(), get_storage_service(sys.modules[__name__])
-        ).upload(
+        public_image = get_image_upload_service().upload(
             uploaded_file,
             filename,
             owner_id=user["user_id"],
@@ -99,15 +89,12 @@ def convert_image():
         return error_response(
             ErrorCodes.INVALID_FORMAT, "A target format is required.", 400
         )
-    if image_id not in get_session_repository():
-        return error_response(
-            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
-        )
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return ownership_error
 
     try:
-        result = ImageIOService(
-            get_session_service(), get_storage_service(sys.modules[__name__])
-        ).convert(image_id, target_format)
+        result = get_image_io_service().convert(image_id, target_format)
     except (FileNotFoundError, FileValidationError) as exc:
         return error_response(ErrorCodes.IMAGE_NOT_AVAILABLE, str(exc), 404)
     except (OSError, ValueError):
@@ -123,6 +110,9 @@ def convert_image():
 
 @images_bp.get("/<image_id>/content")
 def image_content(image_id: str):
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return ownership_error
     session = get_session_service().get_session(image_id)
     if session is None:
         return error_response(
@@ -135,7 +125,7 @@ def image_content(image_id: str):
             ErrorCodes.IMAGE_NOT_AVAILABLE, "Image is not available.", 404
         )
 
-    storage_service = get_storage_service(sys.modules[__name__])
+    storage_service = get_storage_service()
     directory = (
         storage_service.processed_dir
         if session.get("current_storage") == "processed"
@@ -174,10 +164,9 @@ def export_image():
         return error_response(
             ErrorCodes.INVALID_FORMAT, "A target format is required.", 400
         )
-    if image_id not in get_session_repository():
-        return error_response(
-            ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
-        )
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return ownership_error
 
     quality = payload.get("quality")
     if quality is not None:
@@ -206,9 +195,7 @@ def export_image():
             composite_path = (
                 get_layer_compositor().compose(image_id, persist=False).path
             )
-        result = ImageIOService(
-            get_session_service(), get_storage_service(sys.modules[__name__])
-        ).convert(
+        result = get_image_io_service().convert(
             image_id,
             target_format,
             quality=quality,

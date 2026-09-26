@@ -3,13 +3,20 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "python backend/run.py",
+    "lint": "eslint frontend",
+    "format": "prettier --write \"frontend/**/*.{js,css,html,md}\"",
+    "test": "vitest run",
     "test:frontend": "vitest run",
+    "test:watch": "vitest",
     "test:browser": "playwright test",
     "test:browser:ui": "playwright test --ui"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
+    "eslint": "^9.39.5",
     "jsdom": "^29.1.1",
+    "prettier": "^3.9.9",
     "vitest": "^2.1.9"
   }
 }

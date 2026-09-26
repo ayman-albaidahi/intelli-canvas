@@ -1,6 +1,7 @@
 import base64
 import io
 
+from auth_helpers import legacy_owner_id
 from PIL import Image
 
 from backend.app import create_app
@@ -8,6 +9,10 @@ from backend.app.services.file_service import FileStorageService
 
 
 def create_session(app, tmp_path, monkeypatch):
+    # The legacy conftest registers the authenticated user when a test client
+    # is built; create one so the owner exists, then link the session to it.
+    app.test_client()
+    owner_id = legacy_owner_id(app)
     storage = FileStorageService(storage_root=tmp_path / "storage")
     image = io.BytesIO()
     Image.new("RGB", (4, 4), "white").save(image, format="PNG")
@@ -20,7 +25,8 @@ def create_session(app, tmp_path, monkeypatch):
             "format": "png",
             "mime_type": "image/png",
             "size": path.stat().st_size,
-        }
+        },
+        owner_id=owner_id,
     )
     return session
 

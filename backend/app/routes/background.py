@@ -2,7 +2,8 @@ import io
 
 from flask import Blueprint, jsonify, request, send_file
 
-from ..dependencies import get_session_service, get_storage_service
+from ..auth import require_owned_image
+from ..dependencies import get_background_service
 from ..error_codes import ErrorCodes
 from ..errors import error_response
 from ..services.background_service import BackgroundParamError, BackgroundService
@@ -17,10 +18,7 @@ background_bp = Blueprint(
 
 
 def _service() -> BackgroundService:
-    return BackgroundService(
-        get_session_service(),
-        get_storage_service(),
-    )
+    return get_background_service()
 
 
 def _image_id_and_params():
@@ -34,22 +32,9 @@ def _image_id_and_params():
             ),
         )
     image_id = payload.get("image_id")
-    if not isinstance(image_id, str) or not image_id.strip():
-        return (
-            None,
-            None,
-            error_response(
-                ErrorCodes.INVALID_IMAGE_ID, "A valid image_id is required.", 400
-            ),
-        )
-    if get_session_service().get_session(image_id) is None:
-        return (
-            None,
-            None,
-            error_response(
-                ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
-            ),
-        )
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return None, None, ownership_error
     try:
         params = BackgroundService.validate_params(payload)
     except BackgroundParamError as exc:
