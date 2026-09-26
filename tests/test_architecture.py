@@ -93,6 +93,33 @@ def test_layers_are_discoverable(layer_sources):
         ), f"layer {layer!r} was not discovered (expected {sentinel}.py)"
 
 
+def test_domain_is_a_pure_leaf(layer_sources):
+    """The domain layer must depend on nothing but the stdlib and itself.
+
+    ``secure_filename`` is tolerated in services because it is pure string
+    sanitation, but the domain types are the innermost contract in the codebase
+    — a dataclass that imports Flask or sqlite3 drags the whole transport and
+    persistence stack into the model, and every service that touches it becomes
+    untestable in isolation. This asserts the stronger property (zero web/db
+    imports, zero inward dependencies) rather than relying on the service-level
+    allowlist, so the exemption can never drift onto the domain layer.
+    """
+    domain_prefix = f"{app_package.__name__}.domain"
+    forbidden_prefixes = ("flask", "werkzeug", "sqlite3", "backend.app.services")
+    violations = []
+    for name, path in layer_sources:
+        if not name.startswith(domain_prefix):
+            continue
+        for module, _ in _imports_of(path):
+            if module.startswith(domain_prefix):
+                continue
+            if module.split(".")[0] in ("__future__", "dataclasses", "typing"):
+                continue
+            if any(module.startswith(p) for p in forbidden_prefixes):
+                violations.append(f"{name}: imports {module}")
+    assert not violations, "domain layer is not a pure leaf:\n" + "\n".join(violations)
+
+
 def test_services_do_not_couple_to_http(layer_sources):
     """The domain and service layer must not depend on request handling.
 
