@@ -7,6 +7,7 @@ from typing import Any
 
 from werkzeug.utils import secure_filename
 
+from ..domain.layer import Layer
 from .session_store import SessionStore
 
 MAX_BASE_STEM_LENGTH = 60
@@ -54,12 +55,10 @@ class ImageSessionService:
     def get_session(self, image_id: str) -> dict[str, Any] | None:
         return self.repository.get_session(image_id)
 
-    def get_layers(self, image_id: str) -> list[dict[str, Any]]:
+    def get_layers(self, image_id: str) -> list[Layer]:
         return self.repository.get_layers(image_id)
 
-    def save_layers(
-        self, image_id: str, layers: list[dict[str, Any]]
-    ) -> list[dict[str, Any]]:
+    def save_layers(self, image_id: str, layers: list[dict[str, Any]]) -> list[Layer]:
         return self.repository.save_layers(image_id, layers, int(time.time()))
 
     def update_current_image(

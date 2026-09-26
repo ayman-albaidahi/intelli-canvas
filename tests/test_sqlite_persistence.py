@@ -28,7 +28,9 @@ def test_sessions_history_and_layers_survive_app_restart(tmp_path):
     assert restored["current_filename"] == "processed.png"
     assert restored["history_index"] == 1
     assert restored["history"][1].operation == "Resize 2x2"
-    assert restored["layers"] == [{"id": "o1", "type": "shape", "name": "Saved"}]
+    assert [layer.to_public_dict() for layer in restored["layers"]] == [
+        {"id": "o1", "type": "shape", "name": "Saved"}
+    ]
 
 
 def test_database_path_is_created_and_schema_is_initialized(tmp_path):

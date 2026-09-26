@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .domain.history import HistoryEntry
+from .domain.layer import Layer
 from .domain.pipeline import Pipeline, PipelineNode
 from .services.auth_store import AuthStore
 from .services.session_store import SessionStore
@@ -594,7 +595,7 @@ class SQLiteSessionRepository(SessionStore, AuthStore):
 
     def save_layers(
         self, image_id: str, layers: list[dict[str, Any]], now: int
-    ) -> list[dict[str, Any]]:
+    ) -> list[Layer]:
         with self._connect() as connection:
             if (
                 connection.execute(
@@ -621,7 +622,7 @@ class SQLiteSessionRepository(SessionStore, AuthStore):
                 )
         return self.get_layers(image_id)
 
-    def get_layers(self, image_id: str) -> list[dict[str, Any]]:
+    def get_layers(self, image_id: str) -> list[Layer]:
         with self._connect() as connection:
             if (
                 connection.execute(
@@ -634,7 +635,7 @@ class SQLiteSessionRepository(SessionStore, AuthStore):
                 "SELECT payload_json FROM image_layers WHERE image_id = ? ORDER BY z_index",
                 (image_id,),
             ).fetchall()
-        return [json.loads(row[0]) for row in rows]
+        return [Layer.from_payload(json.loads(row[0])) for row in rows]
 
     def get_pipeline(self, image_id: str) -> Pipeline | None:
         with self._connect() as connection:
@@ -746,11 +747,9 @@ class SQLiteSessionRepository(SessionStore, AuthStore):
             parameters=json.loads(row["parameters_json"] or "{}"),
         )
 
-    def _layers(
-        self, connection: sqlite3.Connection, image_id: str
-    ) -> list[dict[str, Any]]:
+    def _layers(self, connection: sqlite3.Connection, image_id: str) -> list[Layer]:
         rows = connection.execute(
             "SELECT payload_json FROM image_layers WHERE image_id = ? ORDER BY z_index",
             (image_id,),
         ).fetchall()
-        return [json.loads(row[0]) for row in rows]
+        return [Layer.from_payload(json.loads(row[0])) for row in rows]

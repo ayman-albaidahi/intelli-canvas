@@ -163,7 +163,11 @@ def get_layers():
         return error_response(
             ErrorCodes.IMAGE_SESSION_NOT_FOUND, "Image session was not found.", 404
         )
-    return jsonify(success=True, image_id=image_id, layers=layers)
+    return jsonify(
+        success=True,
+        image_id=image_id,
+        layers=[layer.to_public_dict() for layer in layers],
+    )
 
 
 @layers_bp.post("/compose")
@@ -215,7 +219,11 @@ def save_layers():
         )
     except ValueError as exc:
         return error_response(ErrorCodes.INVALID_LAYER_ASSET, str(exc), 400)
-    return jsonify(success=True, image_id=image_id, layers=saved)
+    return jsonify(
+        success=True,
+        image_id=image_id,
+        layers=[layer.to_public_dict() for layer in saved],
+    )
 
 
 @layers_bp.get("/assets/<asset_id>")

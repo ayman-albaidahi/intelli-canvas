@@ -5,6 +5,7 @@ from typing import Any
 
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 
+from ..domain.layer import Layer
 from ..domain.results import OperationResult
 from .file_service import FileStorageService, FileValidationError
 
@@ -54,7 +55,7 @@ class LayerCompositorService:
         with Image.open(source) as base:
             canvas = base.convert("RGBA")
             for layer in session.get("layers", []):
-                if layer.get("visible", True):
+                if layer.visible:
                     self._render_layer(canvas, layer, image_id)
             output_path = self.storage_service.resolve_storage_destination(
                 "processed", f"{session.get('base_stem', 'image')}_composite.png"
@@ -98,15 +99,12 @@ class LayerCompositorService:
             raise FileNotFoundError("Stored image was not found.")
         return path
 
-    def _render_layer(
-        self, canvas: Image.Image, layer: dict[str, Any], image_id: str
-    ) -> None:
-        layer_type = layer.get("type")
-        if layer_type == "image":
+    def _render_layer(self, canvas: Image.Image, layer: Layer, image_id: str) -> None:
+        if layer.type == "image":
             rendered = self._image_layer(layer, image_id)
-        elif layer_type == "text":
+        elif layer.type == "text":
             rendered = self._text_layer(layer)
-        elif layer_type in {"shape", "brush"}:
+        elif layer.type in {"shape", "brush"}:
             rendered = self._vector_layer(layer)
         else:
             return
@@ -117,7 +115,7 @@ class LayerCompositorService:
         self._composite(canvas, rendered, layer)
         rendered.close()
 
-    def _image_layer(self, layer: dict[str, Any], image_id: str) -> Image.Image:
+    def _image_layer(self, layer: Layer, image_id: str) -> Image.Image:
         asset = self.repository.get_asset_for_image(layer.get("asset_id", ""), image_id)
         if asset is None:
             raise FileNotFoundError("Layer image asset was not found.")
@@ -132,7 +130,7 @@ class LayerCompositorService:
                 (width, height), Image.Resampling.LANCZOS
             )
 
-    def _text_layer(self, layer: dict[str, Any]) -> Image.Image:
+    def _text_layer(self, layer: Layer) -> Image.Image:
         width = max(1, round(float(layer.get("w", 100))))
         height = max(1, round(float(layer.get("h", 40))))
         image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
@@ -148,12 +146,12 @@ class LayerCompositorService:
         )
         return image
 
-    def _vector_layer(self, layer: dict[str, Any]) -> Image.Image:
+    def _vector_layer(self, layer: Layer) -> Image.Image:
         width = max(1, round(float(layer.get("w", 8))))
         height = max(1, round(float(layer.get("h", 8))))
         image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
         draw = ImageDraw.Draw(image)
-        if layer.get("type") == "brush":
+        if layer.type == "brush":
             points = layer.get("pointsRel", [])
             if len(points) > 1:
                 offset_x, offset_y = width / 2, height / 2
@@ -190,7 +188,7 @@ class LayerCompositorService:
         return image
 
     def _composite(
-        self, canvas: Image.Image, rendered: Image.Image, layer: dict[str, Any]
+        self, canvas: Image.Image, rendered: Image.Image, layer: Layer
     ) -> None:
         angle = float(layer.get("rotation", 0))
         if angle:
