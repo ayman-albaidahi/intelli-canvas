@@ -9,7 +9,8 @@ through ``isinstance(x, int)`` checks unnoticed.
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from .errors import InvalidRequestError
 

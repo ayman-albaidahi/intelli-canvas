@@ -22,7 +22,11 @@ target-version = "py311"
 line-length = 88
 
 [tool.ruff.lint]
-select = ["F", "I", "BLE"]
+# Conservative-but-meaningful set: bugbear (B), pyupgrade (UP) and simplify
+# (SIM) on top of the existing pyflakes/isort/ble rules. The line-length bump
+# (88 -> 100) is deliberately deferred: it reflows every file and deserves its
+# own dedicated commit so these rule adoptions stay reviewable.
+select = ["F", "I", "BLE", "B", "UP", "SIM"]
 
 [tool.coverage.run]
 source = ["backend"]
@@ -35,3 +39,6 @@ exclude_lines = [
     "if TYPE_CHECKING:",
 ]
 show_missing = true
+# Floor for Phase 2 of the 2026-09-25 plan; measured coverage is 86%, and the
+# plan raises this floor to 85% in the test-pyramid phase.
+fail_under = 80

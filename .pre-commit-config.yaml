@@ -1,0 +1,40 @@
+# Pre-commit hooks. Mirrors `make lint` / `make format` so a commit that passes
+# locally also passes CI.
+#
+# Prettier is intentionally absent: enforcing it today would block every commit
+# that touches one of the 42 unformatted files. It lands with the one-time
+# prettier-baseline PR, which is also when the line-length bump (88 -> 100) is
+# applied.
+#
+# Install once with: pre-commit install
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  # Local system hooks use the same ruff/eslint the developer and CI run, so
+  # behaviour cannot drift from a pinned upstream release.
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check (backend + tests)
+        entry: ruff check
+        language: system
+        types: [python]
+        pass_filenames: true
+      - id: ruff-format
+        name: ruff format
+        entry: ruff format
+        language: system
+        types: [python]
+        pass_filenames: true
+      - id: eslint
+        name: eslint (frontend)
+        entry: npx eslint
+        language: system
+        types: [javascript]
+        pass_filenames: false

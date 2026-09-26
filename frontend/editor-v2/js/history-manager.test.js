@@ -47,7 +47,7 @@ function makeClient(state = threeEntries()) {
     async history() { calls.history += 1; return state; },
     async undoHistory() { calls.undo += 1; return state; },
     async redoHistory() { calls.redo += 1; return state; },
-    async gotoHistory(id, index) { calls.goto += 1; return state; },
+    async gotoHistory(_id, _index) { calls.goto += 1; return state; },
     async clearHistory() { calls.clear += 1; return { ...state, total: 1, index: 0, entries: [state.entries[1]] }; },
     async compareHistory() { return { from: { url: 'http://from' }, to: { url: 'http://to' } }; },
     async diffHistory() { return new Blob(['x'], { type: 'image/png' }); },
@@ -137,7 +137,6 @@ describe('HistoryManager — step (undo/redo)', () => {
   });
 
   it('reloads the canvas exactly once per step', async () => {
-    const events = [];
     const client = makeClient();
     const canvasManager = { loadFromUrl: vi.fn(async () => {}) };
     await makeManager(client, canvasManager);

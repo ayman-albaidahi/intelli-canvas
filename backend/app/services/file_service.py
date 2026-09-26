@@ -135,9 +135,9 @@ class FileStorageService:
         except FileValidationError:
             file_obj.seek(position)
             raise
-        except (OSError, SyntaxError, ValueError):
+        except (OSError, SyntaxError, ValueError) as exc:
             file_obj.seek(position)
-            raise FileValidationError("File content is not a valid image.")
+            raise FileValidationError("File content is not a valid image.") from exc
         file_obj.seek(position)
 
         mime_type = self._detect_mime_type(file_obj, filename)

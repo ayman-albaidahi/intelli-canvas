@@ -34,8 +34,9 @@ test-e2e:  ## Run the browser suite (Playwright); needs `make install` first
 
 test: test-py test-js  ## Run backend + frontend unit suites
 
-lint:  ## Lint the backend (Ruff); frontend linting lands with the quality gate
+lint:  ## Lint backend (Ruff) and frontend (ESLint)
 	$(PYTHON) -m ruff check backend tests
+	$(NPM) eslint frontend
 
 format:  ## Format the backend in place (Ruff)
 	$(PYTHON) -m ruff format backend tests
@@ -46,11 +47,12 @@ audit:  ## Scan Python dependencies for known vulnerabilities (pip-audit)
 
 # Mirrors the CI backend + frontend jobs. Browser tests are separate
 # (`make test-e2e`) because they need the Playwright browser download.
-check:  ## Full quality gate: compile + lint + format-check + unit tests
+check:  ## Full quality gate: compile + lint + format-check + unit tests + coverage
 	$(PYTHON) -m compileall -q backend
 	$(PYTHON) -m ruff check backend tests
 	$(PYTHON) -m ruff format --check backend tests
-	$(PYTHON) -m pytest -q
+	$(PYTHON) -m pytest -q --cov=backend --cov-report=term-missing
+	$(NPM) eslint frontend
 	$(NPM) vitest run
 
 clean:  ## Remove generated caches and test artifacts

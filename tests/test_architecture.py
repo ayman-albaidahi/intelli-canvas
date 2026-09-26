@@ -60,10 +60,10 @@ def _imports_of(path: Path) -> set[tuple[str, str]]:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 found.add((alias.name, ""))
-        elif isinstance(node, ast.ImportFrom):
-            if node.module and not node.level:  # absolute imports only
-                for alias in node.names:
-                    found.add((node.module, alias.name))
+        elif isinstance(node, ast.ImportFrom) and node.module and not node.level:
+            # absolute imports only
+            for alias in node.names:
+                found.add((node.module, alias.name))
     return found
 
 
@@ -169,16 +169,14 @@ def test_service_dependency_graph_is_acyclic(layer_sources):
         for dependency in graph.get(node, ()):
             if color[dependency] == GREY:
                 return f"{node} -> {dependency}"
-            if color[dependency] == WHITE:
-                if found := find_cycle(dependency):
-                    return found
+            if color[dependency] == WHITE and (found := find_cycle(dependency)):
+                return found
         color[node] = BLACK
         return None
 
     for node in graph:
-        if color[node] == WHITE:
-            if cycle := find_cycle(node):
-                pytest.fail(f"import cycle in the service/domain graph: {cycle}")
+        if color[node] == WHITE and (cycle := find_cycle(node)):
+            pytest.fail(f"import cycle in the service/domain graph: {cycle}")
 
 
 def test_every_registered_operation_has_a_route():

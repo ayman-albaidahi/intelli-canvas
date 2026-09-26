@@ -8,8 +8,8 @@ export function clampCropSelection(selection, bounds) {
 
 export function aspectRatioDimensions(width, height, nextWidth, nextHeight, lockAspectRatio = true) {
   if (!lockAspectRatio) return { width: nextWidth ?? width, height: nextHeight ?? height };
-  if (nextWidth != null) return { width: nextWidth, height: Math.max(1, Math.round(height * nextWidth / width)) };
-  if (nextHeight != null) return { width: Math.max(1, Math.round(width * nextHeight / height)), height: nextHeight };
+  if (nextWidth !== undefined && nextWidth !== null) return { width: nextWidth, height: Math.max(1, Math.round(height * nextWidth / width)) };
+  if (nextHeight !== undefined && nextHeight !== null) return { width: Math.max(1, Math.round(width * nextHeight / height)), height: nextHeight };
   return { width, height };
 }
 

@@ -130,7 +130,7 @@ export function renderTransientContext(state = {}, root = document) {
   const message = root.querySelector('#error-message');
   const retry = root.querySelector('#error-retry');
   if (operation) operation.textContent = state.processing?.operation ? `${state.processing.operation}…` : 'Working…';
-  if (progress) progress.textContent = state.processing?.progress == null
+  if (progress) progress.textContent = typeof state.processing?.progress !== 'number'
     ? 'Please wait while the operation completes.'
     : `${state.processing.progress}% complete`;
   if (errorOperation) errorOperation.textContent = state.error?.operation || 'Action failed';

@@ -75,7 +75,7 @@ bindTransformTools(canvasManager, apiClient, showToast);
 const cropTool = new CropTool(canvasManager, document.querySelector('#canvas-card'), apiClient, showToast);
 initResizeTool(canvasManager, apiClient, showToast);
 const objectManager = new ObjectManager(document.querySelector('#object-canvas'), showToast, canvasManager);
-const layerManager = new LayerManager(objectManager, { list: document.querySelector('#layers-list'), empty: document.querySelector('#layers-empty'), count: document.querySelector('#layer-count'), showToast });
+new LayerManager(objectManager, { list: document.querySelector('#layers-list'), empty: document.querySelector('#layers-empty'), count: document.querySelector('#layer-count'), showToast });
 const refreshSelectionState = objectManager.onSelectionChange;
 objectManager.onSelectionChange = (id) => {
   refreshSelectionState?.(id);
@@ -102,8 +102,8 @@ async function restoreLayers() {
 new ComparisonTool(canvasManager, showToast);
 new AdjustmentsManager({ canvasManager, apiClient, showToast });
 new FiltersManager({ canvasManager, apiClient, showToast });
-const backgroundManager = new BackgroundManager({ canvasManager, apiClient, objectManager, showToast });
-const historyManager = new HistoryManager({ canvasManager, apiClient, showToast });
+new BackgroundManager({ canvasManager, apiClient, objectManager, showToast });
+new HistoryManager({ canvasManager, apiClient, showToast });
 new ExportManager({ canvasManager, apiClient, objectManager, showToast });
 const analysisManager = new AnalysisManager({ canvasManager, apiClient, showToast });
 new PipelineManager({ apiClient, canvasManager, showToast });

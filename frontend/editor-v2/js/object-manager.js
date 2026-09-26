@@ -149,7 +149,7 @@ export class ObjectManager {
     const from = this.objects.findIndex((o) => o.id === id);
     if (from < 0) return;
     const [item] = this.objects.splice(from, 1);
-    let to = this.objects.findIndex((o) => o.id === targetId);
+    const to = this.objects.findIndex((o) => o.id === targetId);
     if (to < 0) { this.objects.splice(from, 0, item); return; }
     this.objects.splice(below ? to : to + 1, 0, item);
     this.changed();
@@ -574,7 +574,7 @@ export class ObjectManager {
   // system gesture, a window blur, a tablet lift). It is not a completed
   // stroke, so the in-flight brush is dropped instead of being committed as a
   // partial layer — otherwise a cancelled drag leaves a fragment behind.
-  onPointerCancel(event) {
+  onPointerCancel(_event) {
     if (this.mode === 'draw') {
       this.drawing = null;
       this.render();
@@ -589,7 +589,7 @@ export class ObjectManager {
     if (this.onSelectionChange) this.onSelectionChange(this.selectedId);
   }
 
-  onPointerEnd(event) {
+  onPointerEnd(_event) {
     if (this.mode === 'draw') { this.endBrush(); }
     else if (this.mode === 'shape-draw' && this.shapeStart && this.shapeCurrent) {
       const shapeType = document.querySelector('#shape-type')?.value || 'rect';
