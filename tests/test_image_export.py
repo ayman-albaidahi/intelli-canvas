@@ -49,7 +49,7 @@ def test_export_returns_downloadable_image(
 
     response = app.test_client().post(
         "/api/images/export",
-        json={"image_id": session["image_id"], "format": target_format},
+        json={"image_id": session.image_id, "format": target_format},
     )
 
     assert response.status_code == 200
@@ -67,19 +67,18 @@ def test_export_returns_downloadable_image(
 def test_export_does_not_change_session_or_original(export_context):
     app, storage_service, session, source_path = export_context
     original_bytes = source_path.read_bytes()
-    original_session = dict(session)
+    original_session = dict(session.payload)
 
     response = app.test_client().post(
         "/api/images/export",
-        json={"image_id": session["image_id"], "format": "webp"},
+        json={"image_id": session.image_id, "format": "webp"},
     )
 
     assert response.status_code == 200
     assert source_path.read_bytes() == original_bytes
-    assert (
-        app.config["IMAGE_SESSION_SERVICE"].get_session(session["image_id"])
-        == original_session
-    )
+    current = app.config["IMAGE_SESSION_SERVICE"].get_session(session.image_id)
+    assert current is not None
+    assert current.payload == original_session
     assert len(list(storage_service.processed_dir.iterdir())) == 1
 
 
@@ -94,7 +93,7 @@ def test_export_does_not_change_session_or_original(export_context):
 def test_export_invalid_request_is_rejected(export_context, payload, expected_code):
     app, _, session, _ = export_context
     if payload.get("image_id") == "valid":
-        payload["image_id"] = session["image_id"]
+        payload["image_id"] = session.image_id
 
     response = app.test_client().post("/api/images/export", json=payload)
 
@@ -108,7 +107,7 @@ def test_export_missing_source_is_rejected(export_context):
 
     response = app.test_client().post(
         "/api/images/export",
-        json={"image_id": session["image_id"], "format": "png"},
+        json={"image_id": session.image_id, "format": "png"},
     )
 
     assert response.status_code == 404
@@ -124,7 +123,7 @@ def test_export_failure_returns_json_error(export_context, monkeypatch):
     monkeypatch.setattr(ImageIOService, "convert", fail_convert)
     response = app.test_client().post(
         "/api/images/export",
-        json={"image_id": session["image_id"], "format": "png"},
+        json={"image_id": session.image_id, "format": "png"},
     )
 
     assert response.status_code == 400
@@ -136,7 +135,7 @@ def test_export_does_not_modify_conversion_endpoint(export_context):
 
     response = app.test_client().post(
         "/api/images/convert",
-        json={"image_id": session["image_id"], "format": "webp"},
+        json={"image_id": session.image_id, "format": "webp"},
     )
 
     assert response.status_code == 200
@@ -158,7 +157,7 @@ def test_export_composites_persisted_image_layer_without_changing_history(
     asset = app.config["IMAGE_SESSIONS"].create_asset(
         {
             "asset_id": "asset-blue",
-            "image_id": session["image_id"],
+            "image_id": session.image_id,
             "storage_category": "layer-assets",
             "stored_filename": layer_path.name,
             "mime_type": "image/png",
@@ -167,7 +166,7 @@ def test_export_composites_persisted_image_layer_without_changing_history(
         }
     )
     app.config["IMAGE_SESSION_SERVICE"].save_layers(
-        session["image_id"],
+        session.image_id,
         [
             {
                 "id": "o1",
@@ -188,7 +187,7 @@ def test_export_composites_persisted_image_layer_without_changing_history(
     response = app.test_client().post(
         "/api/images/export",
         json={
-            "image_id": session["image_id"],
+            "image_id": session.image_id,
             "format": "png",
             "composite_layers": True,
         },
@@ -197,6 +196,4 @@ def test_export_composites_persisted_image_layer_without_changing_history(
     assert response.status_code == 200
     with Image.open(io.BytesIO(response.data)).convert("RGBA") as exported:
         assert exported.getpixel((0, 0))[:3] == (0, 0, 255)
-    assert (
-        app.config["IMAGE_SESSION_SERVICE"].history(session["image_id"])["total"] == 1
-    )
+    assert app.config["IMAGE_SESSION_SERVICE"].history(session.image_id)["total"] == 1

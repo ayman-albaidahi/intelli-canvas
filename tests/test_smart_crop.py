@@ -45,19 +45,19 @@ def post(app, path, image_id, **values):
 
 def test_preview_returns_crop_without_changing_history(smart_crop_context):
     app, storage, session, source_path = smart_crop_context
-    before = app.config["IMAGE_SESSION_SERVICE"].history(session["image_id"])
+    before = app.config["IMAGE_SESSION_SERVICE"].history(session.image_id)
 
     response = post(
         app,
         "/api/transform/smart-crop/preview",
-        session["image_id"],
+        session.image_id,
         aspect_ratio="1:1",
     )
 
     assert response.status_code == 200
     assert response.mimetype == "image/png"
     assert "width=" in response.headers["X-Smart-Crop"]
-    assert app.config["IMAGE_SESSION_SERVICE"].history(session["image_id"]) == before
+    assert app.config["IMAGE_SESSION_SERVICE"].history(session.image_id) == before
     assert source_path.exists()
     assert len(list(storage.processed_dir.iterdir())) == 1
     with Image.open(io.BytesIO(response.data)) as preview:
@@ -68,14 +68,14 @@ def test_apply_returns_expected_ratio_and_records_history(smart_crop_context):
     app, _, session, _ = smart_crop_context
 
     response = post(
-        app, "/api/transform/smart-crop/apply", session["image_id"], aspect_ratio="16:9"
+        app, "/api/transform/smart-crop/apply", session.image_id, aspect_ratio="16:9"
     )
 
     assert response.status_code == 200
     result = response.get_json()["image"]
     assert result["width"] / result["height"] == pytest.approx(16 / 9, rel=0.01)
     assert result["width"] < 1200 or result["height"] < 800
-    history = app.config["IMAGE_SESSION_SERVICE"].history(session["image_id"])
+    history = app.config["IMAGE_SESSION_SERVICE"].history(session.image_id)
     assert history["entries"][-1]["operation"].startswith("Smart crop")
     assert history["entries"][-1]["parameters"]["aspect_ratio"] == "16:9"
 
@@ -85,17 +85,17 @@ def test_apply_integrates_with_undo_and_redo(smart_crop_context):
     client = app.test_client()
 
     applied = post(
-        app, "/api/transform/smart-crop/apply", session["image_id"], aspect_ratio="1:1"
+        app, "/api/transform/smart-crop/apply", session.image_id, aspect_ratio="1:1"
     )
     assert applied.status_code == 200
     cropped_filename = applied.get_json()["image"]["filename"]
 
-    undo = client.post("/api/history/undo", json={"image_id": session["image_id"]})
+    undo = client.post("/api/history/undo", json={"image_id": session.image_id})
     assert undo.status_code == 200
     assert undo.get_json()["image"]["index"] == 0
     assert undo.get_json()["image"]["current_filename"] != cropped_filename
 
-    redo = client.post("/api/history/redo", json={"image_id": session["image_id"]})
+    redo = client.post("/api/history/redo", json={"image_id": session.image_id})
     assert redo.status_code == 200
     assert redo.get_json()["image"]["index"] == 1
     assert redo.get_json()["image"]["current_filename"] == cropped_filename
@@ -107,7 +107,7 @@ def test_original_ratio_returns_full_image(smart_crop_context):
     response = post(
         app,
         "/api/transform/smart-crop/preview",
-        session["image_id"],
+        session.image_id,
         aspect_ratio="original",
     )
 
@@ -125,7 +125,7 @@ def test_invalid_aspect_ratio_is_rejected(smart_crop_context, aspect_ratio):
     response = post(
         app,
         "/api/transform/smart-crop/preview",
-        session["image_id"],
+        session.image_id,
         aspect_ratio=aspect_ratio,
     )
 
@@ -137,7 +137,7 @@ def test_crop_is_always_inside_source_bounds(smart_crop_context):
     app, _, session, _ = smart_crop_context
 
     response = post(
-        app, "/api/transform/smart-crop/apply", session["image_id"], aspect_ratio="9:16"
+        app, "/api/transform/smart-crop/apply", session.image_id, aspect_ratio="9:16"
     )
 
     assert response.status_code == 200
@@ -188,7 +188,7 @@ def test_saliency_search_is_bounded_for_large_image(tmp_path):
     response = post(
         app,
         "/api/transform/smart-crop/preview",
-        session["image_id"],
+        session.image_id,
         aspect_ratio="4:5",
     )
     elapsed = time.perf_counter() - started

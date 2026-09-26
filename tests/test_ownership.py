@@ -94,7 +94,7 @@ def test_new_upload_creates_project_owned_by_authenticated_user():
     image_id = response.get_json()["image"]["image_id"]
     session = app.config["IMAGE_SESSIONS"].get_session(image_id)
     owner = app.config["IMAGE_SESSIONS"].get_user_by_email("owner-a@example.com")
-    project = app.config["IMAGE_SESSIONS"].get_project(session["project_id"])
+    project = app.config["IMAGE_SESSIONS"].get_project(session.project_id)
     assert project["owner_id"] == owner["user_id"]
 
 
@@ -105,7 +105,7 @@ def test_upload_rejects_project_owned_by_another_user():
 
     created = _upload(owner_client)
     image_id = created.get_json()["image"]["image_id"]
-    project_id = app.config["IMAGE_SESSIONS"].get_session(image_id)["project_id"]
+    project_id = app.config["IMAGE_SESSIONS"].get_session(image_id).project_id
 
     response = _upload(other_client, "cross-owner.png", project_id=project_id)
 
@@ -126,7 +126,7 @@ def test_client_cannot_spoof_project_owner_id():
     assert response.status_code == 200
     image_id = response.get_json()["image"]["image_id"]
     session = app.config["IMAGE_SESSIONS"].get_session(image_id)
-    project = app.config["IMAGE_SESSIONS"].get_project(session["project_id"])
+    project = app.config["IMAGE_SESSIONS"].get_project(session.project_id)
     owner = app.config["IMAGE_SESSIONS"].get_user_by_email("owner-a@example.com")
     assert project["owner_id"] == owner["user_id"]
     assert project["owner_id"] != forged_owner_id
@@ -159,7 +159,7 @@ def test_repository_owner_resolvers_hide_other_users_resources():
             "updated_at": int(time.time()),
         }
     )["user_id"]
-    project_id = repository.get_session(image_id)["project_id"]
+    project_id = repository.get_session(image_id).project_id
 
     assert repository.get_project_for_owner(project_id, owner_a) is not None
     assert repository.get_project_for_owner(project_id, owner_b) is None

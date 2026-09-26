@@ -8,6 +8,7 @@ from typing import Any
 from werkzeug.utils import secure_filename
 
 from ..domain.layer import Layer
+from ..domain.session import ImageSession
 from .session_store import SessionStore
 
 MAX_BASE_STEM_LENGTH = 60
@@ -49,10 +50,10 @@ class ImageSessionService:
         sanitized = secure_filename(stem)
         return (sanitized or "image")[:MAX_BASE_STEM_LENGTH]
 
-    def list_sessions(self) -> list[dict[str, Any]]:
+    def list_sessions(self) -> list[ImageSession]:
         return self.repository.list_sessions()
 
-    def get_session(self, image_id: str) -> dict[str, Any] | None:
+    def get_session(self, image_id: str) -> ImageSession | None:
         return self.repository.get_session(image_id)
 
     def get_layers(self, image_id: str) -> list[Layer]:
@@ -75,8 +76,8 @@ class ImageSessionService:
 
     def history(self, image_id: str) -> dict[str, Any]:
         session = self._require(image_id)
-        entries = session.get("history", [])
-        index = session.get("history_index", 0)
+        entries = session.history
+        index = session.history_index
         return {
             "image_id": image_id,
             "index": index,
@@ -92,31 +93,28 @@ class ImageSessionService:
 
     def goto(self, image_id: str, index: int) -> dict[str, Any]:
         session = self._require(image_id)
-        if not isinstance(index, int) or not 0 <= index < len(
-            session.get("history", [])
-        ):
+        if not isinstance(index, int) or not 0 <= index < len(session.history):
             raise ValueError("History index is out of range.")
         return self.repository.set_current_history(image_id, index, int(time.time()))
 
     def undo(self, image_id: str) -> dict[str, Any]:
         session = self._require(image_id)
-        index = session.get("history_index", 0)
+        index = session.history_index
         if index <= 0:
             raise ValueError("Nothing to undo.")
         return self.goto(image_id, index - 1)
 
     def redo(self, image_id: str) -> dict[str, Any]:
         session = self._require(image_id)
-        index = session.get("history_index", 0)
-        if index >= len(session.get("history", [])) - 1:
+        if session.history_index >= len(session.history) - 1:
             raise ValueError("Nothing to redo.")
-        return self.goto(image_id, index + 1)
+        return self.goto(image_id, session.history_index + 1)
 
     def clear_history(self, image_id: str) -> dict[str, Any]:
         self._require(image_id)
         return self.repository.clear_history(image_id, int(time.time()))
 
-    def _require(self, image_id: str) -> dict[str, Any]:
+    def _require(self, image_id: str) -> ImageSession:
         session = self.get_session(image_id)
         if session is None:
             raise FileNotFoundError("Image session was not found.")

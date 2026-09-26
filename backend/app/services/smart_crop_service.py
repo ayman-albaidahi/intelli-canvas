@@ -170,12 +170,12 @@ class SmartCropService:
         session = self.session_service.get_session(image_id)
         if session is None:
             raise FileNotFoundError("Image session was not found.")
-        stored = session.get("current_filename") or session.get("stored_filename")
+        stored = session.current_filename or session.get("stored_filename")
         if not isinstance(stored, str) or not stored:
             raise FileValidationError("Image session has no valid stored file.")
         directory = (
             self.storage_service.processed_dir
-            if session.get("current_storage") == "processed"
+            if session.current_storage == "processed"
             else self.storage_service.uploads_dir
         ).resolve()
         path = (directory / stored).resolve()

@@ -52,7 +52,7 @@ def _state(image_id: str):
         success=True,
         image={
             "image_id": image_id,
-            "current_filename": session.get("current_filename"),
+            "current_filename": session.current_filename,
             "index": history["index"],
             "total": history["total"],
             "entries": history["entries"],
@@ -129,11 +129,11 @@ def current_file():
     storage = get_storage_service()
     directory = (
         storage.processed_dir
-        if session.get("current_storage") == "processed"
+        if session.current_storage == "processed"
         else storage.uploads_dir
     )
     return jsonify(
-        success=True, filename=session.get("current_filename"), directory=directory.name
+        success=True, filename=session.current_filename, directory=directory.name
     )
 
 

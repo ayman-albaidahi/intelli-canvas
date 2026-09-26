@@ -172,7 +172,7 @@ class BackgroundService:
 
     def _new_output_path(self, image_id: str, operation: str) -> Path:
         session = self.session_service.get_session(image_id)
-        base_stem = session.get("base_stem") if session else None
+        base_stem = session.base_stem if session else None
         if not isinstance(base_stem, str) or not base_stem:
             base_stem = "image"
         filename = self.storage_service.generate_safe_filename(

@@ -58,12 +58,12 @@ def test_layers_are_saved_and_restored_for_image_session(tmp_path):
     ]
 
     saved = client.put(
-        "/api/layers", json={"image_id": session["image_id"], "layers": layers}
+        "/api/layers", json={"image_id": session.image_id, "layers": layers}
     )
     assert saved.status_code == 200
     assert saved.get_json()["layers"] == layers
 
-    restored = client.get(f"/api/layers?image_id={session['image_id']}")
+    restored = client.get(f"/api/layers?image_id={session.image_id}")
     assert restored.status_code == 200
     assert restored.get_json()["layers"] == layers
 
@@ -92,7 +92,7 @@ def test_image_layer_data_url_is_moved_to_file_storage(tmp_path):
     response = client.put(
         "/api/layers",
         json={
-            "image_id": session["image_id"],
+            "image_id": session.image_id,
             "layers": [
                 {
                     "id": "o1",
@@ -125,7 +125,7 @@ def test_layers_reject_invalid_transforms_and_blend_modes(tmp_path):
     invalid = client.put(
         "/api/layers",
         json={
-            "image_id": session["image_id"],
+            "image_id": session.image_id,
             "layers": [{"id": "bad", "type": "shape", "w": -1}],
         },
     )
@@ -135,7 +135,7 @@ def test_layers_reject_invalid_transforms_and_blend_modes(tmp_path):
     invalid_blend = client.put(
         "/api/layers",
         json={
-            "image_id": session["image_id"],
+            "image_id": session.image_id,
             "layers": [{"id": "bad", "type": "shape", "blend": "wipe"}],
         },
     )
@@ -157,7 +157,7 @@ def test_layer_asset_cannot_be_reused_across_image_sessions(tmp_path):
     asset = app.config["IMAGE_SESSIONS"].create_asset(
         {
             "asset_id": "owned-by-first",
-            "image_id": first["image_id"],
+            "image_id": first.image_id,
             "storage_category": "layer-assets",
             "stored_filename": asset_path.name,
             "mime_type": "image/png",
@@ -169,7 +169,7 @@ def test_layer_asset_cannot_be_reused_across_image_sessions(tmp_path):
     response = app.test_client().put(
         "/api/layers",
         json={
-            "image_id": second["image_id"],
+            "image_id": second.image_id,
             "layers": [
                 {"id": "foreign", "type": "image", "asset_id": asset["asset_id"]}
             ],
@@ -195,7 +195,7 @@ def test_hidden_layers_are_excluded_from_composition(tmp_path):
     asset = app.config["IMAGE_SESSIONS"].create_asset(
         {
             "asset_id": "hidden-blue",
-            "image_id": session["image_id"],
+            "image_id": session.image_id,
             "storage_category": "layer-assets",
             "stored_filename": asset_path.name,
             "mime_type": "image/png",
@@ -204,7 +204,7 @@ def test_hidden_layers_are_excluded_from_composition(tmp_path):
         }
     )
     app.config["IMAGE_SESSION_SERVICE"].save_layers(
-        session["image_id"],
+        session.image_id,
         [
             {
                 "id": "hidden",
@@ -220,11 +220,11 @@ def test_hidden_layers_are_excluded_from_composition(tmp_path):
     )
 
     response = app.test_client().post(
-        "/api/layers/compose", json={"image_id": session["image_id"]}
+        "/api/layers/compose", json={"image_id": session.image_id}
     )
 
     assert response.status_code == 200
     composed_path = response.get_json()["image"]["filename"]
-    content = app.test_client().get(f"/api/images/{session['image_id']}/content")
+    content = app.test_client().get(f"/api/images/{session.image_id}/content")
     assert content.status_code == 200
     assert composed_path

@@ -45,9 +45,9 @@ class ImageUploadService:
             raise
 
         return {
-            "image_id": session_data["image_id"],
-            "original_filename": session_data["original_filename"],
-            "format": session_data["format"],
-            "mime_type": session_data["mime_type"],
-            "size": session_data["size"],
+            "image_id": session_data.image_id,
+            "original_filename": session_data.get("original_filename"),
+            "format": session_data.get("format"),
+            "mime_type": session_data.get("mime_type"),
+            "size": session_data.get("size"),
         }

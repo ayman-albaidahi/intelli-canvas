@@ -45,7 +45,7 @@ def test_all_supported_format_conversions_return_metadata(
     ]:
         response = app.test_client().post(
             "/api/images/convert",
-            json={"image_id": session["image_id"], "format": target_format},
+            json={"image_id": session.image_id, "format": target_format},
         )
 
         assert response.status_code == 200
@@ -94,7 +94,7 @@ def test_supported_source_and_target_formats_convert(
 
     response = app.test_client().post(
         "/api/images/convert",
-        json={"image_id": session["image_id"], "format": target_format},
+        json={"image_id": session.image_id, "format": target_format},
     )
 
     assert response.status_code == 200
@@ -121,7 +121,7 @@ def test_conversion_preserves_original_and_stores_processed_file(
 
     response = app.test_client().post(
         "/api/images/convert",
-        json={"image_id": session["image_id"], "format": "webp"},
+        json={"image_id": session.image_id, "format": "webp"},
     )
 
     assert response.status_code == 200
@@ -148,7 +148,7 @@ def test_unsupported_format_is_rejected(
 
     response = app.test_client().post(
         "/api/images/convert",
-        json={"image_id": session["image_id"], "format": target_format},
+        json={"image_id": session.image_id, "format": target_format},
     )
 
     assert response.status_code == 400

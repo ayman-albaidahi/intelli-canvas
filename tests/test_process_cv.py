@@ -49,7 +49,7 @@ def test_histogram_returns_rgb_bins_without_mutating_the_session():
     assert payload["histogram"]["g"][0] == 1
     assert payload["histogram"]["g"][20] == 1
     after = app.config["IMAGE_SESSION_SERVICE"].get_session(image_id)
-    assert after["current_filename"] == before["current_filename"]
+    assert after.current_filename == before.current_filename
 
 
 @pytest.mark.parametrize(

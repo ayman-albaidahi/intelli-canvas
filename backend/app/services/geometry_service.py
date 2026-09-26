@@ -175,15 +175,13 @@ class GeometryService:
         return self._transform_metadata(image_id, output_path, dimensions)
 
     def _resolve_current_path(self, session: dict[str, Any]) -> Path:
-        stored_filename = session.get("current_filename") or session.get(
-            "stored_filename"
-        )
+        stored_filename = session.current_filename or session.get("stored_filename")
         if not isinstance(stored_filename, str) or not stored_filename:
             raise FileValidationError("Image session has no valid stored file.")
 
         source_dir = (
             self.storage_service.processed_dir
-            if session.get("current_storage") == "processed"
+            if session.current_storage == "processed"
             else self.storage_service.uploads_dir
         ).resolve()
         input_path = (source_dir / stored_filename).resolve()
@@ -216,7 +214,7 @@ class GeometryService:
     def _output_base_name(self, session: dict[str, Any], input_path: Path) -> str:
         """Derive output names from the original upload stem, not the
         current filename, so chained operations cannot grow file paths."""
-        base_stem = session.get("base_stem")
+        base_stem = session.base_stem
         if not isinstance(base_stem, str) or not base_stem:
             base_stem = input_path.stem
         extension = input_path.suffix.lower() or ".png"

@@ -9,6 +9,7 @@ from typing import Any
 from .domain.history import HistoryEntry
 from .domain.layer import Layer
 from .domain.pipeline import Pipeline, PipelineNode
+from .domain.session import ImageSession
 from .services.auth_store import AuthStore
 from .services.session_store import SessionStore
 
@@ -381,7 +382,7 @@ class SQLiteSessionRepository(SessionStore, AuthStore):
             return None
         return self.get_pipeline(image_id)
 
-    def create_session(self, payload: dict[str, Any]) -> dict[str, Any]:
+    def create_session(self, payload: dict[str, Any]) -> ImageSession:
         with self._connect() as connection:
             project_id = payload.get("project_id")
             owner_id = payload.get("owner_id") or SYSTEM_OWNER_USER_ID
@@ -438,7 +439,13 @@ class SQLiteSessionRepository(SessionStore, AuthStore):
                     payload["created_at"],
                 ),
             )
-        return self.get_session(payload["image_id"]) or payload
+        return self.get_session(payload["image_id"]) or ImageSession(
+            image_id=payload["image_id"],
+            current_filename=payload.get("current_filename") or "",
+            current_storage=payload.get("current_storage") or "uploads",
+            base_stem=payload.get("base_stem") or "image",
+            payload=dict(payload),
+        )
 
     def create_asset(self, asset: dict[str, Any]) -> dict[str, Any]:
         with self._connect() as connection:
@@ -481,19 +488,19 @@ class SQLiteSessionRepository(SessionStore, AuthStore):
             ).fetchone()
         return dict(row) if row else None
 
-    def get_session(self, image_id: str) -> dict[str, Any] | None:
+    def get_session(self, image_id: str) -> ImageSession | None:
         with self._connect() as connection:
             row = connection.execute(
                 "SELECT * FROM image_sessions WHERE image_id = ?", (image_id,)
             ).fetchone()
             if row is None:
                 return None
-            session = dict(row)
-            session["history"] = self._history(connection, image_id)
-            session["layers"] = self._layers(connection, image_id)
-            return session
+            payload = dict(row)
+            payload["history"] = self._history(connection, image_id)
+            payload["layers"] = self._layers(connection, image_id)
+            return ImageSession.from_row(payload)
 
-    def list_sessions(self) -> list[dict[str, Any]]:
+    def list_sessions(self) -> list[ImageSession]:
         with self._connect() as connection:
             ids = [
                 row[0]
@@ -501,7 +508,7 @@ class SQLiteSessionRepository(SessionStore, AuthStore):
                     "SELECT image_id FROM image_sessions"
                 ).fetchall()
             ]
-        return [self.get_session(image_id) for image_id in ids]
+        return [session for session in (self.get_session(i) for i in ids) if session]
 
     def count(self) -> int:
         with self._connect() as connection:
@@ -517,7 +524,7 @@ class SQLiteSessionRepository(SessionStore, AuthStore):
         operation: str | None,
         now: int,
         parameters: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+    ) -> ImageSession:
         with self._connect() as connection:
             session = connection.execute(
                 "SELECT history_index FROM image_sessions WHERE image_id = ?",
@@ -551,11 +558,9 @@ class SQLiteSessionRepository(SessionStore, AuthStore):
                     "UPDATE image_sessions SET history_index = ? WHERE image_id = ?",
                     (next_index, image_id),
                 )
-        return self.get_session(image_id)  # type: ignore[return-value]
+        return self.get_session(image_id) or ImageSession(image_id=image_id)
 
-    def set_current_history(
-        self, image_id: str, index: int, now: int
-    ) -> dict[str, Any]:
+    def set_current_history(self, image_id: str, index: int, now: int) -> ImageSession:
         with self._connect() as connection:
             row = connection.execute(
                 "SELECT filename, storage FROM image_history WHERE image_id = ? AND history_index = ?",
@@ -572,7 +577,7 @@ class SQLiteSessionRepository(SessionStore, AuthStore):
             raise FileNotFoundError("Image session was not found.")
         return session
 
-    def clear_history(self, image_id: str, now: int) -> dict[str, Any]:
+    def clear_history(self, image_id: str, now: int) -> ImageSession:
         with self._connect() as connection:
             row = connection.execute(
                 "SELECT current_filename, current_storage FROM image_sessions WHERE image_id = ?",

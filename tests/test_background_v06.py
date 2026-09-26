@@ -47,7 +47,7 @@ def test_replace_preview_is_non_destructive_and_supports_new_effect_parameters()
     assert response.mimetype == "image/png"
     assert app.config["IMAGE_SESSION_SERVICE"].history(image_id) == before
     current = app.config["IMAGE_SESSION_SERVICE"].get_session(image_id)
-    assert current["current_storage"] == "uploads"
+    assert current.current_storage == "uploads"
 
 
 def test_replace_with_effects_preserves_foreground_and_history_once():

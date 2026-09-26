@@ -36,10 +36,10 @@ def _analysis_findings(image_id: str):
     storage = get_storage_service()
     directory = (
         storage.processed_dir
-        if session.get("current_storage") == "processed"
+        if session.current_storage == "processed"
         else storage.uploads_dir
     )
-    source_path = Path(directory) / (session.get("current_filename") or "")
+    source_path = Path(directory) / (session.current_filename or "")
     if not source_path.is_file():
         return None, error_response(
             ErrorCodes.IMAGE_NOT_AVAILABLE, "Stored image was not found.", 404

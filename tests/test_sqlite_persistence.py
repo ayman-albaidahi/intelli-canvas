@@ -16,7 +16,7 @@ def test_sessions_history_and_layers_survive_app_restart(tmp_path):
     app_one = create_app(str(database_path))
     service_one = app_one.config["IMAGE_SESSION_SERVICE"]
     session = service_one.create_session(_metadata())
-    image_id = session["image_id"]
+    image_id = session.image_id
     service_one.save_layers(image_id, [{"id": "o1", "type": "shape", "name": "Saved"}])
     service_one.update_current_image(image_id, "processed.png", operation="Resize 2x2")
 
@@ -25,10 +25,10 @@ def test_sessions_history_and_layers_survive_app_restart(tmp_path):
     restored = service_two.get_session(image_id)
 
     assert restored is not None
-    assert restored["current_filename"] == "processed.png"
-    assert restored["history_index"] == 1
-    assert restored["history"][1].operation == "Resize 2x2"
-    assert [layer.to_public_dict() for layer in restored["layers"]] == [
+    assert restored.current_filename == "processed.png"
+    assert restored.history_index == 1
+    assert restored.history[1].operation == "Resize 2x2"
+    assert [layer.to_public_dict() for layer in restored.layers] == [
         {"id": "o1", "type": "shape", "name": "Saved"}
     ]
 

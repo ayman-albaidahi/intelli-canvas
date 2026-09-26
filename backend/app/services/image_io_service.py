@@ -45,7 +45,7 @@ class ImageIOService:
         resolved_source, session = self._resolve_source(image_id)
         source_path = source_path or resolved_source
         pillow_format, extension, mime_type = export_format
-        base_stem = session.get("base_stem")
+        base_stem = session.base_stem
         if not isinstance(base_stem, str) or not base_stem:
             base_stem = source_path.stem
         output_name = self.storage_service.generate_safe_filename(
@@ -112,15 +112,13 @@ class ImageIOService:
         if session is None:
             raise FileNotFoundError("Image session was not found.")
 
-        stored_filename = session.get("current_filename") or session.get(
-            "stored_filename"
-        )
+        stored_filename = session.current_filename or session.get("stored_filename")
         if not isinstance(stored_filename, str) or not stored_filename:
             raise FileValidationError("Image session has no valid stored file.")
 
         source_dir = (
             self.storage_service.processed_dir
-            if session.get("current_storage") == "processed"
+            if session.current_storage == "processed"
             else self.storage_service.uploads_dir
         ).resolve()
         source_path = (source_dir / stored_filename).resolve()

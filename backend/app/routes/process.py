@@ -46,7 +46,7 @@ def _image_id_from_payload():
     # request quoting an older index was queued against a previous state, so
     # applying it now would silently clobber a newer result.
     supplied = payload.get("source_revision")
-    expected = session.get("history_index", 0)
+    expected = session.history_index or 0
     if supplied is not None and supplied != expected:
         return (
             None,

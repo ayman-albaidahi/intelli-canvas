@@ -7,6 +7,7 @@ from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 from ..domain.layer import Layer
 from ..domain.results import OperationResult
+from ..domain.session import ImageSession
 from .file_service import FileStorageService, FileValidationError
 
 # Candidate font paths across platforms (Linux distros, WSL, Windows).
@@ -54,11 +55,11 @@ class LayerCompositorService:
         source = self._source_path(session)
         with Image.open(source) as base:
             canvas = base.convert("RGBA")
-            for layer in session.get("layers", []):
+            for layer in session.layers:
                 if layer.visible:
                     self._render_layer(canvas, layer, image_id)
             output_path = self.storage_service.resolve_storage_destination(
-                "processed", f"{session.get('base_stem', 'image')}_composite.png"
+                "processed", f"{session.base_stem or 'image'}_composite.png"
             )
             canvas.save(output_path, format="PNG")
             width, height = canvas.size
@@ -78,16 +79,14 @@ class LayerCompositorService:
             mime_type="image/png",
             path=output_path,
             filename=output_path.name,
-            public_extras={
-                "history_index": updated["history_index"] if updated else None
-            },
+            public_extras={"history_index": updated.history_index if updated else None},
         )
 
-    def _source_path(self, session: dict[str, Any]) -> Path:
-        filename = session.get("current_filename") or session.get("stored_filename")
+    def _source_path(self, session: ImageSession) -> Path:
+        filename = session.current_filename or session.get("stored_filename")
         directory = (
             self.storage_service.processed_dir
-            if session.get("current_storage") == "processed"
+            if session.current_storage == "processed"
             else self.storage_service.uploads_dir
         )
         path = (directory / str(filename)).resolve()

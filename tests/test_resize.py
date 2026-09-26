@@ -42,11 +42,11 @@ def post_resize(app, image_id, **values):
 def test_resize_by_width_preserves_locked_aspect_ratio(resize_context):
     app, _, session, _ = resize_context
 
-    response = post_resize(app, session["image_id"], width=800, lock_aspect_ratio=True)
+    response = post_resize(app, session.image_id, width=800, lock_aspect_ratio=True)
 
     assert response.status_code == 200
     assert response.get_json()["image"] == {
-        "image_id": session["image_id"],
+        "image_id": session.image_id,
         "width": 800,
         "height": 600,
         "format": "png",
@@ -57,7 +57,7 @@ def test_resize_by_width_preserves_locked_aspect_ratio(resize_context):
 def test_resize_by_height_preserves_locked_aspect_ratio(resize_context):
     app, _, session, _ = resize_context
 
-    response = post_resize(app, session["image_id"], height=600)
+    response = post_resize(app, session.image_id, height=600)
 
     assert response.status_code == 200
     assert response.get_json()["image"]["width"] == 800
@@ -69,7 +69,7 @@ def test_resize_with_unlocked_ratio_uses_explicit_dimensions(resize_context):
 
     response = post_resize(
         app,
-        session["image_id"],
+        session.image_id,
         width=800,
         height=800,
         lock_aspect_ratio=False,
@@ -85,7 +85,7 @@ def test_locked_ratio_treats_two_dimensions_as_bounding_box(resize_context):
 
     response = post_resize(
         app,
-        session["image_id"],
+        session.image_id,
         width=800,
         height=800,
         lock_aspect_ratio=True,
@@ -100,7 +100,7 @@ def test_locked_ratio_treats_two_dimensions_as_bounding_box(resize_context):
 def test_invalid_width_is_rejected(resize_context, width):
     app, _, session, _ = resize_context
 
-    response = post_resize(app, session["image_id"], width=width)
+    response = post_resize(app, session.image_id, width=width)
 
     assert response.status_code == 400
     assert response.get_json()["error"]["code"] == "INVALID_DIMENSIONS"
@@ -110,7 +110,7 @@ def test_invalid_width_is_rejected(resize_context, width):
 def test_invalid_height_is_rejected(resize_context, height):
     app, _, session, _ = resize_context
 
-    response = post_resize(app, session["image_id"], height=height)
+    response = post_resize(app, session.image_id, height=height)
 
     assert response.status_code == 400
     assert response.get_json()["error"]["code"] == "INVALID_DIMENSIONS"
@@ -119,7 +119,7 @@ def test_invalid_height_is_rejected(resize_context, height):
 def test_missing_dimensions_are_rejected(resize_context):
     app, _, session, _ = resize_context
 
-    response = post_resize(app, session["image_id"])
+    response = post_resize(app, session.image_id)
 
     assert response.status_code == 400
     assert response.get_json()["error"]["code"] == "INVALID_DIMENSIONS"
@@ -130,7 +130,7 @@ def test_unlocked_ratio_requires_both_dimensions(resize_context):
 
     response = post_resize(
         app,
-        session["image_id"],
+        session.image_id,
         width=800,
         lock_aspect_ratio=False,
     )
@@ -152,7 +152,7 @@ def test_resize_preserves_original_and_creates_processed_file(resize_context):
     app, storage_service, session, source_path = resize_context
     original_bytes = source_path.read_bytes()
 
-    response = post_resize(app, session["image_id"], width=800)
+    response = post_resize(app, session.image_id, width=800)
 
     assert response.status_code == 200
     assert source_path.read_bytes() == original_bytes
@@ -165,9 +165,9 @@ def test_resize_preserves_original_and_creates_processed_file(resize_context):
 def test_resize_response_does_not_expose_internal_storage_details(resize_context):
     app, _, session, _ = resize_context
 
-    response = post_resize(app, session["image_id"], width=800)
+    response = post_resize(app, session.image_id, width=800)
     payload = response.get_json()
 
     assert "stored_filename" not in payload["image"]
     assert "path" not in str(payload).lower()
-    assert str(session["stored_filename"]) not in str(payload)
+    assert str(session.get("stored_filename")) not in str(payload)

@@ -112,7 +112,7 @@ class ProcessService:
             public_extras={
                 **history_parameters,
                 "operation": operation,
-                "revision": session.get("history_index", 0),
+                "revision": (session.history_index or 0),
             },
         )
 
@@ -123,7 +123,7 @@ class ProcessService:
         operation and eventually exceeds the Windows path limit.
         """
         session = self.session_service.get_session(image_id)
-        base_stem = session.get("base_stem") if session else None
+        base_stem = session.base_stem if session else None
         if not isinstance(base_stem, str) or not base_stem:
             base_stem = "image"
         filename = self.storage_service.generate_safe_filename(
