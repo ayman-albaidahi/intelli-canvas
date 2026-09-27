@@ -3,6 +3,8 @@ import {
   centerOf,
   handles,
   hitObject,
+  normalizeStrokeBox,
+  resizeObjectFromDrag,
   rotateHandle,
   rotateOffset,
   toLocal,
@@ -143,7 +145,7 @@ export class ObjectManager {
       // box needs recomputing, since the stored box was normalised at save time
       // and the points are the source of truth.
       if (layer.type === 'brush' && layer.points && layer.points.length) {
-        this.normalizeBrush(layer);
+        normalizeStrokeBox(layer);
       }
     });
     this.render();
@@ -336,7 +338,7 @@ export class ObjectManager {
     const ip = this._screenToImage(point.x, point.y);
     if (Math.hypot(ip.x - last[0], ip.y - last[1]) < 1.5) return;
     this.drawing.points.push([ip.x, ip.y]);
-    this.normalizeBrush(this.drawing);
+    normalizeStrokeBox(this.drawing);
     this.render();
   }
 
@@ -345,28 +347,12 @@ export class ObjectManager {
     if (this.drawing.points.length < 2) this.drawing.points.push([this.drawing.points[0][0] + 1, this.drawing.points[0][1] + 1]);
     const stroke = this.drawing;
     this.drawing = null;
-    this.normalizeBrush(stroke);
+    normalizeStrokeBox(stroke);
     this.objects.push(stroke);
     this.select(stroke.id);
     this.changed();
   }
 
-  normalizeBrush(stroke) {
-    const xs = stroke.points.map((p) => p[0]);
-    const ys = stroke.points.map((p) => p[1]);
-    const pad = stroke.strokeWidth / 2 + 2;
-    const minX = Math.min(...xs) - pad;
-    const minY = Math.min(...ys) - pad;
-    const maxX = Math.max(...xs) + pad;
-    const maxY = Math.max(...ys) + pad;
-    stroke.x = minX;
-    stroke.y = minY;
-    stroke.w = Math.max(MIN_SIZE, maxX - minX);
-    stroke.h = Math.max(MIN_SIZE, maxY - minY);
-    const cx = stroke.x + stroke.w / 2;
-    const cy = stroke.y + stroke.h / 2;
-    stroke.pointsRel = stroke.points.map(([px, py]) => [px - cx, py - cy]);
-  }
 
   addImageLayer(img, name) {
     const zone = this.canvas.getBoundingClientRect();
@@ -540,41 +526,10 @@ export class ObjectManager {
       o.rotation = Math.round(rotation * 10) / 10;
       this.angleReadout = `${o.rotation}°`;
     } else if (this.mode === 'resize') {
-      this.applyResize(o, point, event.shiftKey);
+      resizeObjectFromDrag(o, this.drag, point, event.shiftKey, MIN_SIZE);
     }
     this.render();
     if (this.onSelectionChange) this.onSelectionChange(this.selectedId);
-  }
-
-  applyResize(o, point, keepRatio) {
-    const { handle, anchor } = this.drag;
-    const startCenter = { x: this.drag.startX + this.drag.startW / 2, y: this.drag.startY + this.drag.startH / 2 };
-    const rad = -o.rotation * Math.PI / 180;
-    const dx = point.x - startCenter.x;
-    const dy = point.y - startCenter.y;
-    const local = { x: dx * Math.cos(rad) - dy * Math.sin(rad), y: dx * Math.sin(rad) + dy * Math.cos(rad) };
-    const anchorStart = { x: (anchor.sx * this.drag.startW) / 2, y: (anchor.sy * this.drag.startH) / 2 };
-    let newW = this.drag.startW;
-    let newH = this.drag.startH;
-    if (handle.sx !== 0) newW = Math.max(MIN_SIZE, Math.abs(local.x - anchorStart.x));
-    if (handle.sy !== 0) newH = Math.max(MIN_SIZE, Math.abs(local.y - anchorStart.y));
-    if (keepRatio && handle.sx !== 0 && handle.sy !== 0) {
-      const ratio = this.drag.startH / this.drag.startW;
-      if (newW / this.drag.startW > newH / this.drag.startH) newH = Math.max(MIN_SIZE, newW * ratio);
-      else newW = Math.max(MIN_SIZE, newH / ratio);
-    }
-    o.w = Math.round(newW);
-    o.h = Math.round(newH);
-    const anchorNew = { x: (anchor.sx * o.w) / 2, y: (anchor.sy * o.h) / 2 };
-    const anchorRotated = this.rotateOffset(o, anchorNew.x, anchorNew.y);
-    o.x = Math.round(this.drag.anchorScreen.x - anchorRotated.x - o.w / 2);
-    o.y = Math.round(this.drag.anchorScreen.y - anchorRotated.y - o.h / 2);
-    if (o.type === 'brush' && o.pointsRel && this.drag.startW && this.drag.startH) {
-      const kx = o.w / this.drag.startW;
-      const ky = o.h / this.drag.startH;
-      o.pointsRel = o.pointsRel.map(([px, py]) => [px * kx, py * ky]);
-      o.strokeWidth = Math.max(1, Math.round((this.drag.startStrokeWidth || o.strokeWidth) * ((kx + ky) / 2)));
-    }
   }
 
   // A pointercancel is the browser saying the gesture was interrupted (a
