@@ -22,31 +22,97 @@
   <body>
     <section id="auth-gate" class="auth-gate" aria-labelledby="login-heading">
       <div class="auth-card">
-        <div class="auth-brand"><img src="assets/intellicanvas-logo.svg" alt="" /><span>IntelliCanvas</span></div>
+        <div class="auth-brand">
+          <img src="assets/intellicanvas-logo.svg" alt="" /><span>IntelliCanvas</span>
+        </div>
         <span class="eyebrow">Private workspace</span>
         <div id="login-view">
           <h1 id="login-heading">Sign in to your canvas</h1>
-          <p class="auth-copy">Your projects and editing sessions stay protected behind your account.</p>
+          <p class="auth-copy">
+            Your projects and editing sessions stay protected behind your account.
+          </p>
         </div>
         <div id="register-view" hidden>
           <h1 id="register-heading">Create your account</h1>
-          <p class="auth-copy">Create a private workspace for your projects and editing sessions.</p>
+          <p class="auth-copy">
+            Create a private workspace for your projects and editing sessions.
+          </p>
         </div>
         <form id="login-form" novalidate>
-          <label class="property-field" for="login-email">Email<input id="login-email" name="email" type="email" autocomplete="username" required /></label>
-          <label class="property-field" for="login-password">Password<input id="login-password" name="password" type="password" autocomplete="current-password" required /></label>
+          <label class="property-field" for="login-email"
+            >Email<input
+              id="login-email"
+              name="email"
+              type="email"
+              autocomplete="username"
+              required
+          /></label>
+          <label class="property-field" for="login-password"
+            >Password<input
+              id="login-password"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              required
+          /></label>
           <p id="login-error" class="auth-error" role="alert" hidden></p>
-          <button id="login-submit" class="button button-auth-primary full-width" type="submit"><span id="auth-loading" class="auth-loading" hidden aria-hidden="true"></span>Sign in</button>
+          <button id="login-submit" class="button button-auth-primary full-width" type="submit">
+            <span id="auth-loading" class="auth-loading" hidden aria-hidden="true"></span>Sign in
+          </button>
         </form>
         <form id="register-form" novalidate hidden>
-          <label class="property-field" for="register-name">Display name <span class="field-optional">(optional)</span><input id="register-name" name="display_name" type="text" autocomplete="name" maxlength="80" /></label>
-          <label class="property-field" for="register-email">Email<input id="register-email" name="email" type="email" autocomplete="email" required /></label>
-          <label class="property-field" for="register-password">Password <span class="field-hint">(at least 8 characters)</span><input id="register-password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required /></label>
-          <label class="property-field" for="register-confirm-password">Confirm password<input id="register-confirm-password" name="confirm_password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required /></label>
+          <label class="property-field" for="register-name"
+            >Display name <span class="field-optional">(optional)</span
+            ><input
+              id="register-name"
+              name="display_name"
+              type="text"
+              autocomplete="name"
+              maxlength="80"
+          /></label>
+          <label class="property-field" for="register-email"
+            >Email<input
+              id="register-email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              required
+          /></label>
+          <label class="property-field" for="register-password"
+            >Password <span class="field-hint">(at least 8 characters)</span
+            ><input
+              id="register-password"
+              name="password"
+              type="password"
+              autocomplete="new-password"
+              minlength="8"
+              maxlength="128"
+              required
+          /></label>
+          <label class="property-field" for="register-confirm-password"
+            >Confirm password<input
+              id="register-confirm-password"
+              name="confirm_password"
+              type="password"
+              autocomplete="new-password"
+              minlength="8"
+              maxlength="128"
+              required
+          /></label>
           <p id="register-error" class="auth-error" role="alert" hidden></p>
-          <button id="register-submit" class="button button-auth-primary full-width" type="submit"><span id="register-loading" class="auth-loading" hidden aria-hidden="true"></span>Create account</button>
+          <button id="register-submit" class="button button-auth-primary full-width" type="submit">
+            <span id="register-loading" class="auth-loading" hidden aria-hidden="true"></span>Create
+            account
+          </button>
         </form>
-        <div class="auth-switch"><span id="auth-switch-copy">New to IntelliCanvas?</span><button id="show-register" class="button button-link" type="button">Create account</button><button id="show-login" class="button button-link" type="button" hidden>Back to sign in</button></div>
+        <div class="auth-switch">
+          <span id="auth-switch-copy">New to IntelliCanvas?</span
+          ><button id="show-register" class="button button-link" type="button">
+            Create account</button
+          ><button id="show-login" class="button button-link" type="button" hidden>
+            Back to sign in
+          </button>
+        </div>
       </div>
     </section>
     <div class="app-shell" hidden>
@@ -55,22 +121,74 @@
           <img class="brand-logo" src="assets/intellicanvas-logo.svg" alt="IntelliCanvas" />
           <div><strong>IntelliCanvas</strong><span>Studio workspace</span></div>
         </div>
-        <div class="document-name"><span class="status-dot"></span><span id="document-name">Untitled project</span><small id="save-state">Not saved yet</small></div>
+        <div class="document-name">
+          <span class="status-dot"></span><span id="document-name">Untitled project</span
+          ><small id="save-state">Not saved yet</small>
+        </div>
         <nav class="top-actions" aria-label="Project actions">
           <button class="button button-ghost" data-action="new">New</button>
           <button class="button button-ghost" data-action="open">Open</button>
-          <button class="button button-primary" data-action="export">Export <span aria-hidden="true">↗</span></button>
+          <button class="button button-primary" data-action="export">
+            Export <span aria-hidden="true">↗</span>
+          </button>
           <span class="action-divider"></span>
-          <button class="icon-button" data-action="rotate-left" aria-label="Rotate left" title="Rotate left">↺</button>
-          <button class="icon-button" data-action="rotate-right" aria-label="Rotate right" title="Rotate right">↻</button>
-          <button class="icon-button" data-action="flip-horizontal" aria-label="Flip horizontal" title="Flip horizontal">⇋</button>
-          <button class="icon-button" data-action="flip-vertical" aria-label="Flip vertical" title="Flip vertical">⇵</button>
-          <button class="icon-button" data-action="resize" aria-label="Resize canvas" title="Resize canvas">⤢</button>
+          <button
+            class="icon-button"
+            data-action="rotate-left"
+            aria-label="Rotate left"
+            title="Rotate left"
+          >
+            ↺
+          </button>
+          <button
+            class="icon-button"
+            data-action="rotate-right"
+            aria-label="Rotate right"
+            title="Rotate right"
+          >
+            ↻
+          </button>
+          <button
+            class="icon-button"
+            data-action="flip-horizontal"
+            aria-label="Flip horizontal"
+            title="Flip horizontal"
+          >
+            ⇋
+          </button>
+          <button
+            class="icon-button"
+            data-action="flip-vertical"
+            aria-label="Flip vertical"
+            title="Flip vertical"
+          >
+            ⇵
+          </button>
+          <button
+            class="icon-button"
+            data-action="resize"
+            aria-label="Resize canvas"
+            title="Resize canvas"
+          >
+            ⤢
+          </button>
           <button class="icon-button" data-action="undo" aria-label="Undo" title="Undo">↶</button>
           <button class="icon-button" data-action="redo" aria-label="Redo" title="Redo">↷</button>
-          <button class="button button-ghost" data-action="help" aria-label="Open Help">Help</button>
-          <button class="icon-button theme-toggle" data-action="theme" aria-label="Toggle color theme" title="Toggle theme">☼</button>
-          <span class="account-label" id="account-label">Account</span><button class="button button-ghost" id="logout-button" type="button" hidden>Sign out</button><button class="avatar" id="account-avatar" aria-label="Current account">AC</button>
+          <button class="button button-ghost" data-action="help" aria-label="Open Help">
+            Help
+          </button>
+          <button
+            class="icon-button theme-toggle"
+            data-action="theme"
+            aria-label="Toggle color theme"
+            title="Toggle theme"
+          >
+            ☼
+          </button>
+          <span class="account-label" id="account-label">Account</span
+          ><button class="button button-ghost" id="logout-button" type="button" hidden>
+            Sign out</button
+          ><button class="avatar" id="account-avatar" aria-label="Current account">AC</button>
         </nav>
       </header>
 
@@ -78,90 +196,1411 @@
         <aside class="tool-rail" aria-label="Editor tools">
           <p class="tool-rail-heading" aria-hidden="true">Tools</p>
           <div class="tool-group">
-            <button class="tool-button is-active" aria-label="Select" aria-pressed="true" data-tool="select" data-requires-image title="Select (V)"><span>↖</span></button>
-            <button class="tool-button" aria-label="Move" aria-pressed="false" data-tool="move" data-requires-image title="Move (M)"><span>✥</span></button>
-            <button class="tool-button" aria-label="Crop" aria-pressed="false" data-tool="crop" data-requires-image title="Crop (C)"><span>⌗</span></button>
+            <button
+              class="tool-button is-active"
+              aria-label="Select"
+              aria-pressed="true"
+              data-tool="select"
+              data-requires-image
+              title="Select (V)"
+            >
+              <span>↖</span>
+            </button>
+            <button
+              class="tool-button"
+              aria-label="Move"
+              aria-pressed="false"
+              data-tool="move"
+              data-requires-image
+              title="Move (M)"
+            >
+              <span>✥</span>
+            </button>
+            <button
+              class="tool-button"
+              aria-label="Crop"
+              aria-pressed="false"
+              data-tool="crop"
+              data-requires-image
+              title="Crop (C)"
+            >
+              <span>⌗</span>
+            </button>
           </div>
           <div class="tool-divider"></div>
           <div class="tool-group">
-            <button class="tool-button" aria-label="Brush" aria-pressed="false" data-tool="brush" data-requires-image title="Brush (B)"><span>╱</span></button>
-            <button class="tool-button" aria-label="Eraser" aria-pressed="false" data-tool="eraser" data-requires-image title="Eraser (E)"><span>⌫</span></button>
-            <button class="tool-button" aria-label="Shapes" aria-pressed="false" data-tool="shape" data-requires-image title="Shapes (U)"><span>◇</span></button>
-            <button class="tool-button" aria-label="Text" aria-pressed="false" data-tool="text" data-requires-image title="Text (T)"><span>T</span></button>
+            <button
+              class="tool-button"
+              aria-label="Brush"
+              aria-pressed="false"
+              data-tool="brush"
+              data-requires-image
+              title="Brush (B)"
+            >
+              <span>╱</span>
+            </button>
+            <button
+              class="tool-button"
+              aria-label="Eraser"
+              aria-pressed="false"
+              data-tool="eraser"
+              data-requires-image
+              title="Eraser (E)"
+            >
+              <span>⌫</span>
+            </button>
+            <button
+              class="tool-button"
+              aria-label="Shapes"
+              aria-pressed="false"
+              data-tool="shape"
+              data-requires-image
+              title="Shapes (U)"
+            >
+              <span>◇</span>
+            </button>
+            <button
+              class="tool-button"
+              aria-label="Text"
+              aria-pressed="false"
+              data-tool="text"
+              data-requires-image
+              title="Text (T)"
+            >
+              <span>T</span>
+            </button>
           </div>
           <div class="tool-divider"></div>
           <div class="tool-group">
-            <button class="tool-button" aria-label="Adjustments" data-panel="adjustments" data-requires-image title="Adjustments"><span>◐</span></button>
-            <button class="tool-button" aria-label="Filters" data-panel="filters" data-requires-image title="Filters"><span>✧</span></button>
-            <button class="tool-button" aria-label="Background" data-panel="background" data-requires-image title="Background"><span>▧</span></button>
+            <button
+              class="tool-button"
+              aria-label="Adjustments"
+              data-panel="adjustments"
+              data-requires-image
+              title="Adjustments"
+            >
+              <span>◐</span>
+            </button>
+            <button
+              class="tool-button"
+              aria-label="Filters"
+              data-panel="filters"
+              data-requires-image
+              title="Filters"
+            >
+              <span>✧</span>
+            </button>
+            <button
+              class="tool-button"
+              aria-label="Background"
+              data-panel="background"
+              data-requires-image
+              title="Background"
+            >
+              <span>▧</span>
+            </button>
           </div>
           <div class="tool-spacer"></div>
-          <button class="tool-button" aria-label="Keyboard shortcuts" data-panel="shortcuts" title="Keyboard shortcuts"><span>⌘</span></button>
+          <button
+            class="tool-button"
+            aria-label="Keyboard shortcuts"
+            data-panel="shortcuts"
+            title="Keyboard shortcuts"
+          >
+            <span>⌘</span>
+          </button>
           <div class="rail-collapse" aria-hidden="true">‹</div>
         </aside>
 
         <main class="workspace">
           <div class="workspace-header">
-            <div class="breadcrumbs"><span>Projects</span><b>/</b><strong>Untitled project</strong></div>
+            <div class="breadcrumbs">
+              <span>Projects</span><b>/</b><strong>Untitled project</strong>
+            </div>
             <div class="workspace-controls">
-              <button class="view-button inspector-toggle" data-action="inspector-toggle" aria-label="Open inspector panels" aria-expanded="false" aria-controls="inspector">▦ <span>Panels</span></button>
-              <button class="view-button" data-action="compare" data-requires-image>◐ <span>Compare</span></button>
+              <button
+                class="view-button inspector-toggle"
+                data-action="inspector-toggle"
+                aria-label="Open inspector panels"
+                aria-expanded="false"
+                aria-controls="inspector"
+              >
+                ▦ <span>Panels</span>
+              </button>
+              <button class="view-button" data-action="compare" data-requires-image>
+                ◐ <span>Compare</span>
+              </button>
               <span class="control-separator"></span>
               <button class="view-button" data-action="fit" data-requires-image>Fit</button>
             </div>
           </div>
           <section class="canvas-zone" id="canvas-zone" aria-label="Canvas workspace">
             <div class="canvas-grid" aria-hidden="true"></div>
-            <div id="comparison-view" class="comparison-view" hidden><div class="comparison-label comparison-original-label">Original</div><div class="comparison-label comparison-edited-label">Edited preview</div><div class="comparison-layer comparison-original-layer"><canvas id="comparison-original"></canvas></div><div class="comparison-layer comparison-edited-layer"><canvas id="comparison-edited"></canvas></div><div id="comparison-handle" class="comparison-handle"><span>↔</span></div><input id="comparison-slider" class="comparison-slider" type="range" min="5" max="95" value="50" aria-label="Comparison split position" /></div>
+            <div id="comparison-view" class="comparison-view" hidden>
+              <div class="comparison-label comparison-original-label">Original</div>
+              <div class="comparison-label comparison-edited-label">Edited preview</div>
+              <div class="comparison-layer comparison-original-layer">
+                <canvas id="comparison-original"></canvas>
+              </div>
+              <div class="comparison-layer comparison-edited-layer">
+                <canvas id="comparison-edited"></canvas>
+              </div>
+              <div id="comparison-handle" class="comparison-handle"><span>↔</span></div>
+              <input
+                id="comparison-slider"
+                class="comparison-slider"
+                type="range"
+                min="5"
+                max="95"
+                value="50"
+                aria-label="Comparison split position"
+              />
+            </div>
             <div class="canvas-card" id="canvas-card">
               <div class="empty-canvas" id="empty-canvas">
                 <div class="empty-icon">✦</div>
                 <h1>Start with an image</h1>
                 <p>Drop an image here or choose a file to begin your canvas.</p>
-                <button class="button button-primary button-large" data-action="open">Choose image <span>↑</span></button>
+                <button class="button button-primary button-large" data-action="open">
+                  Choose image <span>↑</span>
+                </button>
                 <span class="file-hint">PNG, JPG, WEBP or BMP · up to 10 MB</span>
               </div>
-              <canvas id="image-canvas" class="image-canvas" aria-label="Image editing canvas"></canvas>
-              <canvas id="object-canvas" class="object-canvas" aria-label="Drawing and object canvas"></canvas>
-              <div id="crop-overlay" class="crop-overlay" hidden aria-label="Crop selection"><span class="crop-handle" data-handle="nw" aria-hidden="true"></span><span class="crop-handle" data-handle="n" aria-hidden="true"></span><span class="crop-handle" data-handle="ne" aria-hidden="true"></span><span class="crop-handle" data-handle="e" aria-hidden="true"></span><span class="crop-handle" data-handle="se" aria-hidden="true"></span><span class="crop-handle" data-handle="s" aria-hidden="true"></span><span class="crop-handle" data-handle="sw" aria-hidden="true"></span><span class="crop-handle" data-handle="w" aria-hidden="true"></span></div>
-              <div id="crop-controls" class="crop-controls" hidden><span><strong>Crop</strong><small id="crop-size">0 × 0 px</small></span><button id="crop-reset" class="button button-ghost">Reset</button><button id="crop-cancel" class="button button-secondary">Cancel</button><button id="crop-apply" class="button button-primary">Apply framing</button></div>
-
-                          </div>
-          <div class="canvas-overlay overlay-top"><span class="badge badge-soft">Original canvas</span></div>
-          <div class="canvas-overlay overlay-bottom"><span>Ctrl+Wheel = Zoom</span><span>Wheel = Pan</span></div>
-          <div class="canvas-toolbar" role="toolbar" aria-label="Canvas view controls">
-            <button class="toolbar-button" data-action="zoom-out" data-requires-image title="Zoom out (−)">−</button>
-            <button class="toolbar-button zoom-display" data-action="zoom-reset" data-requires-image data-zoom-display id="zoom-value" title="Reset to 100%">—</button>
-            <button class="toolbar-button" data-action="zoom-in" data-requires-image title="Zoom in (+)">+</button>
-            <span class="toolbar-separator"></span>
-            <button class="toolbar-button" data-action="fit" data-requires-image title="Fit to screen (0)">Fit</button>
-            <button class="toolbar-button" data-action="fit-width" data-requires-image title="Fit width">Width</button>
-            <button class="toolbar-button" data-action="zoom-100" data-requires-image title="Zoom to 100% (1)">100%</button>
-            <button class="toolbar-button" data-action="zoom-actual" data-requires-image title="Actual pixels">1:1</button>
-            <span class="toolbar-separator"></span>
-            <button class="toolbar-button" data-action="fullscreen" title="Fullscreen canvas">⛶</button>
-          </div>
+              <canvas
+                id="image-canvas"
+                class="image-canvas"
+                aria-label="Image editing canvas"
+              ></canvas>
+              <canvas
+                id="object-canvas"
+                class="object-canvas"
+                aria-label="Drawing and object canvas"
+              ></canvas>
+              <div id="crop-overlay" class="crop-overlay" hidden aria-label="Crop selection">
+                <span class="crop-handle" data-handle="nw" aria-hidden="true"></span
+                ><span class="crop-handle" data-handle="n" aria-hidden="true"></span
+                ><span class="crop-handle" data-handle="ne" aria-hidden="true"></span
+                ><span class="crop-handle" data-handle="e" aria-hidden="true"></span
+                ><span class="crop-handle" data-handle="se" aria-hidden="true"></span
+                ><span class="crop-handle" data-handle="s" aria-hidden="true"></span
+                ><span class="crop-handle" data-handle="sw" aria-hidden="true"></span
+                ><span class="crop-handle" data-handle="w" aria-hidden="true"></span>
+              </div>
+              <div id="crop-controls" class="crop-controls" hidden>
+                <span><strong>Crop</strong><small id="crop-size">0 × 0 px</small></span
+                ><button id="crop-reset" class="button button-ghost">Reset</button
+                ><button id="crop-cancel" class="button button-secondary">Cancel</button
+                ><button id="crop-apply" class="button button-primary">Apply framing</button>
+              </div>
+            </div>
+            <div class="canvas-overlay overlay-top">
+              <span class="badge badge-soft">Original canvas</span>
+            </div>
+            <div class="canvas-overlay overlay-bottom">
+              <span>Ctrl+Wheel = Zoom</span><span>Wheel = Pan</span>
+            </div>
+            <div class="canvas-toolbar" role="toolbar" aria-label="Canvas view controls">
+              <button
+                class="toolbar-button"
+                data-action="zoom-out"
+                data-requires-image
+                title="Zoom out (−)"
+              >
+                −
+              </button>
+              <button
+                class="toolbar-button zoom-display"
+                data-action="zoom-reset"
+                data-requires-image
+                data-zoom-display
+                id="zoom-value"
+                title="Reset to 100%"
+              >
+                —
+              </button>
+              <button
+                class="toolbar-button"
+                data-action="zoom-in"
+                data-requires-image
+                title="Zoom in (+)"
+              >
+                +
+              </button>
+              <span class="toolbar-separator"></span>
+              <button
+                class="toolbar-button"
+                data-action="fit"
+                data-requires-image
+                title="Fit to screen (0)"
+              >
+                Fit
+              </button>
+              <button
+                class="toolbar-button"
+                data-action="fit-width"
+                data-requires-image
+                title="Fit width"
+              >
+                Width
+              </button>
+              <button
+                class="toolbar-button"
+                data-action="zoom-100"
+                data-requires-image
+                title="Zoom to 100% (1)"
+              >
+                100%
+              </button>
+              <button
+                class="toolbar-button"
+                data-action="zoom-actual"
+                data-requires-image
+                title="Actual pixels"
+              >
+                1:1
+              </button>
+              <span class="toolbar-separator"></span>
+              <button class="toolbar-button" data-action="fullscreen" title="Fullscreen canvas">
+                ⛶
+              </button>
+            </div>
           </section>
-          <footer class="statusbar"><div><span class="status-led"></span><span id="status-message" class="muted" role="status" aria-live="polite">Ready for your next idea</span></div><div><span>RGB / 8-bit</span><span>•</span><span id="canvas-size">No image</span><span>•</span><span>Local draft</span></div></footer>
+          <footer class="statusbar">
+            <div>
+              <span class="status-led"></span
+              ><span id="status-message" class="muted" role="status" aria-live="polite"
+                >Ready for your next idea</span
+              >
+            </div>
+            <div>
+              <span>RGB / 8-bit</span><span>•</span><span id="canvas-size">No image</span
+              ><span>•</span><span>Local draft</span>
+            </div>
+          </footer>
         </main>
 
         <div id="inspector-scrim" class="inspector-scrim" hidden></div>
         <aside class="inspector" id="inspector" aria-label="Inspector panels">
-          <div class="inspector-tab-strip"><button class="tab-scroll-button" data-tab-scroll="prev" aria-label="Show previous inspector tabs" title="Previous tabs">‹</button><div class="inspector-tabs" role="tablist" aria-label="Editor surfaces. Scroll horizontally for more tabs."><button id="edit-tab" class="inspector-tab is-active" aria-selected="true" data-inspector="edit" aria-controls="edit-panel" role="tab">Edit</button><button id="layers-tab" aria-selected="false" class="inspector-tab" data-inspector="layers" aria-controls="layers-panel" role="tab">Layers <span class="count-pill">0</span></button><button id="insights-tab" aria-selected="false" class="inspector-tab" data-inspector="insights" aria-controls="insights-panel" role="tab">Insights</button><button id="history-tab" aria-selected="false" class="inspector-tab" data-inspector="history" aria-controls="history-panel" role="tab">History</button></div><button class="tab-scroll-button" data-tab-scroll="next" aria-label="Show more inspector tabs" title="More tabs">›</button></div>
-          <section class="inspector-content" id="edit-panel" role="tabpanel" aria-labelledby="edit-panel-label"><div class="panel-heading"><div><span class="eyebrow">Selected object</span><h2 id="edit-panel-label">Edit</h2></div><button class="more-button" aria-label="More property options">•••</button></div><div id="edit-context-stack" class="edit-context-stack" aria-live="polite"></div><div class="inspector-quick-actions" aria-label="Quick actions" data-contextual-actions><span class="quick-actions-label">Quick actions</span><div class="quick-actions-grid"><button class="quick-action" data-panel="smart-crop" data-context="image"><span>⌗</span><small>Smart Crop</small></button><button class="quick-action" data-panel="adjustments" data-context="image"><span>◐</span><small>Adjust</small></button><button class="quick-action" data-panel="filters" data-context="image"><span>✧</span><small>Enhance</small></button><button class="quick-action" data-panel="background" data-context="image"><span>▧</span><small>Background</small></button><button class="quick-action" data-panel="pipeline"><span>≋</span><small>Pipeline</small></button><button class="quick-action" data-panel="insights" data-context="image"><span>◌</span><small>Intelligence</small></button></div></div><div class="empty-panel" id="object-empty"><div class="panel-icon">⌁</div><strong id="edit-empty-title">Nothing selected</strong><p id="edit-empty-copy">Select an object or choose an editing tool.</p></div><div id="object-properties" hidden><div class="section-heading"><span>Selected layer</span><span id="obj-type" class="muted">—</span></div><label class="property-field">Name<input id="obj-name" type="text" /></label><div class="obj-grid"><label>X<input id="obj-x" type="number" /></label><label>Y<input id="obj-y" type="number" /></label><label>W<input id="obj-w" type="number" min="8" /></label><label>H<input id="obj-h" type="number" min="8" /></label></div><label class="property-field">Rotation<input id="obj-rotation" type="number" min="0" max="360" /></label><label class="property-field">Opacity · <span id="obj-opacity-val">100%</span><input id="obj-opacity" type="range" min="0" max="100" value="100" /></label><label class="property-field">Blend mode<select id="obj-blend"></select></label><div class="obj-actions"><button class="button button-secondary" id="obj-duplicate">Duplicate</button><button class="button button-secondary danger" id="obj-delete">Delete</button></div></div><div class="panel-section"><details class="panel-accordion smart-crop-accordion" id="smart-crop-accordion" data-context="crop"><summary class="section-heading"><span>Smart Crop</span><span id="smart-crop-status" class="muted">Ready</span></summary><div class="accordion-body"><label class="property-field">Aspect ratio<select id="smart-crop-ratio"><option value="original">Original</option><option value="1:1">1:1 Square</option><option value="4:5">4:5 Portrait</option><option value="5:4">5:4 Landscape</option><option value="16:9">16:9 Wide</option><option value="9:16">9:16 Story</option><option value="3:2">3:2 Photo</option><option value="2:3">2:3 Portrait</option></select></label><div class="bg-row"><button class="button button-secondary" data-action="smart-crop-preview" data-smart-crop-action>Preview framing</button><button class="button button-primary" data-action="smart-crop-apply" data-smart-crop-action>Apply framing</button></div><button class="button button-ghost full-width" data-action="smart-crop-cancel" data-smart-crop-action>Clear framing preview</button><img id="smart-crop-preview" class="smart-crop-preview" alt="Smart Crop preview" hidden /></div></details><details class="panel-accordion" id="adjustments-accordion" open data-context="image"><summary class="section-heading"><span>Appearance &amp; adjustments</span><span id="adjustment-summary" class="muted">Neutral</span></summary><div class="accordion-body"><div class="preview-row"><label class="check-row compact"><input id="preview-toggle" type="checkbox" checked /> Live preview</label><button class="mini-button wide" data-action="toggle-before-after" title="Before / After comparison">◐ Before/After</button></div><div class="adjustment-row"><label class="property-field">Brightness<input data-adjustment="brightness" type="range" min="0" max="200" value="100" /></label><output class="adjustment-value" data-value-for="brightness">100</output><button class="mini-button" data-reset="brightness" title="Reset brightness">↺</button></div><div class="adjustment-row"><label class="property-field">Contrast<input data-adjustment="contrast" type="range" min="0" max="200" value="100" /></label><output class="adjustment-value" data-value-for="contrast">100</output><button class="mini-button" data-reset="contrast" title="Reset contrast">↺</button></div><div class="adjustment-row"><label class="property-field">Saturation<input data-adjustment="saturation" type="range" min="0" max="200" value="100" /></label><output class="adjustment-value" data-value-for="saturation">100</output><button class="mini-button" data-reset="saturation" title="Reset saturation">↺</button></div><div class="adjustment-row"><label class="property-field">Blur<input data-adjustment="blur" type="range" min="0" max="20" value="0" /></label><output class="adjustment-value" data-value-for="blur">0px</output><button class="mini-button" data-reset="blur" title="Reset blur">↺</button></div><div class="adjustment-row"><label class="property-field">Sharpen<input data-adjustment="sharpen" type="range" min="0" max="5" value="0" /></label><output class="adjustment-value" data-value-for="sharpen">0</output><button class="mini-button" data-reset="sharpen" title="Reset sharpen">↺</button></div><label class="check-row compact"><input data-adjustment="grayscale" type="checkbox" /> Grayscale</label><label class="check-row compact"><input data-adjustment="negative" type="checkbox" /> Negative</label><button class="button button-primary full-width" data-action="apply-adjustments">Apply adjustments</button><button class="button button-secondary full-width" data-action="reset-adjustments">Reset all</button><p class="applied-line" id="applied-line">Nothing applied yet — press Apply to bake with Python.</p></div></details><details class="panel-accordion" id="filters-accordion" data-context="image"><summary class="section-heading"><span>Enhance &amp; inspect</span><span id="filters-status" class="muted">Ready</span></summary><div class="accordion-body"><div class="section-heading quick-heading"><span>Color balance</span></div><button class="button button-secondary full-width" data-action="compute-histogram" data-filter-action>Analyze color balance</button><div id="histogram-output" class="analysis-metrics" aria-live="polite"><p class="empty-panel-copy">No color analysis yet.</p></div><div class="section-heading quick-heading"><span>Detail &amp; edge</span></div><details class="advanced-disclosure" id="filters-detail-advanced"><summary class="section-heading"><span>Advanced</span><span class="muted">Detail parameters</span></summary><div class="advanced-body"><p class="advanced-help">Adjust the processing kernel only when you need finer control.</p><label class="property-field">Detail boost<select id="sobel-ksize"><option value="1">1 × 1</option><option value="3" selected>3 × 3</option><option value="5">5 × 5</option><option value="7">7 × 7</option></select></label></div></details><div class="bg-row"><button class="button button-secondary" data-action="apply-sobel" data-filter-action>Apply detail boost</button><button class="button button-secondary" data-action="apply-laplacian" data-filter-action>Apply edge detail</button></div><div class="section-heading quick-heading"><span>Noise &amp; texture</span></div><details class="advanced-disclosure" id="filters-noise-advanced"><summary class="section-heading"><span>Advanced</span><span class="muted">Noise parameters</span></summary><div class="advanced-body"><p class="advanced-help">Choose the kernel size used by noise reduction.</p><label class="property-field">Noise reduction<select id="median-ksize"><option value="1">1 × 1</option><option value="3" selected>3 × 3</option><option value="5">5 × 5</option><option value="7">7 × 7</option><option value="9">9 × 9</option><option value="11">11 × 11</option><option value="13">13 × 13</option><option value="15">15 × 15</option></select></label></div></details><button class="button button-secondary full-width" data-action="apply-median-filter" data-filter-action>Reduce noise</button><details class="advanced-disclosure" id="filters-texture-advanced"><summary class="section-heading"><span>Advanced</span><span class="muted">Texture parameters</span></summary><div class="advanced-body"><p class="advanced-help">Technical morphology controls for refining mask and texture edges.</p><label class="property-field">Texture refine<select id="morphology-operation"><option value="erode">Erode</option><option value="dilate">Dilate</option><option value="open">Open</option><option value="close">Close</option></select></label><label class="property-field">Refinement strength<select id="morphology-ksize"><option value="1">1 × 1</option><option value="3" selected>3 × 3</option><option value="5">5 × 5</option><option value="7">7 × 7</option><option value="9">9 × 9</option><option value="11">11 × 11</option><option value="13">13 × 13</option><option value="15">15 × 15</option></select></label></div></details><button class="button button-secondary full-width" data-action="apply-morphology" data-filter-action>Refine texture</button><div class="section-heading quick-heading"><span>Tone &amp; range</span></div><details class="advanced-disclosure" id="filters-tone-advanced"><summary class="section-heading"><span>Advanced</span><span class="muted">Tone parameters</span></summary><div class="advanced-body"><p class="advanced-help">Fine-tune the numeric tone transform when the guided action is not enough.</p><label class="property-field">Gamma<input id="gamma-value" type="number" min="0.1" max="5" step="0.1" value="1" /></label><button class="button button-secondary full-width" data-action="apply-gamma" data-filter-action>Balance tone</button><label class="property-field">Threshold<input id="threshold-value" type="number" min="0" max="255" step="1" value="128" /></label></div></details><button class="button button-secondary full-width" data-action="apply-threshold" data-filter-action>Create high contrast</button></div></details><details class="panel-accordion" id="background-accordion" data-context="image"><summary class="section-heading"><span>Background &amp; retouch</span><span class="muted">Alpha</span></summary><div class="accordion-body"><button class="button button-secondary full-width" data-action="pick-color" style="margin-top:0">💧 Pick color from image</button><label class="property-field">Key color<input id="bg-key-color" type="color" value="#ffffff" /></label><details class="advanced-disclosure" id="background-mask-advanced"><summary class="section-heading"><span>Advanced</span><span class="muted">Mask parameters</span></summary><div class="advanced-body"><p class="advanced-help">Fine-tune the mask only when the guided background removal needs adjustment.</p><label class="property-field">Tolerance · <span id="bg-tolerance-val">25</span><input data-bg-param="tolerance" type="range" min="0" max="100" value="25" /></label><label class="property-field">Feather · <span id="bg-feather-val">2</span><input data-bg-param="feather" type="range" min="0" max="25" value="2" /></label><label class="property-field">Smooth · <span id="bg-smooth-val">1</span><input data-bg-param="smooth" type="range" min="0" max="5" value="1" /></label><label class="check-row compact"><input id="bg-invert" type="checkbox" /> Invert mask</label></div></details><div class="bg-row"><button class="button button-secondary" data-action="preview-mask">Preview mask</button><button class="button button-secondary" data-action="clear-mask">Clear</button></div><button class="button button-primary full-width" data-action="remove-background">Remove background</button><div class="section-heading quick-heading"><span>Replace with</span></div><label class="property-field">Solid color<input id="bg-replace-color" type="color" value="#ffffff" /></label><label class="property-field">Category<select id="bg-category"><option value="all">All backgrounds</option><option value="general">General</option><option value="product">Product</option><option value="studio">Studio</option><option value="social">Social</option><option value="seasonal">Seasonal</option></select></label><label class="property-field">Library<select id="bg-library"><option value="">— choose background —</option></select></label><div id="bg-library-grid" class="bg-library-grid" aria-label="Background thumbnails"></div><button class="button button-secondary full-width" data-action="upload-background">⬆ Upload background</button><input type="file" id="bg-upload-input" accept="image/png,image/jpeg,image/webp,image/bmp" hidden /><button class="button button-secondary full-width" data-action="preview-replacement">Preview replacement</button><details class="advanced-disclosure" id="background-tuning-advanced"><summary class="section-heading"><span>Advanced</span><span class="muted">Background tuning</span></summary><div class="advanced-body"><p class="advanced-help">Control blur, placement, scale, and shadow for a replacement background.</p><div class="section-heading quick-heading"><span>Background tuning</span><span class="muted">Live values</span></div><label class="property-field">Background blur · <span id="bg-blur-val">0</span><input data-bg-param="background_blur" type="range" min="0" max="40" value="0" /></label><label class="property-field">Background scale · <span id="bg-scale-val">1</span><input data-bg-param="background_scale" type="range" min="0.1" max="5" step="0.1" value="1" /></label><div class="obj-grid"><label>X offset<input data-bg-param="background_x" id="bg-offset-x" type="number" min="-10000" max="10000" value="0" /></label><label>Y offset<input data-bg-param="background_y" id="bg-offset-y" type="number" min="-10000" max="10000" value="0" /></label></div><label class="check-row compact"><input id="bg-shadow" type="checkbox" /> Add foreground shadow</label><label class="property-field">Shadow opacity · <span id="bg-shadow-opacity-val">25%</span><input data-bg-param="shadow_opacity" type="range" min="0" max="100" value="25" /></label><label class="property-field">Shadow blur · <span id="bg-shadow-blur-val">12</span><input data-bg-param="shadow_blur" type="range" min="0" max="40" value="12" /></label><label class="property-field">Shadow Y offset<input data-bg-param="shadow_offset_y" type="number" min="-10000" max="10000" value="10" /></label></div></details><div class="bg-row"><button class="button button-secondary" data-action="cancel-background">Cancel preview</button><button class="button button-secondary" data-action="reset-background">Reset</button></div><button class="button button-primary full-width" data-action="replace-background">Replace background</button></div></details><details class="panel-accordion" id="drawing-accordion" data-context="brush"><summary class="section-heading"><span>Brush controls</span><span class="muted">Paint</span></summary><div class="accordion-body"><label class="property-field">Brush size · <output id="brush-size-value">8</output><input id="brush-size" type="range" min="1" max="80" value="8" /></label><label class="property-field">Opacity · <output id="brush-opacity-value">100%</output><input id="brush-opacity" type="range" min="0" max="100" value="100" /></label><label class="property-field">Color<input id="drawing-color" type="color" value="#0e9c81" /></label><button class="button button-secondary full-width" id="brush-reset" type="button">Reset brush</button></div></details><details class="panel-accordion" id="eraser-accordion" data-context="eraser"><summary class="section-heading"><span>Eraser controls</span><span class="muted">Remove</span></summary><div class="accordion-body"><p class="context-help">Erase marks from the active layer without changing the original image.</p><label class="property-field">Eraser size · <output id="eraser-size-value">8</output><input id="eraser-size" type="range" min="1" max="80" value="8" /></label><label class="property-field">Opacity · <output id="eraser-opacity-value">100%</output><input id="eraser-opacity" type="range" min="0" max="100" value="100" /></label><button class="button button-secondary full-width" id="eraser-reset" type="button">Reset eraser</button></div></details><details class="panel-accordion" id="quick-accordion"><summary class="section-heading"><span>More tools</span><span class="muted">⌘</span></summary><div class="accordion-body"><button class="list-action" data-panel="filters"><span class="action-icon">✧</span><span>Browse filters</span><b>›</b></button><button class="list-action" data-panel="background"><span class="action-icon">▧</span><span>Remove background</span><b>›</b></button></div></details></div></section>
-          <section class="inspector-content" id="insights-panel" role="tabpanel" aria-labelledby="analysis-heading" hidden><div class="panel-heading"><div><span class="eyebrow">Inspector</span><h2 id="analysis-heading">Image Intelligence</h2></div></div><div class="section-heading"><span>Status</span><span id="analysis-status" class="muted" role="status" aria-live="polite">—</span></div><div class="accordion-body"><p class="analysis-intro">Get a quality summary, findings, and practical improvement suggestions for this image.</p><button class="button button-secondary full-width" data-action="analyze-image" data-requires-image style="margin-top:0">🔬 Analyze image</button><div id="analysis-quality" class="analysis-quality" hidden><span>Quality score</span><strong id="analysis-quality-score">—</strong></div><div id="analysis-metrics" class="analysis-metrics" hidden></div><div id="analysis-findings" hidden></div><div id="suggestion-list" class="suggestion-list" role="list" aria-label="Smart suggestions"><p class="empty-panel-copy" id="suggestion-empty">Run the analysis to see suggested improvements.</p></div><div id="suggestion-card" class="suggestion-card" hidden><div class="section-heading"><span>Suggestion</span><span id="suggestion-type" class="muted"></span></div><p class="applied-line" id="suggestion-reason"></p><p class="applied-line" id="suggestion-confidence"></p><div id="suggestion-source" class="explain-block"></div><div id="suggestion-evidence" class="explain-block"></div><div id="suggestion-parameters" class="explain-block"></div><img id="suggestion-preview" class="suggestion-preview" hidden alt="Suggestion preview" /><div class="bg-row"><button class="button button-secondary" data-action="preview-suggestion">Preview</button><button class="button button-secondary" data-action="dismiss-suggestion">Dismiss</button><button class="button button-primary" data-action="apply-suggestion">Apply</button></div></div></div></section><section class="inspector-content" id="layers-panel" role="tabpanel" aria-labelledby="layers-panel-label" hidden><div class="panel-heading"><div><span class="eyebrow">Composition</span><h2 id="layers-panel-label">Layers <span class="count-pill" id="layer-count">0</span></h2></div></div><div class="layer-add-row"><button class="button button-secondary" data-action="add-image-layer">🖼 Image</button><button class="button button-secondary" data-action="add-shape-layer">▭ Shape</button><button class="button button-secondary" data-action="add-text-layer">T Text</button></div><div class="empty-panel" id="layers-empty"><div class="panel-icon">▱</div><strong>Your canvas is clear</strong><p>Draw, add shapes, text or images and they appear here as layers.</p></div><div id="layers-list" class="layers-list"></div><input type="file" id="layer-image-input" accept="image/png,image/jpeg,image/webp,image/bmp" hidden /></section>
-          <section class="inspector-content" id="pipeline-panel" role="tabpanel" aria-labelledby="pipeline-heading" role="region" aria-labelledby="pipeline-heading" hidden><div class="panel-heading"><div><span class="eyebrow">Non-destructive editing</span><h2 id="pipeline-heading">Processing pipeline</h2></div><span id="pipeline-version" class="muted">v1</span></div><div class="pipeline-add-row"><select id="pipeline-operation"><option value="brightness">Brightness</option><option value="contrast">Contrast</option><option value="saturation">Saturation</option><option value="gamma">Tone balance</option><option value="blur">Soft focus</option><option value="sharpen">Detail sharpen</option><option value="grayscale">Black &amp; white</option><option value="negative">Invert colors</option><option value="threshold">High contrast</option><option value="sobel">Detail boost</option><option value="laplacian">Edge enhance</option><option value="median-filter">Noise reducer</option><option value="morphology">Texture refine</option></select><button class="button button-primary" data-action="pipeline-add">Add operation</button></div><p class="applied-line" id="pipeline-hint">Build a reusable ordered list of operations. Changes are saved without modifying the current image.</p><div class="bg-row pipeline-actions"><button class="button button-secondary" data-action="pipeline-preview">Preview</button><button class="button button-primary" data-action="pipeline-apply">Apply pipeline</button></div><div id="pipeline-preview-status" class="applied-line" role="status" aria-live="polite" hidden></div><button class="button button-secondary pipeline-retry" data-action="pipeline-retry" hidden>Retry connection</button><div id="pipeline-list" class="pipeline-list" role="list" aria-live="polite"></div></section><section class="inspector-content" id="history-panel" role="tabpanel" aria-labelledby="history-panel-label" hidden><div class="panel-heading"><div><span class="eyebrow">Timeline</span><h2 id="history-panel-label">History</h2></div><div class="history-actions"><button class="icon-button" data-action="history-undo" title="Undo last Python step">↶</button><button class="icon-button" data-action="history-redo" title="Redo next step">↷</button><button class="icon-button" data-action="history-clear" title="Clear history">🗑</button></div></div><p class="applied-line" id="history-hint">Every Python operation is recorded here. Click an entry to jump back to it.</p><div id="history-list" class="history-list"></div><div class="history-compare-controls"><label>Before<select id="history-before"></select></label><label>After<select id="history-after"></select></label><div class="bg-row"><button class="button button-secondary" data-action="history-compare">Compare</button><button class="button button-secondary" data-action="history-diff">Diff map</button></div></div><details class="panel-accordion process-disclosure" id="process-disclosure"><summary class="section-heading"><span>Process</span><span class="muted">Technical details</span></summary><div class="accordion-body"><p class="applied-line">Open the full processing pipeline only when you need technical control.</p><button class="button button-secondary full-width" data-panel="pipeline">Open Process details</button></div></details><div id="history-comparison" class="history-comparison" hidden><div class="history-compare-images"><figure><figcaption>Before</figcaption><img id="history-before-image" alt="Before history state" /></figure><figure><figcaption>After</figcaption><img id="history-after-image" alt="After history state" /></figure></div><img id="history-diff-image" class="history-diff-image" alt="Difference map" hidden /></div></section></aside>
+          <div class="inspector-tab-strip">
+            <button
+              class="tab-scroll-button"
+              data-tab-scroll="prev"
+              aria-label="Show previous inspector tabs"
+              title="Previous tabs"
+            >
+              ‹
+            </button>
+            <div
+              class="inspector-tabs"
+              role="tablist"
+              aria-label="Editor surfaces. Scroll horizontally for more tabs."
+            >
+              <button
+                id="edit-tab"
+                class="inspector-tab is-active"
+                aria-selected="true"
+                data-inspector="edit"
+                aria-controls="edit-panel"
+                role="tab"
+              >
+                Edit</button
+              ><button
+                id="layers-tab"
+                aria-selected="false"
+                class="inspector-tab"
+                data-inspector="layers"
+                aria-controls="layers-panel"
+                role="tab"
+              >
+                Layers <span class="count-pill">0</span></button
+              ><button
+                id="insights-tab"
+                aria-selected="false"
+                class="inspector-tab"
+                data-inspector="insights"
+                aria-controls="insights-panel"
+                role="tab"
+              >
+                Insights</button
+              ><button
+                id="history-tab"
+                aria-selected="false"
+                class="inspector-tab"
+                data-inspector="history"
+                aria-controls="history-panel"
+                role="tab"
+              >
+                History
+              </button>
+            </div>
+            <button
+              class="tab-scroll-button"
+              data-tab-scroll="next"
+              aria-label="Show more inspector tabs"
+              title="More tabs"
+            >
+              ›
+            </button>
+          </div>
+          <section
+            class="inspector-content"
+            id="edit-panel"
+            role="tabpanel"
+            aria-labelledby="edit-panel-label"
+          >
+            <div class="panel-heading">
+              <div>
+                <span class="eyebrow">Selected object</span>
+                <h2 id="edit-panel-label">Edit</h2>
+              </div>
+              <button class="more-button" aria-label="More property options">•••</button>
+            </div>
+            <div id="edit-context-stack" class="edit-context-stack" aria-live="polite"></div>
+            <div class="inspector-quick-actions" aria-label="Quick actions" data-contextual-actions>
+              <span class="quick-actions-label">Quick actions</span>
+              <div class="quick-actions-grid">
+                <button class="quick-action" data-panel="smart-crop" data-context="image">
+                  <span>⌗</span><small>Smart Crop</small></button
+                ><button class="quick-action" data-panel="adjustments" data-context="image">
+                  <span>◐</span><small>Adjust</small></button
+                ><button class="quick-action" data-panel="filters" data-context="image">
+                  <span>✧</span><small>Enhance</small></button
+                ><button class="quick-action" data-panel="background" data-context="image">
+                  <span>▧</span><small>Background</small></button
+                ><button class="quick-action" data-panel="pipeline">
+                  <span>≋</span><small>Pipeline</small></button
+                ><button class="quick-action" data-panel="insights" data-context="image">
+                  <span>◌</span><small>Intelligence</small>
+                </button>
+              </div>
+            </div>
+            <div class="empty-panel" id="object-empty">
+              <div class="panel-icon">⌁</div>
+              <strong id="edit-empty-title">Nothing selected</strong>
+              <p id="edit-empty-copy">Select an object or choose an editing tool.</p>
+            </div>
+            <div id="object-properties" hidden>
+              <div class="section-heading">
+                <span>Selected layer</span><span id="obj-type" class="muted">—</span>
+              </div>
+              <label class="property-field">Name<input id="obj-name" type="text" /></label>
+              <div class="obj-grid">
+                <label>X<input id="obj-x" type="number" /></label
+                ><label>Y<input id="obj-y" type="number" /></label
+                ><label>W<input id="obj-w" type="number" min="8" /></label
+                ><label>H<input id="obj-h" type="number" min="8" /></label>
+              </div>
+              <label class="property-field"
+                >Rotation<input id="obj-rotation" type="number" min="0" max="360" /></label
+              ><label class="property-field"
+                >Opacity · <span id="obj-opacity-val">100%</span
+                ><input id="obj-opacity" type="range" min="0" max="100" value="100" /></label
+              ><label class="property-field">Blend mode<select id="obj-blend"></select></label>
+              <div class="obj-actions">
+                <button class="button button-secondary" id="obj-duplicate">Duplicate</button
+                ><button class="button button-secondary danger" id="obj-delete">Delete</button>
+              </div>
+            </div>
+            <div class="panel-section">
+              <details
+                class="panel-accordion smart-crop-accordion"
+                id="smart-crop-accordion"
+                data-context="crop"
+              >
+                <summary class="section-heading">
+                  <span>Smart Crop</span><span id="smart-crop-status" class="muted">Ready</span>
+                </summary>
+                <div class="accordion-body">
+                  <label class="property-field"
+                    >Aspect ratio<select id="smart-crop-ratio">
+                      <option value="original">Original</option>
+                      <option value="1:1">1:1 Square</option>
+                      <option value="4:5">4:5 Portrait</option>
+                      <option value="5:4">5:4 Landscape</option>
+                      <option value="16:9">16:9 Wide</option>
+                      <option value="9:16">9:16 Story</option>
+                      <option value="3:2">3:2 Photo</option>
+                      <option value="2:3">2:3 Portrait</option>
+                    </select></label
+                  >
+                  <div class="bg-row">
+                    <button
+                      class="button button-secondary"
+                      data-action="smart-crop-preview"
+                      data-smart-crop-action
+                    >
+                      Preview framing</button
+                    ><button
+                      class="button button-primary"
+                      data-action="smart-crop-apply"
+                      data-smart-crop-action
+                    >
+                      Apply framing
+                    </button>
+                  </div>
+                  <button
+                    class="button button-ghost full-width"
+                    data-action="smart-crop-cancel"
+                    data-smart-crop-action
+                  >
+                    Clear framing preview</button
+                  ><img
+                    id="smart-crop-preview"
+                    class="smart-crop-preview"
+                    alt="Smart Crop preview"
+                    hidden
+                  />
+                </div>
+              </details>
+              <details class="panel-accordion" id="adjustments-accordion" open data-context="image">
+                <summary class="section-heading">
+                  <span>Appearance &amp; adjustments</span
+                  ><span id="adjustment-summary" class="muted">Neutral</span>
+                </summary>
+                <div class="accordion-body">
+                  <div class="preview-row">
+                    <label class="check-row compact"
+                      ><input id="preview-toggle" type="checkbox" checked /> Live preview</label
+                    ><button
+                      class="mini-button wide"
+                      data-action="toggle-before-after"
+                      title="Before / After comparison"
+                    >
+                      ◐ Before/After
+                    </button>
+                  </div>
+                  <div class="adjustment-row">
+                    <label class="property-field"
+                      >Brightness<input
+                        data-adjustment="brightness"
+                        type="range"
+                        min="0"
+                        max="200"
+                        value="100" /></label
+                    ><output class="adjustment-value" data-value-for="brightness">100</output
+                    ><button class="mini-button" data-reset="brightness" title="Reset brightness">
+                      ↺
+                    </button>
+                  </div>
+                  <div class="adjustment-row">
+                    <label class="property-field"
+                      >Contrast<input
+                        data-adjustment="contrast"
+                        type="range"
+                        min="0"
+                        max="200"
+                        value="100" /></label
+                    ><output class="adjustment-value" data-value-for="contrast">100</output
+                    ><button class="mini-button" data-reset="contrast" title="Reset contrast">
+                      ↺
+                    </button>
+                  </div>
+                  <div class="adjustment-row">
+                    <label class="property-field"
+                      >Saturation<input
+                        data-adjustment="saturation"
+                        type="range"
+                        min="0"
+                        max="200"
+                        value="100" /></label
+                    ><output class="adjustment-value" data-value-for="saturation">100</output
+                    ><button class="mini-button" data-reset="saturation" title="Reset saturation">
+                      ↺
+                    </button>
+                  </div>
+                  <div class="adjustment-row">
+                    <label class="property-field"
+                      >Blur<input
+                        data-adjustment="blur"
+                        type="range"
+                        min="0"
+                        max="20"
+                        value="0" /></label
+                    ><output class="adjustment-value" data-value-for="blur">0px</output
+                    ><button class="mini-button" data-reset="blur" title="Reset blur">↺</button>
+                  </div>
+                  <div class="adjustment-row">
+                    <label class="property-field"
+                      >Sharpen<input
+                        data-adjustment="sharpen"
+                        type="range"
+                        min="0"
+                        max="5"
+                        value="0" /></label
+                    ><output class="adjustment-value" data-value-for="sharpen">0</output
+                    ><button class="mini-button" data-reset="sharpen" title="Reset sharpen">
+                      ↺
+                    </button>
+                  </div>
+                  <label class="check-row compact"
+                    ><input data-adjustment="grayscale" type="checkbox" /> Grayscale</label
+                  ><label class="check-row compact"
+                    ><input data-adjustment="negative" type="checkbox" /> Negative</label
+                  ><button class="button button-primary full-width" data-action="apply-adjustments">
+                    Apply adjustments</button
+                  ><button
+                    class="button button-secondary full-width"
+                    data-action="reset-adjustments"
+                  >
+                    Reset all
+                  </button>
+                  <p class="applied-line" id="applied-line">
+                    Nothing applied yet — press Apply to bake with Python.
+                  </p>
+                </div>
+              </details>
+              <details class="panel-accordion" id="filters-accordion" data-context="image">
+                <summary class="section-heading">
+                  <span>Enhance &amp; inspect</span
+                  ><span id="filters-status" class="muted">Ready</span>
+                </summary>
+                <div class="accordion-body">
+                  <div class="section-heading quick-heading"><span>Color balance</span></div>
+                  <button
+                    class="button button-secondary full-width"
+                    data-action="compute-histogram"
+                    data-filter-action
+                  >
+                    Analyze color balance
+                  </button>
+                  <div id="histogram-output" class="analysis-metrics" aria-live="polite">
+                    <p class="empty-panel-copy">No color analysis yet.</p>
+                  </div>
+                  <div class="section-heading quick-heading"><span>Detail &amp; edge</span></div>
+                  <details class="advanced-disclosure" id="filters-detail-advanced">
+                    <summary class="section-heading">
+                      <span>Advanced</span><span class="muted">Detail parameters</span>
+                    </summary>
+                    <div class="advanced-body">
+                      <p class="advanced-help">
+                        Adjust the processing kernel only when you need finer control.
+                      </p>
+                      <label class="property-field"
+                        >Detail boost<select id="sobel-ksize">
+                          <option value="1">1 × 1</option>
+                          <option value="3" selected>3 × 3</option>
+                          <option value="5">5 × 5</option>
+                          <option value="7">7 × 7</option>
+                        </select></label
+                      >
+                    </div>
+                  </details>
+                  <div class="bg-row">
+                    <button
+                      class="button button-secondary"
+                      data-action="apply-sobel"
+                      data-filter-action
+                    >
+                      Apply detail boost</button
+                    ><button
+                      class="button button-secondary"
+                      data-action="apply-laplacian"
+                      data-filter-action
+                    >
+                      Apply edge detail
+                    </button>
+                  </div>
+                  <div class="section-heading quick-heading"><span>Noise &amp; texture</span></div>
+                  <details class="advanced-disclosure" id="filters-noise-advanced">
+                    <summary class="section-heading">
+                      <span>Advanced</span><span class="muted">Noise parameters</span>
+                    </summary>
+                    <div class="advanced-body">
+                      <p class="advanced-help">Choose the kernel size used by noise reduction.</p>
+                      <label class="property-field"
+                        >Noise reduction<select id="median-ksize">
+                          <option value="1">1 × 1</option>
+                          <option value="3" selected>3 × 3</option>
+                          <option value="5">5 × 5</option>
+                          <option value="7">7 × 7</option>
+                          <option value="9">9 × 9</option>
+                          <option value="11">11 × 11</option>
+                          <option value="13">13 × 13</option>
+                          <option value="15">15 × 15</option>
+                        </select></label
+                      >
+                    </div>
+                  </details>
+                  <button
+                    class="button button-secondary full-width"
+                    data-action="apply-median-filter"
+                    data-filter-action
+                  >
+                    Reduce noise
+                  </button>
+                  <details class="advanced-disclosure" id="filters-texture-advanced">
+                    <summary class="section-heading">
+                      <span>Advanced</span><span class="muted">Texture parameters</span>
+                    </summary>
+                    <div class="advanced-body">
+                      <p class="advanced-help">
+                        Technical morphology controls for refining mask and texture edges.
+                      </p>
+                      <label class="property-field"
+                        >Texture refine<select id="morphology-operation">
+                          <option value="erode">Erode</option>
+                          <option value="dilate">Dilate</option>
+                          <option value="open">Open</option>
+                          <option value="close">Close</option>
+                        </select></label
+                      ><label class="property-field"
+                        >Refinement strength<select id="morphology-ksize">
+                          <option value="1">1 × 1</option>
+                          <option value="3" selected>3 × 3</option>
+                          <option value="5">5 × 5</option>
+                          <option value="7">7 × 7</option>
+                          <option value="9">9 × 9</option>
+                          <option value="11">11 × 11</option>
+                          <option value="13">13 × 13</option>
+                          <option value="15">15 × 15</option>
+                        </select></label
+                      >
+                    </div>
+                  </details>
+                  <button
+                    class="button button-secondary full-width"
+                    data-action="apply-morphology"
+                    data-filter-action
+                  >
+                    Refine texture
+                  </button>
+                  <div class="section-heading quick-heading"><span>Tone &amp; range</span></div>
+                  <details class="advanced-disclosure" id="filters-tone-advanced">
+                    <summary class="section-heading">
+                      <span>Advanced</span><span class="muted">Tone parameters</span>
+                    </summary>
+                    <div class="advanced-body">
+                      <p class="advanced-help">
+                        Fine-tune the numeric tone transform when the guided action is not enough.
+                      </p>
+                      <label class="property-field"
+                        >Gamma<input
+                          id="gamma-value"
+                          type="number"
+                          min="0.1"
+                          max="5"
+                          step="0.1"
+                          value="1" /></label
+                      ><button
+                        class="button button-secondary full-width"
+                        data-action="apply-gamma"
+                        data-filter-action
+                      >
+                        Balance tone</button
+                      ><label class="property-field"
+                        >Threshold<input
+                          id="threshold-value"
+                          type="number"
+                          min="0"
+                          max="255"
+                          step="1"
+                          value="128"
+                      /></label>
+                    </div>
+                  </details>
+                  <button
+                    class="button button-secondary full-width"
+                    data-action="apply-threshold"
+                    data-filter-action
+                  >
+                    Create high contrast
+                  </button>
+                </div>
+              </details>
+              <details class="panel-accordion" id="background-accordion" data-context="image">
+                <summary class="section-heading">
+                  <span>Background &amp; retouch</span><span class="muted">Alpha</span>
+                </summary>
+                <div class="accordion-body">
+                  <button
+                    class="button button-secondary full-width"
+                    data-action="pick-color"
+                    style="margin-top: 0"
+                  >
+                    💧 Pick color from image</button
+                  ><label class="property-field"
+                    >Key color<input id="bg-key-color" type="color" value="#ffffff"
+                  /></label>
+                  <details class="advanced-disclosure" id="background-mask-advanced">
+                    <summary class="section-heading">
+                      <span>Advanced</span><span class="muted">Mask parameters</span>
+                    </summary>
+                    <div class="advanced-body">
+                      <p class="advanced-help">
+                        Fine-tune the mask only when the guided background removal needs adjustment.
+                      </p>
+                      <label class="property-field"
+                        >Tolerance · <span id="bg-tolerance-val">25</span
+                        ><input
+                          data-bg-param="tolerance"
+                          type="range"
+                          min="0"
+                          max="100"
+                          value="25" /></label
+                      ><label class="property-field"
+                        >Feather · <span id="bg-feather-val">2</span
+                        ><input
+                          data-bg-param="feather"
+                          type="range"
+                          min="0"
+                          max="25"
+                          value="2" /></label
+                      ><label class="property-field"
+                        >Smooth · <span id="bg-smooth-val">1</span
+                        ><input
+                          data-bg-param="smooth"
+                          type="range"
+                          min="0"
+                          max="5"
+                          value="1" /></label
+                      ><label class="check-row compact"
+                        ><input id="bg-invert" type="checkbox" /> Invert mask</label
+                      >
+                    </div>
+                  </details>
+                  <div class="bg-row">
+                    <button class="button button-secondary" data-action="preview-mask">
+                      Preview mask</button
+                    ><button class="button button-secondary" data-action="clear-mask">Clear</button>
+                  </div>
+                  <button class="button button-primary full-width" data-action="remove-background">
+                    Remove background
+                  </button>
+                  <div class="section-heading quick-heading"><span>Replace with</span></div>
+                  <label class="property-field"
+                    >Solid color<input id="bg-replace-color" type="color" value="#ffffff" /></label
+                  ><label class="property-field"
+                    >Category<select id="bg-category">
+                      <option value="all">All backgrounds</option>
+                      <option value="general">General</option>
+                      <option value="product">Product</option>
+                      <option value="studio">Studio</option>
+                      <option value="social">Social</option>
+                      <option value="seasonal">Seasonal</option>
+                    </select></label
+                  ><label class="property-field"
+                    >Library<select id="bg-library">
+                      <option value="">— choose background —</option>
+                    </select></label
+                  >
+                  <div
+                    id="bg-library-grid"
+                    class="bg-library-grid"
+                    aria-label="Background thumbnails"
+                  ></div>
+                  <button
+                    class="button button-secondary full-width"
+                    data-action="upload-background"
+                  >
+                    ⬆ Upload background</button
+                  ><input
+                    type="file"
+                    id="bg-upload-input"
+                    accept="image/png,image/jpeg,image/webp,image/bmp"
+                    hidden
+                  /><button
+                    class="button button-secondary full-width"
+                    data-action="preview-replacement"
+                  >
+                    Preview replacement
+                  </button>
+                  <details class="advanced-disclosure" id="background-tuning-advanced">
+                    <summary class="section-heading">
+                      <span>Advanced</span><span class="muted">Background tuning</span>
+                    </summary>
+                    <div class="advanced-body">
+                      <p class="advanced-help">
+                        Control blur, placement, scale, and shadow for a replacement background.
+                      </p>
+                      <div class="section-heading quick-heading">
+                        <span>Background tuning</span><span class="muted">Live values</span>
+                      </div>
+                      <label class="property-field"
+                        >Background blur · <span id="bg-blur-val">0</span
+                        ><input
+                          data-bg-param="background_blur"
+                          type="range"
+                          min="0"
+                          max="40"
+                          value="0" /></label
+                      ><label class="property-field"
+                        >Background scale · <span id="bg-scale-val">1</span
+                        ><input
+                          data-bg-param="background_scale"
+                          type="range"
+                          min="0.1"
+                          max="5"
+                          step="0.1"
+                          value="1"
+                      /></label>
+                      <div class="obj-grid">
+                        <label
+                          >X offset<input
+                            data-bg-param="background_x"
+                            id="bg-offset-x"
+                            type="number"
+                            min="-10000"
+                            max="10000"
+                            value="0" /></label
+                        ><label
+                          >Y offset<input
+                            data-bg-param="background_y"
+                            id="bg-offset-y"
+                            type="number"
+                            min="-10000"
+                            max="10000"
+                            value="0"
+                        /></label>
+                      </div>
+                      <label class="check-row compact"
+                        ><input id="bg-shadow" type="checkbox" /> Add foreground shadow</label
+                      ><label class="property-field"
+                        >Shadow opacity · <span id="bg-shadow-opacity-val">25%</span
+                        ><input
+                          data-bg-param="shadow_opacity"
+                          type="range"
+                          min="0"
+                          max="100"
+                          value="25" /></label
+                      ><label class="property-field"
+                        >Shadow blur · <span id="bg-shadow-blur-val">12</span
+                        ><input
+                          data-bg-param="shadow_blur"
+                          type="range"
+                          min="0"
+                          max="40"
+                          value="12" /></label
+                      ><label class="property-field"
+                        >Shadow Y offset<input
+                          data-bg-param="shadow_offset_y"
+                          type="number"
+                          min="-10000"
+                          max="10000"
+                          value="10"
+                      /></label>
+                    </div>
+                  </details>
+                  <div class="bg-row">
+                    <button class="button button-secondary" data-action="cancel-background">
+                      Cancel preview</button
+                    ><button class="button button-secondary" data-action="reset-background">
+                      Reset
+                    </button>
+                  </div>
+                  <button class="button button-primary full-width" data-action="replace-background">
+                    Replace background
+                  </button>
+                </div>
+              </details>
+              <details class="panel-accordion" id="drawing-accordion" data-context="brush">
+                <summary class="section-heading">
+                  <span>Brush controls</span><span class="muted">Paint</span>
+                </summary>
+                <div class="accordion-body">
+                  <label class="property-field"
+                    >Brush size · <output id="brush-size-value">8</output
+                    ><input id="brush-size" type="range" min="1" max="80" value="8" /></label
+                  ><label class="property-field"
+                    >Opacity · <output id="brush-opacity-value">100%</output
+                    ><input id="brush-opacity" type="range" min="0" max="100" value="100" /></label
+                  ><label class="property-field"
+                    >Color<input id="drawing-color" type="color" value="#0e9c81" /></label
+                  ><button
+                    class="button button-secondary full-width"
+                    id="brush-reset"
+                    type="button"
+                  >
+                    Reset brush
+                  </button>
+                </div>
+              </details>
+              <details class="panel-accordion" id="eraser-accordion" data-context="eraser">
+                <summary class="section-heading">
+                  <span>Eraser controls</span><span class="muted">Remove</span>
+                </summary>
+                <div class="accordion-body">
+                  <p class="context-help">
+                    Erase marks from the active layer without changing the original image.
+                  </p>
+                  <label class="property-field"
+                    >Eraser size · <output id="eraser-size-value">8</output
+                    ><input id="eraser-size" type="range" min="1" max="80" value="8" /></label
+                  ><label class="property-field"
+                    >Opacity · <output id="eraser-opacity-value">100%</output
+                    ><input id="eraser-opacity" type="range" min="0" max="100" value="100" /></label
+                  ><button
+                    class="button button-secondary full-width"
+                    id="eraser-reset"
+                    type="button"
+                  >
+                    Reset eraser
+                  </button>
+                </div>
+              </details>
+              <details class="panel-accordion" id="quick-accordion">
+                <summary class="section-heading">
+                  <span>More tools</span><span class="muted">⌘</span>
+                </summary>
+                <div class="accordion-body">
+                  <button class="list-action" data-panel="filters">
+                    <span class="action-icon">✧</span><span>Browse filters</span><b>›</b></button
+                  ><button class="list-action" data-panel="background">
+                    <span class="action-icon">▧</span><span>Remove background</span><b>›</b>
+                  </button>
+                </div>
+              </details>
+            </div>
+          </section>
+          <section
+            class="inspector-content"
+            id="insights-panel"
+            role="tabpanel"
+            aria-labelledby="analysis-heading"
+            hidden
+          >
+            <div class="panel-heading">
+              <div>
+                <span class="eyebrow">Inspector</span>
+                <h2 id="analysis-heading">Image Intelligence</h2>
+              </div>
+            </div>
+            <div class="section-heading">
+              <span>Status</span
+              ><span id="analysis-status" class="muted" role="status" aria-live="polite">—</span>
+            </div>
+            <div class="accordion-body">
+              <p class="analysis-intro">
+                Get a quality summary, findings, and practical improvement suggestions for this
+                image.
+              </p>
+              <button
+                class="button button-secondary full-width"
+                data-action="analyze-image"
+                data-requires-image
+                style="margin-top: 0"
+              >
+                🔬 Analyze image
+              </button>
+              <div id="analysis-quality" class="analysis-quality" hidden>
+                <span>Quality score</span><strong id="analysis-quality-score">—</strong>
+              </div>
+              <div id="analysis-metrics" class="analysis-metrics" hidden></div>
+              <div id="analysis-findings" hidden></div>
+              <div
+                id="suggestion-list"
+                class="suggestion-list"
+                role="list"
+                aria-label="Smart suggestions"
+              >
+                <p class="empty-panel-copy" id="suggestion-empty">
+                  Run the analysis to see suggested improvements.
+                </p>
+              </div>
+              <div id="suggestion-card" class="suggestion-card" hidden>
+                <div class="section-heading">
+                  <span>Suggestion</span><span id="suggestion-type" class="muted"></span>
+                </div>
+                <p class="applied-line" id="suggestion-reason"></p>
+                <p class="applied-line" id="suggestion-confidence"></p>
+                <div id="suggestion-source" class="explain-block"></div>
+                <div id="suggestion-evidence" class="explain-block"></div>
+                <div id="suggestion-parameters" class="explain-block"></div>
+                <img
+                  id="suggestion-preview"
+                  class="suggestion-preview"
+                  hidden
+                  alt="Suggestion preview"
+                />
+                <div class="bg-row">
+                  <button class="button button-secondary" data-action="preview-suggestion">
+                    Preview</button
+                  ><button class="button button-secondary" data-action="dismiss-suggestion">
+                    Dismiss</button
+                  ><button class="button button-primary" data-action="apply-suggestion">
+                    Apply
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section
+            class="inspector-content"
+            id="layers-panel"
+            role="tabpanel"
+            aria-labelledby="layers-panel-label"
+            hidden
+          >
+            <div class="panel-heading">
+              <div>
+                <span class="eyebrow">Composition</span>
+                <h2 id="layers-panel-label">
+                  Layers <span class="count-pill" id="layer-count">0</span>
+                </h2>
+              </div>
+            </div>
+            <div class="layer-add-row">
+              <button class="button button-secondary" data-action="add-image-layer">🖼 Image</button
+              ><button class="button button-secondary" data-action="add-shape-layer">▭ Shape</button
+              ><button class="button button-secondary" data-action="add-text-layer">T Text</button>
+            </div>
+            <div class="empty-panel" id="layers-empty">
+              <div class="panel-icon">▱</div>
+              <strong>Your canvas is clear</strong>
+              <p>Draw, add shapes, text or images and they appear here as layers.</p>
+            </div>
+            <div id="layers-list" class="layers-list"></div>
+            <input
+              type="file"
+              id="layer-image-input"
+              accept="image/png,image/jpeg,image/webp,image/bmp"
+              hidden
+            />
+          </section>
+          <section
+            class="inspector-content"
+            id="pipeline-panel"
+            role="tabpanel"
+            aria-labelledby="pipeline-heading"
+            role="region"
+            aria-labelledby="pipeline-heading"
+            hidden
+          >
+            <div class="panel-heading">
+              <div>
+                <span class="eyebrow">Non-destructive editing</span>
+                <h2 id="pipeline-heading">Processing pipeline</h2>
+              </div>
+              <span id="pipeline-version" class="muted">v1</span>
+            </div>
+            <div class="pipeline-add-row">
+              <select id="pipeline-operation">
+                <option value="brightness">Brightness</option>
+                <option value="contrast">Contrast</option>
+                <option value="saturation">Saturation</option>
+                <option value="gamma">Tone balance</option>
+                <option value="blur">Soft focus</option>
+                <option value="sharpen">Detail sharpen</option>
+                <option value="grayscale">Black &amp; white</option>
+                <option value="negative">Invert colors</option>
+                <option value="threshold">High contrast</option>
+                <option value="sobel">Detail boost</option>
+                <option value="laplacian">Edge enhance</option>
+                <option value="median-filter">Noise reducer</option>
+                <option value="morphology">Texture refine</option></select
+              ><button class="button button-primary" data-action="pipeline-add">
+                Add operation
+              </button>
+            </div>
+            <p class="applied-line" id="pipeline-hint">
+              Build a reusable ordered list of operations. Changes are saved without modifying the
+              current image.
+            </p>
+            <div class="bg-row pipeline-actions">
+              <button class="button button-secondary" data-action="pipeline-preview">Preview</button
+              ><button class="button button-primary" data-action="pipeline-apply">
+                Apply pipeline
+              </button>
+            </div>
+            <div
+              id="pipeline-preview-status"
+              class="applied-line"
+              role="status"
+              aria-live="polite"
+              hidden
+            ></div>
+            <button
+              class="button button-secondary pipeline-retry"
+              data-action="pipeline-retry"
+              hidden
+            >
+              Retry connection
+            </button>
+            <div id="pipeline-list" class="pipeline-list" role="list" aria-live="polite"></div>
+          </section>
+          <section
+            class="inspector-content"
+            id="history-panel"
+            role="tabpanel"
+            aria-labelledby="history-panel-label"
+            hidden
+          >
+            <div class="panel-heading">
+              <div>
+                <span class="eyebrow">Timeline</span>
+                <h2 id="history-panel-label">History</h2>
+              </div>
+              <div class="history-actions">
+                <button
+                  class="icon-button"
+                  data-action="history-undo"
+                  title="Undo last Python step"
+                >
+                  ↶</button
+                ><button class="icon-button" data-action="history-redo" title="Redo next step">
+                  ↷</button
+                ><button class="icon-button" data-action="history-clear" title="Clear history">
+                  🗑
+                </button>
+              </div>
+            </div>
+            <p class="applied-line" id="history-hint">
+              Every Python operation is recorded here. Click an entry to jump back to it.
+            </p>
+            <div id="history-list" class="history-list"></div>
+            <div class="history-compare-controls">
+              <label>Before<select id="history-before"></select></label
+              ><label>After<select id="history-after"></select></label>
+              <div class="bg-row">
+                <button class="button button-secondary" data-action="history-compare">
+                  Compare</button
+                ><button class="button button-secondary" data-action="history-diff">
+                  Diff map
+                </button>
+              </div>
+            </div>
+            <details class="panel-accordion process-disclosure" id="process-disclosure">
+              <summary class="section-heading">
+                <span>Process</span><span class="muted">Technical details</span>
+              </summary>
+              <div class="accordion-body">
+                <p class="applied-line">
+                  Open the full processing pipeline only when you need technical control.
+                </p>
+                <button class="button button-secondary full-width" data-panel="pipeline">
+                  Open Process details
+                </button>
+              </div>
+            </details>
+            <div id="history-comparison" class="history-comparison" hidden>
+              <div class="history-compare-images">
+                <figure>
+                  <figcaption>Before</figcaption>
+                  <img id="history-before-image" alt="Before history state" />
+                </figure>
+                <figure>
+                  <figcaption>After</figcaption>
+                  <img id="history-after-image" alt="After history state" />
+                </figure>
+              </div>
+              <img id="history-diff-image" class="history-diff-image" alt="Difference map" hidden />
+            </div>
+          </section>
+        </aside>
       </div>
     </div>
     <input type="file" id="file-input" accept="image/png,image/jpeg,image/webp,image/bmp" hidden />
-    <div id="resize-dialog" class="dialog-backdrop" hidden><form id="resize-form" class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="resize-dialog-heading"><div class="dialog-heading"><div><span class="eyebrow">Canvas setup</span><h2 id="resize-dialog-heading">Resize canvas</h2></div><button type="button" id="resize-cancel" class="icon-button" aria-label="Close">×</button></div><p class="dialog-copy">Set the working dimensions for your image canvas.</p><div class="resize-fields"><label>Width<input id="resize-width" type="number" min="1" max="12000" required /></label><span>×</span><label>Height<input id="resize-height" type="number" min="1" max="12000" required /></label></div><label class="check-row"><input id="resize-ratio" type="checkbox" checked /> Maintain aspect ratio</label><div class="dialog-actions"><button type="button" id="resize-cancel-secondary" class="button button-secondary">Cancel</button><button class="button button-primary" type="submit">Apply resize</button></div></form></div>
+    <div id="resize-dialog" class="dialog-backdrop" hidden>
+      <form
+        id="resize-form"
+        class="dialog-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="resize-dialog-heading"
+      >
+        <div class="dialog-heading">
+          <div>
+            <span class="eyebrow">Canvas setup</span>
+            <h2 id="resize-dialog-heading">Resize canvas</h2>
+          </div>
+          <button type="button" id="resize-cancel" class="icon-button" aria-label="Close">×</button>
+        </div>
+        <p class="dialog-copy">Set the working dimensions for your image canvas.</p>
+        <div class="resize-fields">
+          <label>Width<input id="resize-width" type="number" min="1" max="12000" required /></label
+          ><span>×</span
+          ><label
+            >Height<input id="resize-height" type="number" min="1" max="12000" required
+          /></label>
+        </div>
+        <label class="check-row"
+          ><input id="resize-ratio" type="checkbox" checked /> Maintain aspect ratio</label
+        >
+        <div class="dialog-actions">
+          <button type="button" id="resize-cancel-secondary" class="button button-secondary">
+            Cancel</button
+          ><button class="button button-primary" type="submit">Apply resize</button>
+        </div>
+      </form>
+    </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <div id="layer-menu" class="layer-menu" hidden></div>
-    <div id="confirm-dialog" class="dialog-backdrop" hidden><div class="dialog-card" role="alertdialog" aria-modal="true" aria-labelledby="confirm-dialog-heading" aria-describedby="confirm-dialog-body"><div class="dialog-heading"><div><span class="eyebrow">Careful</span><h2 id="confirm-dialog-heading">Are you sure?</h2></div><button type="button" id="confirm-cancel" class="icon-button" aria-label="Close">×</button></div><p class="dialog-copy" id="confirm-dialog-body">This cannot be undone.</p><div class="dialog-actions"><button type="button" id="confirm-cancel-secondary" class="button button-secondary">Cancel</button><button type="button" id="confirm-accept" class="button button-primary">Confirm</button></div></div></div>
-    <div id="shortcuts-dialog" class="dialog-backdrop" hidden><div class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="shortcuts-dialog-heading"><div class="dialog-heading"><div><span class="eyebrow">Keyboard</span><h2 id="shortcuts-dialog-heading">Shortcuts</h2></div><button type="button" id="shortcuts-cancel" class="icon-button" aria-label="Close">×</button></div><ul class="shortcuts-list"><li><kbd>V</kbd><span>Select tool</span></li><li><kbd>M</kbd><span>Move tool</span></li><li><kbd>C</kbd><span>Crop tool</span></li><li><kbd>B</kbd><span>Brush tool</span></li><li><kbd>E</kbd><span>Eraser tool</span></li><li><kbd>U</kbd><span>Shapes tool</span></li><li><kbd>T</kbd><span>Text tool</span></li><li><kbd>Ctrl</kbd>+<kbd>Z</kbd><span>Undo last step</span></li><li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd><span>Redo step</span></li><li><kbd>0</kbd><span>Fit canvas to workspace</span></li><li><kbd>1</kbd><span>Zoom to 100%</span></li><li><kbd>+</kbd> / <kbd>-</kbd><span>Zoom in and out</span></li><li><kbd>Esc</kbd><span>Close dialogs and menus</span></li></ul><div class="dialog-actions"><button type="button" id="shortcuts-cancel-secondary" class="button button-secondary">Close</button></div></div></div>
-    <div id="help-dialog" class="dialog-backdrop" hidden><div class="dialog-card help-dialog-card" role="dialog" aria-modal="true" aria-labelledby="help-dialog-heading" aria-describedby="help-dialog-copy"><div class="dialog-heading"><div><span class="eyebrow">Help</span><h2 id="help-dialog-heading">Learn IntelliCanvas</h2></div><button type="button" id="help-cancel" class="icon-button" aria-label="Close">×</button></div><p class="dialog-copy" id="help-dialog-copy">اقرأ الدليل الكامل لفهم أدوات المحرر، Inspector، الطبقات، التصدير، الاختصارات، وحل المشكلات الشائعة.</p><div class="help-dialog-links"><a class="button button-primary" href="assets/intellicanvas-user-guide-ar.pdf" download>Download user guide</a><a class="button button-secondary" href="assets/intellicanvas-user-guide-ar.pdf" target="_blank" rel="noopener">Open PDF</a></div><div class="dialog-actions"><button type="button" id="help-cancel-secondary" class="button button-secondary">Close</button></div></div></div>
-    <div id="text-popover" class="dialog-backdrop" hidden><form class="text-popover-card" role="dialog" aria-modal="true" aria-labelledby="text-popover-heading"><div class="dialog-heading"><div><span class="eyebrow">Canvas objects</span><h2 id="text-popover-heading">Add text</h2></div><button type="button" id="text-popover-cancel" class="icon-button" aria-label="Close">×</button></div><label class="property-field" for="text-popover-input">Text</label><input id="text-popover-input" type="text" placeholder="Type something…" autocomplete="off" aria-describedby="text-popover-hint" /><p class="dialog-copy" id="text-popover-hint">Press Enter to add, Esc to cancel. Arabic and Hebrew text is detected automatically.</p><div class="dialog-actions"><button type="button" id="text-popover-cancel-secondary" class="button button-secondary">Cancel</button><button type="submit" class="button button-primary" id="text-popover-submit">Add text</button></div></form></div>
-    <div id="export-dialog" class="dialog-backdrop" hidden><form id="export-form" class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="export-dialog-heading"><div class="dialog-heading"><div><span class="eyebrow">Deliver</span><h2 id="export-dialog-heading">Export image</h2></div><button type="button" id="export-cancel" class="icon-button" aria-label="Close">×</button></div><label class="property-field">Format<select id="export-format"><option value="png">PNG · transparency</option><option value="jpeg">JPEG</option><option value="webp">WEBP</option></select></label><label class="property-field" id="export-quality-field" hidden>Quality · <span id="export-quality-val">90</span><input id="export-quality" type="range" min="1" max="100" value="90" /></label><div class="obj-grid"><label>Width<input id="export-width" type="number" min="1" max="20000" /></label><label>Height<input id="export-height" type="number" min="1" max="20000" /></label></div><label class="check-row compact"><input id="export-ratio" type="checkbox" checked /> Maintain aspect ratio</label><label class="property-field">File name<input id="export-name" type="text" value="intellicanvas" /></label><div class="dialog-actions"><button type="button" id="export-cancel-secondary" class="button button-secondary">Cancel</button><button type="submit" class="button button-primary" id="export-submit">Export</button></div></form></div>
+    <div id="confirm-dialog" class="dialog-backdrop" hidden>
+      <div
+        class="dialog-card"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="confirm-dialog-heading"
+        aria-describedby="confirm-dialog-body"
+      >
+        <div class="dialog-heading">
+          <div>
+            <span class="eyebrow">Careful</span>
+            <h2 id="confirm-dialog-heading">Are you sure?</h2>
+          </div>
+          <button type="button" id="confirm-cancel" class="icon-button" aria-label="Close">
+            ×
+          </button>
+        </div>
+        <p class="dialog-copy" id="confirm-dialog-body">This cannot be undone.</p>
+        <div class="dialog-actions">
+          <button type="button" id="confirm-cancel-secondary" class="button button-secondary">
+            Cancel</button
+          ><button type="button" id="confirm-accept" class="button button-primary">Confirm</button>
+        </div>
+      </div>
+    </div>
+    <div id="shortcuts-dialog" class="dialog-backdrop" hidden>
+      <div
+        class="dialog-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="shortcuts-dialog-heading"
+      >
+        <div class="dialog-heading">
+          <div>
+            <span class="eyebrow">Keyboard</span>
+            <h2 id="shortcuts-dialog-heading">Shortcuts</h2>
+          </div>
+          <button type="button" id="shortcuts-cancel" class="icon-button" aria-label="Close">
+            ×
+          </button>
+        </div>
+        <ul class="shortcuts-list">
+          <li><kbd>V</kbd><span>Select tool</span></li>
+          <li><kbd>M</kbd><span>Move tool</span></li>
+          <li><kbd>C</kbd><span>Crop tool</span></li>
+          <li><kbd>B</kbd><span>Brush tool</span></li>
+          <li><kbd>E</kbd><span>Eraser tool</span></li>
+          <li><kbd>U</kbd><span>Shapes tool</span></li>
+          <li><kbd>T</kbd><span>Text tool</span></li>
+          <li><kbd>Ctrl</kbd>+<kbd>Z</kbd><span>Undo last step</span></li>
+          <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd><span>Redo step</span></li>
+          <li><kbd>0</kbd><span>Fit canvas to workspace</span></li>
+          <li><kbd>1</kbd><span>Zoom to 100%</span></li>
+          <li><kbd>+</kbd> / <kbd>-</kbd><span>Zoom in and out</span></li>
+          <li><kbd>Esc</kbd><span>Close dialogs and menus</span></li>
+        </ul>
+        <div class="dialog-actions">
+          <button type="button" id="shortcuts-cancel-secondary" class="button button-secondary">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+    <div id="help-dialog" class="dialog-backdrop" hidden>
+      <div
+        class="dialog-card help-dialog-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="help-dialog-heading"
+        aria-describedby="help-dialog-copy"
+      >
+        <div class="dialog-heading">
+          <div>
+            <span class="eyebrow">Help</span>
+            <h2 id="help-dialog-heading">Learn IntelliCanvas</h2>
+          </div>
+          <button type="button" id="help-cancel" class="icon-button" aria-label="Close">×</button>
+        </div>
+        <p class="dialog-copy" id="help-dialog-copy">
+          اقرأ الدليل الكامل لفهم أدوات المحرر، Inspector، الطبقات، التصدير، الاختصارات، وحل
+          المشكلات الشائعة.
+        </p>
+        <div class="help-dialog-links">
+          <a class="button button-primary" href="assets/intellicanvas-user-guide-ar.pdf" download
+            >Download user guide</a
+          ><a
+            class="button button-secondary"
+            href="assets/intellicanvas-user-guide-ar.pdf"
+            target="_blank"
+            rel="noopener"
+            >Open PDF</a
+          >
+        </div>
+        <div class="dialog-actions">
+          <button type="button" id="help-cancel-secondary" class="button button-secondary">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+    <div id="text-popover" class="dialog-backdrop" hidden>
+      <form
+        class="text-popover-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="text-popover-heading"
+      >
+        <div class="dialog-heading">
+          <div>
+            <span class="eyebrow">Canvas objects</span>
+            <h2 id="text-popover-heading">Add text</h2>
+          </div>
+          <button type="button" id="text-popover-cancel" class="icon-button" aria-label="Close">
+            ×
+          </button>
+        </div>
+        <label class="property-field" for="text-popover-input">Text</label
+        ><input
+          id="text-popover-input"
+          type="text"
+          placeholder="Type something…"
+          autocomplete="off"
+          aria-describedby="text-popover-hint"
+        />
+        <p class="dialog-copy" id="text-popover-hint">
+          Press Enter to add, Esc to cancel. Arabic and Hebrew text is detected automatically.
+        </p>
+        <div class="dialog-actions">
+          <button type="button" id="text-popover-cancel-secondary" class="button button-secondary">
+            Cancel</button
+          ><button type="submit" class="button button-primary" id="text-popover-submit">
+            Add text
+          </button>
+        </div>
+      </form>
+    </div>
+    <div id="export-dialog" class="dialog-backdrop" hidden>
+      <form
+        id="export-form"
+        class="dialog-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="export-dialog-heading"
+      >
+        <div class="dialog-heading">
+          <div>
+            <span class="eyebrow">Deliver</span>
+            <h2 id="export-dialog-heading">Export image</h2>
+          </div>
+          <button type="button" id="export-cancel" class="icon-button" aria-label="Close">×</button>
+        </div>
+        <label class="property-field"
+          >Format<select id="export-format">
+            <option value="png">PNG · transparency</option>
+            <option value="jpeg">JPEG</option>
+            <option value="webp">WEBP</option>
+          </select></label
+        ><label class="property-field" id="export-quality-field" hidden
+          >Quality · <span id="export-quality-val">90</span
+          ><input id="export-quality" type="range" min="1" max="100" value="90"
+        /></label>
+        <div class="obj-grid">
+          <label>Width<input id="export-width" type="number" min="1" max="20000" /></label
+          ><label>Height<input id="export-height" type="number" min="1" max="20000" /></label>
+        </div>
+        <label class="check-row compact"
+          ><input id="export-ratio" type="checkbox" checked /> Maintain aspect ratio</label
+        ><label class="property-field"
+          >File name<input id="export-name" type="text" value="intellicanvas"
+        /></label>
+        <div class="dialog-actions">
+          <button type="button" id="export-cancel-secondary" class="button button-secondary">
+            Cancel</button
+          ><button type="submit" class="button button-primary" id="export-submit">Export</button>
+        </div>
+      </form>
+    </div>
     <script type="module" src="js/icons.js"></script>
     <script type="module" src="js/main.js"></script>
   </body>
