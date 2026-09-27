@@ -4,9 +4,7 @@ import { mountInspectorContextContainers, renderInspectorContextContainers, rend
 import { beginOperation, completeOperation, dismissError, failOperation, retryOperation } from './operation-state.js';
 import { openDialog, closeDialog } from './lib/dialogs.js';
 import { bus, events } from './lib/events.js';
-
-const toast = document.querySelector('#toast');
-let toastTimer;
+import { showToast } from './lib/toast.js';
 
 const inspector = document.querySelector('#inspector');
 const inspectorScrim = document.querySelector('#inspector-scrim');
@@ -334,6 +332,10 @@ export async function withBusy(button, message, fn, options = {}) {
 
 export { dismissError, retryOperation };
 
+// showToast lives in lib/toast.js; re-exported so the injected-dependency
+// call sites and main.js's import keep working unchanged.
+export { showToast };
+
 // Dialog lifecycle lives in lib/dialogs.js — the stack of open dialogs,
 // the single Escape handler, the focus trap and confirmDialog. ui-manager
 // owned these until Phase 4 of the restructuring plan; re-exporting keeps
@@ -346,13 +348,6 @@ export {
   initDialogFocusTrap,
   openDialogCount,
 } from './lib/dialogs.js';
-
-export function showToast(message) {
-  toast.textContent = message;
-  toast.classList.add('is-visible');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('is-visible'), 2300);
-}
 
 function initInspectorTabScroller(tabs) {
   const strip = document.querySelector('.inspector-tabs');

@@ -1,6 +1,7 @@
 import { appState, setState } from './app-state.js';
 import { initKeyboardShortcuts } from './keyboard-shortcuts.js';
 import { createUploadManager } from './upload-manager.js';
+import { handleError } from './lib/errors.js';
 import { initThemeManager } from './theme-manager.js';
 import { initUI, initDialogEscape, initDialogFocusTrap, onPanelOpened, setEditorReady, showToast } from './ui-manager.js';
 import { CanvasManager } from './canvas-manager.js';
@@ -90,14 +91,14 @@ objectManager.onChange = () => {
     if (!apiClient.imageId) return;
     apiClient.saveLayers(objectManager.serializeLayers())
       .then((saved) => objectManager.applyPersistedLayers(saved))
-      .catch((error) => showToast(error.message));
+      .catch((error) => handleError(error, 'layers.save'));
   }, 250);
 };
 async function restoreLayers() {
   if (!apiClient.imageId) return;
   try {
     await objectManager.loadLayers(await apiClient.layers());
-  } catch (error) { showToast(error.message); }
+  } catch (error) { handleError(error, 'layers.restore'); }
 }
 new ComparisonTool(canvasManager, showToast);
 new AdjustmentsManager({ canvasManager, apiClient, showToast });

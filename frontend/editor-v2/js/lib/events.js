@@ -89,10 +89,13 @@ export const bus = {
  * `ic-operation` is the "an image-changing operation finished" signal: it
  * tells the history manager to refresh and the layer list to rebuild.
  * `appstatechange` carries the whole serialisable app state. `ic-auth-
- * required` fires when the API rejects a request's session.
+ * required` fires when the API rejects a request's session. `ic-error`
+ * carries `{ error, context }` for anything routed through handleError —
+ * the seam a telemetry or error-panel feature subscribes to.
  */
 export const events = Object.freeze({
   operation: 'ic-operation',
   appStateChange: 'appstatechange',
   authRequired: 'ic-auth-required',
+  error: 'ic-error',
 });
