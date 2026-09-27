@@ -2,7 +2,7 @@ import { appState, setState } from './app-state.js';
 import { initKeyboardShortcuts } from './keyboard-shortcuts.js';
 import { createUploadManager } from './upload-manager.js';
 import { initThemeManager } from './theme-manager.js';
-import { initUI, initDialogEscape, initDialogFocusTrap, setEditorReady, showToast } from './ui-manager.js';
+import { initUI, initDialogEscape, initDialogFocusTrap, onPanelOpened, setEditorReady, showToast } from './ui-manager.js';
 import { CanvasManager } from './canvas-manager.js';
 import { bindTransformTools } from './transform-tools.js';
 import { CropTool } from './crop-tool.js';
@@ -14,9 +14,6 @@ import { AdjustmentsManager } from './adjustments-manager.js';
 import { FiltersManager } from './filters-manager.js';
 import { HistoryManager } from './history-manager.js';
 import { ExportManager } from './export-manager.js';
-import { BackgroundManager } from './background-manager.js';
-import { AnalysisManager } from './analysis-manager.js';
-import { PipelineManager } from './pipeline-manager.js';
 import { SmartCropManager } from './smart-crop-manager.js';
 import { ApiClient } from './api-client.js';
 import { renderImageContextSummary } from './inspector-context-view.js';
@@ -105,11 +102,28 @@ async function restoreLayers() {
 new ComparisonTool(canvasManager, showToast);
 new AdjustmentsManager({ canvasManager, apiClient, showToast });
 new FiltersManager({ canvasManager, apiClient, showToast });
-new BackgroundManager({ canvasManager, apiClient, objectManager, showToast });
 new HistoryManager({ canvasManager, apiClient, showToast });
 new ExportManager({ canvasManager, apiClient, objectManager, showToast });
-const analysisManager = new AnalysisManager({ canvasManager, apiClient, showToast });
-new PipelineManager({ apiClient, canvasManager, showToast });
+
+// The three heaviest panels mount on first open rather than at boot: before
+// an image is uploaded, nobody needs the background library fetch, the
+// pipeline state refresh, or the analysis bindings, and shipping their
+// modules eagerly paid for them on every page load. The activators run
+// once, driven by ui-manager's onPanelOpened hook; the module loads and the
+// manager constructs itself with the same constructor it used before.
+let analysisManager = null;
+onPanelOpened('insights', async () => {
+  const { AnalysisManager } = await import('./analysis-manager.js');
+  analysisManager = new AnalysisManager({ canvasManager, apiClient, showToast });
+});
+onPanelOpened('pipeline', async () => {
+  const { PipelineManager } = await import('./pipeline-manager.js');
+  new PipelineManager({ apiClient, canvasManager, showToast });
+});
+onPanelOpened('background', async () => {
+  const { BackgroundManager } = await import('./background-manager.js');
+  new BackgroundManager({ canvasManager, apiClient, objectManager, showToast });
+});
 const smartCropManager = new SmartCropManager({ canvasManager, apiClient, showToast });
 objectManager.setInteractive(true);
 bus.on(events.appStateChange, (state) => objectManager.setInteractive(['select', 'brush', 'eraser', 'shape', 'text'].includes(state.activeTool)));
@@ -157,7 +171,10 @@ const uploadManager = createUploadManager({
   apiClient,
   canvasManager,
   restoreLayers,
-  analysisManager,
+  // analysisManager may still be the pending lazy mount when an upload
+  // lands first; resetting a panel that was never opened is vacuous, so a
+  // null-safe facade is the honest wiring.
+  analysisManager: { reset: () => analysisManager?.reset() },
   smartCropManager,
   setState,
   setEditorReady,

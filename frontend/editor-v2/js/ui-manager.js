@@ -21,6 +21,35 @@ const isMobile = () => mobileQuery()?.matches ?? false;
 
 const READY_PANELS = new Set(['adjustments', 'filters', 'background', 'smart-crop']);
 
+// Panels whose managers are mounted on first open rather than at boot (see
+// main.js). The activator fires whenever the panel becomes visible, however
+// the user got there — tab click, arrow key, or quick action. It is
+// fire-and-forget: a panel that fails to load surfaces its own error and
+// must never block the inspector switch.
+const panelActivators = new Map();
+
+export function onPanelOpened(panel, activate) {
+  panelActivators.set(panel, activate);
+}
+
+function activatePanel(panel) {
+  const activate = panelActivators.get(panel);
+  if (!activate) return;
+  panelActivators.delete(panel); // one-shot: the mount runs exactly once
+  try {
+    const result = activate();
+    if (result && typeof result.catch === 'function') {
+      result.catch((error) => {
+        // A failed dynamic import must not strand the empty panel with no
+        // explanation; the toast is the editor's standard error surface.
+        showToast(`Could not load the ${panel} panel: ${error.message}`);
+      });
+    }
+  } catch (error) {
+    showToast(`Could not load the ${panel} panel: ${error.message}`);
+  }
+}
+
 export function getInspectorContext({ ready, activeTool = 'select', selectedObjectId = null } = {}) {
   return deriveInspectorContext({ editorReady: ready, activeTool, selectedObjectId });
 }
@@ -176,7 +205,13 @@ export function initUI() {
   document.querySelector('#help-cancel')?.addEventListener('click', () => closeDialog(document.querySelector('#help-dialog')));
   document.querySelector('#help-cancel-secondary')?.addEventListener('click', () => closeDialog(document.querySelector('#help-dialog')));
   document.querySelectorAll('#edit-panel details.panel-accordion').forEach((section) => {
-    section.addEventListener('toggle', () => { if (section.open) closeOtherAccordions(section); });
+    section.addEventListener('toggle', () => {
+      if (!section.open) return;
+      closeOtherAccordions(section);
+      // Opening an accordion directly (not through a data-panel quick
+      // action) must still mount a lazy panel — the id encodes the name.
+      activatePanel(section.id.replace(/-accordion$/, ''));
+    });
   });
 
   // Mobile drawer: the toggle, the scrim tap, and Escape all close it. The
@@ -228,6 +263,7 @@ function focusPanel(panel) {
   if (!section) return;
   closeOtherAccordions(section);
   section.open = true;
+  activatePanel(panel);
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   section.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' });
   section.classList.remove('is-flash');
@@ -264,6 +300,7 @@ export function switchInspector(name) {
   // On mobile the panels live in the drawer, so switching to one must also
   // reveal it — otherwise the tap changes hidden state behind nothing.
   if (isMobile()) openInspectorDrawer();
+  activatePanel(name);
 }
 export async function withBusy(button, message, fn, options = {}) {
   const { status = null, operation = message, retry = null } = options;
