@@ -2,7 +2,7 @@
 
 **تاريخ الخطة:** 2026-09-25  
 **نقطة البداية:** الفرع `arena/01a0d5fb-intelli-canvas` (مبني على `18f0bc7`)  
-**الحالة الحالية:** 306 اختبار باكند ✅ · 137 اختبار فرونتند ✅ · 12 Playwright suite ✅ · Ruff/Vitest ناجح  
+**الحالة الحالية:** 358 اختبار باكند ✅ · 137 اختبار فرونتند ✅ · 12 Playwright suite ✅ · Ruff/Vitest ناجح  
 **الهدف النهائي:** مشروع مُهيكل نظيفًا، جاهز للتوسع، مع بنية تطوير واضحة، وبوابة جودة موحدة، وقابل للنشر للإنتاج بثقة.
 
 ---
@@ -16,7 +16,7 @@
 |---|---|---|---|
 | 1 | تنظيف جذر المستودع | **مكتملة** | نقل التخزين إلى `instance/`، `Makefile`، `wsgi.py` (PR #140) |
 | 2 | بوابة الجودة الموحدة | **مكتملة** | Ruff B/UP/SIM، ESLint كأخطاء، `fail_under=80`، lockfile، pre-commit (PR #141) |
-| 3 | نموذج المجال (الباكند) | **قيد التنفيذ** | `HistoryEntry`، `Pipeline`/`PipelineNode`، `Layer`، `ImageSession` جاهزة؛ بقيت `User`/`Project` وفصل `AuthService` |
+| 3 | نموذج المجال (الباكند) | **مكتملة** | `HistoryEntry`، `Pipeline`/`PipelineNode`، `Layer`، `ImageSession`، `User`، `AuthSession`، وفصل `AuthStore` إلى `UserRepository` + `AuthSessionRepository` وحذفها |
 | 4 | تقسيم واجهة `editor-v2` | **لم تبدأ** | المرحلة الأهم: تقسيم `index.html`/`main.js`، `EventBus`، `App` class، lazy panels |
 | 5 | إكمال هرم الاختبارات | **لم تبدأ** | رفع تغطية الواجهة فوق الـ34% الحالية (baseline)، اختبارات تكاملية |
 | 6 | توثيق موحد | **جزئيًا** | `wsgi.py` و`Makefile` موثقان؛ بقيت README وجدول القيادة |
