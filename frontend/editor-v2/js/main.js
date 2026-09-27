@@ -1,5 +1,6 @@
 import { appState, setState } from './app-state.js';
 import { initKeyboardShortcuts } from './keyboard-shortcuts.js';
+import { createUploadManager } from './upload-manager.js';
 import { initThemeManager } from './theme-manager.js';
 import { initUI, initDialogEscape, initDialogFocusTrap, setEditorReady, showToast } from './ui-manager.js';
 import { CanvasManager } from './canvas-manager.js';
@@ -152,78 +153,24 @@ for (const button of document.querySelectorAll('[data-action]')) {
   if (action) button.addEventListener('click', action);
 }
 
-// A second upload started before the first finished would race: whichever
-// response lands last wins apiClient.imageId, and the canvas load guard can
-// disagree about which image is actually displayed. The flag makes a
-// mid-flight upload a no-op instead.
-let uploading = false;
-
-async function uploadImageFile(file) {
-  if (uploading) return;
-  uploading = true;
-  // The dropzone and the file input share this path, so both triggers are
-  // disabled for the duration — the user cannot start a second upload while
-  // the first is still in flight.
-  const openers = document.querySelectorAll('[data-action="open"], #file-input');
-  openers.forEach((el) => { el.disabled = true; });
-  statusMessage.textContent = 'Uploading image…';
-  showToast('Uploading image to IntelliCanvas API…');
-  try {
-    const image = await apiClient.upload(file);
-    await canvasManager.loadFromUrl(apiClient.contentUrl(image.image_id), image);
-    await restoreLayers();
-    analysisManager.reset();
-    smartCropManager.resetPreviewOnly();
-    setState({ hasImage: true, selectedObjectId: null });
-    setEditorReady(true);
-    emptyCanvas.hidden = true;
-    document.querySelector('#document-name').textContent = image.original_filename;
-    document.querySelector('#canvas-size').textContent = `${image.width ?? canvasManager.getSourceDimensions().width} × ${image.height ?? canvasManager.getSourceDimensions().height}`;
-    renderImageContextSummary({
-      name: image.original_filename,
-      width: image.width ?? canvasManager.getSourceDimensions().width,
-      height: image.height ?? canvasManager.getSourceDimensions().height,
-      status: 'Ready to edit',
-    });
-    document.querySelector('#save-state').textContent = 'Saved in API session';
-    statusMessage.textContent = 'Image loaded — backend session ready';
-    showToast(`${image.original_filename} uploaded successfully`);
-  } catch (error) {
-    setState({ hasImage: false, selectedObjectId: null });
-    setEditorReady(false);
-    renderImageContextSummary({ status: 'Waiting for an image' });
-    statusMessage.textContent = error.message.startsWith('Could not reach') ? 'Backend offline' : 'Upload failed';
-    showToast(error.message);
-  } finally {
-    uploading = false;
-    openers.forEach((el) => { el.disabled = false; });
-  }
-}
-
-fileInput.addEventListener('change', ({ target }) => {
-  const file = target.files?.[0];
-  if (!file) return;
-  uploadImageFile(file);
-  target.value = '';
+const uploadManager = createUploadManager({
+  apiClient,
+  canvasManager,
+  restoreLayers,
+  analysisManager,
+  smartCropManager,
+  setState,
+  setEditorReady,
+  renderImageContextSummary,
+  showToast,
+  fileInput,
+  statusMessage,
+  emptyCanvas,
+  documentName: document.querySelector('#document-name'),
+  canvasSize: document.querySelector('#canvas-size'),
+  saveState: document.querySelector('#save-state'),
 });
-bus.on(events.operation, restoreLayers);
-
-const canvasZone = document.querySelector('#canvas-zone');
-['dragenter', 'dragover'].forEach((type) => canvasZone.addEventListener(type, (event) => {
-  event.preventDefault();
-  canvasZone.classList.add('is-drop-target');
-}));
-canvasZone.addEventListener('dragleave', (event) => {
-  if (event.target === canvasZone) canvasZone.classList.remove('is-drop-target');
-});
-canvasZone.addEventListener('drop', (event) => {
-  event.preventDefault();
-  canvasZone.classList.remove('is-drop-target');
-  const file = event.dataTransfer?.files?.[0];
-  if (!file) return;
-  if (!file.type.startsWith('image/')) return showToast('Drop an image file (PNG, JPG, WEBP or BMP)');
-  uploadImageFile(file);
-});
+uploadManager.bindDropZone(document.querySelector('#canvas-zone'));
 
 initKeyboardShortcuts({ canvasManager, fileInput, showToast });
 
