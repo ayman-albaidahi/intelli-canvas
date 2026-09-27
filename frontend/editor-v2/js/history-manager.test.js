@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { JSDOM } from 'jsdom';
 import { HistoryManager } from './history-manager.js';
+import { bus, events as eventNames } from './lib/events.js';
 
 const HISTORY_HTML = `
   <button data-action="history-undo">Undo</button>
@@ -239,11 +240,11 @@ describe('HistoryManager — goto and clear', () => {
 });
 
 describe('HistoryManager — event wiring', () => {
-  it('refreshes when an ic-operation event fires', async () => {
+  it('refreshes when the operation event fires', async () => {
     const events = [];
     const client = makeClient();
-    const { document } = await makeManager(client, canvasThatRecords(events));
-    document.dispatchEvent(new document.defaultView.CustomEvent('ic-operation'));
+    await makeManager(client, canvasThatRecords(events));
+    bus.emit(eventNames.operation);
     await new Promise((resolve) => { setTimeout(resolve, 0); });
     expect(client.calls.history).toBe(1);
   });

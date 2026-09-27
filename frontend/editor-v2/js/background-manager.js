@@ -1,5 +1,6 @@
 import { escapeHtml } from './escape-html.js';
 import { withBusy } from './ui-manager.js';
+import { bus, events } from './lib/events.js';
 
 export class BackgroundManager {
   constructor({ canvasManager, apiClient, objectManager, showToast }) {
@@ -208,7 +209,7 @@ export class BackgroundManager {
     // After the busy flag clears: HistoryManager.refresh() bails out while any
     // manager is mid-operation, so an earlier dispatch is silently dropped and
     // the history list never reflects the background change.
-    document.dispatchEvent(new CustomEvent('ic-operation'));
+    bus.emit(events.operation);
   }
 
   async refreshLibrary() {

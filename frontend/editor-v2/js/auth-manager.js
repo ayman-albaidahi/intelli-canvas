@@ -1,3 +1,4 @@
+import { bus, events } from './lib/events.js';
 export class AuthManager {
   constructor({ apiClient, documentRef = document } = {}) {
     this.apiClient = apiClient;
@@ -27,7 +28,7 @@ export class AuthManager {
     this.logout = this.document.querySelector('#logout-button');
     this.user = null;
     this.bind();
-    window.addEventListener('ic-auth-required', () => {
+    bus.on(events.authRequired, () => {
       this.apiClient.resetSession();
       this.showLogin('Your session expired. Sign in again to continue.');
     });

@@ -1,9 +1,10 @@
 import { withBusy } from './ui-manager.js';
+import { bus, events } from './lib/events.js';
 
 async function applyServerTransform(canvasManager, apiClient, path, data) {
   const image = await apiClient.transform(path, data);
   await canvasManager.applyTransformResult(path, image, apiClient.contentUrl(image.image_id));
-  document.dispatchEvent(new CustomEvent('ic-operation'));
+  bus.emit(events.operation);
 }
 
 export function bindTransformTools(canvasManager, apiClient, showToast) {
@@ -37,7 +38,7 @@ export function bindTransformTools(canvasManager, apiClient, showToast) {
       try {
         const state = action === 'undo' ? await apiClient.undoHistory() : await apiClient.redoHistory();
         await canvasManager.loadFromUrl(apiClient.contentUrl(), state.image);
-        document.dispatchEvent(new CustomEvent('ic-operation'));
+        bus.emit(events.operation);
         showToast(label);
       } catch (error) { showToast(error.message); }
     });

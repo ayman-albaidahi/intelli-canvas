@@ -1,4 +1,5 @@
 import { deriveInspectorContext } from './inspector-context.js';
+import { bus, events } from './lib/events.js';
 
 export const appState = {
   theme: localStorage.getItem('intelli-canvas-theme') || 'light',
@@ -17,5 +18,5 @@ export function setState(patch) {
   const { inspectorContext: _ignoredContext, ...nextState } = patch;
   Object.assign(appState, nextState);
   appState.inspectorContext = deriveInspectorContext(appState);
-  document.dispatchEvent(new CustomEvent('appstatechange', { detail: appState }));
+  bus.emit(events.appStateChange, appState);
 }

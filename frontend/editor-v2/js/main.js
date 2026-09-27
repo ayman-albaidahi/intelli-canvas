@@ -19,6 +19,7 @@ import { SmartCropManager } from './smart-crop-manager.js';
 import { ApiClient } from './api-client.js';
 import { renderImageContextSummary } from './inspector-context-view.js';
 import { AuthManager } from './auth-manager.js';
+import { bus, events } from './lib/events.js';
 
 const apiClient = new ApiClient();
 const authManager = new AuthManager({ apiClient });
@@ -109,7 +110,7 @@ const analysisManager = new AnalysisManager({ canvasManager, apiClient, showToas
 new PipelineManager({ apiClient, canvasManager, showToast });
 const smartCropManager = new SmartCropManager({ canvasManager, apiClient, showToast });
 objectManager.setInteractive(true);
-document.addEventListener('appstatechange', ({ detail }) => objectManager.setInteractive(['select', 'brush', 'eraser', 'shape', 'text'].includes(detail.activeTool)));
+bus.on(events.appStateChange, (state) => objectManager.setInteractive(['select', 'brush', 'eraser', 'shape', 'text'].includes(state.activeTool)));
 document.querySelectorAll('[data-action="add-layer"]').forEach((button) => button.remove());
 document.querySelector('[data-action="add-image-layer"]')?.addEventListener('click', () => document.querySelector('#layer-image-input').click());
 document.querySelector('[data-action="add-shape-layer"]')?.addEventListener('click', () => { document.querySelector('[data-tool="shape"]').click(); showToast('Drag on the canvas to draw the shape'); });
@@ -204,7 +205,7 @@ fileInput.addEventListener('change', ({ target }) => {
   uploadImageFile(file);
   target.value = '';
 });
-document.addEventListener('ic-operation', restoreLayers);
+bus.on(events.operation, restoreLayers);
 
 const canvasZone = document.querySelector('#canvas-zone');
 ['dragenter', 'dragover'].forEach((type) => canvasZone.addEventListener(type, (event) => {
@@ -267,8 +268,8 @@ function renderZoom() {
   const value = canvasManager.hasImage() ? `${appState.zoom}%` : '—';
   document.querySelectorAll('[data-zoom-display]').forEach((element) => { element.textContent = value; });
 }
-document.addEventListener('appstatechange', ({ detail }) => {
-  document.body.dataset.activeTool = detail.activeTool || 'select';
+bus.on(events.appStateChange, (state) => {
+  document.body.dataset.activeTool = state.activeTool || 'select';
   renderZoom();
 });
 document.body.dataset.activeTool = appState.activeTool;

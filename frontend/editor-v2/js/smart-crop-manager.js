@@ -1,3 +1,4 @@
+import { bus, events } from './lib/events.js';
 export class SmartCropManager {
   constructor({ canvasManager, apiClient, showToast }) {
     this.canvasManager = canvasManager;
@@ -14,7 +15,7 @@ export class SmartCropManager {
     document.querySelector('[data-action="smart-crop-preview"]')?.addEventListener('click', () => this.preview());
     document.querySelector('[data-action="smart-crop-apply"]')?.addEventListener('click', () => this.apply());
     document.querySelector('[data-action="smart-crop-cancel"]')?.addEventListener('click', () => this.reset());
-    document.addEventListener('appstatechange', () => this.syncControls());
+    bus.on(events.appStateChange, () => this.syncControls());
     this.syncControls();
   }
 
@@ -79,7 +80,7 @@ export class SmartCropManager {
     // After the busy flag clears: HistoryManager.refresh() bails out while any
     // manager is mid-operation, so an earlier dispatch is silently dropped and
     // the history list never reflects the crop.
-    document.dispatchEvent(new CustomEvent('ic-operation'));
+    bus.emit(events.operation);
   }
 
   resetPreviewOnly() {

@@ -1,4 +1,5 @@
 import { escapeHtml } from './escape-html.js';
+import { bus, events } from './lib/events.js';
 
 const FINDING_LABELS = {
   LOW_BRIGHTNESS: 'سطوع منخفض',
@@ -183,6 +184,6 @@ export class AnalysisManager {
     // After the busy flag clears: HistoryManager.refresh() bails out while any
     // manager is mid-operation, so an earlier dispatch is silently dropped and
     // the history list never reflects the applied suggestion.
-    document.dispatchEvent(new CustomEvent('ic-operation'));
+    bus.emit(events.operation);
   }
 }

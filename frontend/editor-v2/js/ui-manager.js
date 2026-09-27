@@ -2,6 +2,7 @@ import { appState, setState } from './app-state.js';
 import { deriveInspectorContext } from './inspector-context.js';
 import { mountInspectorContextContainers, renderInspectorContextContainers, renderTransientContext } from './inspector-context-view.js';
 import { beginOperation, completeOperation, dismissError, failOperation, retryOperation } from './operation-state.js';
+import { bus, events } from './lib/events.js';
 
 const toast = document.querySelector('#toast');
 let toastTimer;
@@ -88,7 +89,7 @@ export function setEditorReady(ready) {
 
 export function initUI() {
   mountInspectorContextContainers();
-  document.addEventListener('appstatechange', ({ detail }) => renderInspectorContext(detail));
+  bus.on(events.appStateChange, (state) => renderInspectorContext(state));
   document.querySelector('#error-retry')?.addEventListener('click', () => retryOperation());
   document.querySelector('#error-dismiss')?.addEventListener('click', () => dismissError());
   setEditorReady(false);

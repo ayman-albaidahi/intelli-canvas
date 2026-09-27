@@ -1,3 +1,4 @@
+import { bus, events } from './lib/events.js';
 const NEUTRAL_SLIDERS = { brightness: 100, contrast: 100, saturation: 100, blur: 0, sharpen: 0 };
 const VALUE_SUFFIXES = { brightness: '', contrast: '', saturation: '', blur: 'px', sharpen: '' };
 
@@ -38,7 +39,7 @@ export class AdjustmentsManager {
       document.querySelector('[data-action="compare"]')?.click();
     });
     this.applyButton?.addEventListener('click', () => this.applyInPython());
-    document.addEventListener('appstatechange', () => this.syncApplyButton());
+    bus.on(events.appStateChange, () => this.syncApplyButton());
     this.syncApplyButton();
   }
 
@@ -178,6 +179,6 @@ export class AdjustmentsManager {
     // After the busy flag clears: HistoryManager.refresh() bails out while any
     // manager is mid-operation, so an earlier dispatch is silently dropped and
     // the history list never reflects the applied adjustments.
-    document.dispatchEvent(new CustomEvent('ic-operation'));
+    bus.emit(events.operation);
   }
 }

@@ -1,5 +1,6 @@
 import { aspectRatioDimensions } from './transform-logic.js';
 import { openDialog, closeDialog, withBusy } from './ui-manager.js';
+import { bus, events } from './lib/events.js';
 
 export function initResizeTool(canvasManager, apiClient, showToast) {
   const dialog = document.querySelector('#resize-dialog');
@@ -44,7 +45,7 @@ export function initResizeTool(canvasManager, apiClient, showToast) {
         lock_aspect_ratio: ratio.checked,
       });
       await canvasManager.loadFromUrl(apiClient.contentUrl(image.image_id), image);
-      document.dispatchEvent(new CustomEvent('ic-operation'));
+      bus.emit(events.operation);
         closeDialog(dialog);
         showToast(`Canvas resized to ${image.width} × ${image.height}`);
       } catch (error) { showToast(error.message); throw error; }

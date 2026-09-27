@@ -3,6 +3,7 @@ import { setState } from './app-state.js';
 import {
   CROP_HANDLES, clampCropRect, cropSelectionToSource, moveCropRect, resizeCropRect,
 } from './transform-logic.js';
+import { bus, events } from './lib/events.js';
 
 // A selection smaller than this in view pixels maps to under 2 source pixels
 // once rounded, which the API would reject. The floor scales with zoom so a
@@ -139,7 +140,7 @@ export class CropTool {
       try {
         const image = await this.apiClient.transform('crop', payload);
         await this.canvasManager.loadFromUrl(this.apiClient.contentUrl(image.image_id), image);
-        document.dispatchEvent(new CustomEvent('ic-operation'));
+        bus.emit(events.operation);
         this.deactivate();
         this.showToast('Crop applied');
       } catch (error) { this.showToast(error.message); throw error; }

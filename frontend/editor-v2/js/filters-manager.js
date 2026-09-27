@@ -1,4 +1,5 @@
 import { escapeHtml } from './escape-html.js';
+import { bus, events } from './lib/events.js';
 
 export class FiltersManager {
   constructor({ canvasManager, apiClient, showToast }) {
@@ -34,7 +35,7 @@ export class FiltersManager {
       this.apply('threshold', { value: this.integerValue('#threshold-value', 128) }, 'High contrast applied');
     });
     document.querySelector('[data-action="compute-histogram"]')?.addEventListener('click', () => this.histogram());
-    document.addEventListener('appstatechange', () => this.syncControls());
+    bus.on(events.appStateChange, () => this.syncControls());
     this.syncControls();
   }
 
@@ -77,7 +78,7 @@ export class FiltersManager {
     // After the busy flag clears: HistoryManager.refresh() bails out while any
     // manager is mid-operation, so an earlier dispatch is silently dropped and
     // the history list never reflects the applied filter.
-    document.dispatchEvent(new CustomEvent('ic-operation'));
+    bus.emit(events.operation);
   }
 
   async histogram() {

@@ -1,5 +1,6 @@
 import { escapeHtml } from './escape-html.js';
 import { confirmDialog } from './ui-manager.js';
+import { bus, events } from './lib/events.js';
 
 export class HistoryManager {
   constructor({ canvasManager, apiClient, showToast }) {
@@ -19,8 +20,8 @@ export class HistoryManager {
     this.diffImage = document.querySelector('#history-diff-image');
     this.busy = false;
     this.bind();
-    document.addEventListener('ic-operation', () => this.refresh());
-    document.addEventListener('appstatechange', () => {
+    bus.on(events.operation, () => this.refresh());
+    bus.on(events.appStateChange, () => {
       if (this.apiClient.imageId) this.refresh();
     });
     this.refresh();
@@ -143,7 +144,7 @@ export class HistoryManager {
   async reloadCanvas() {
     const url = this.apiClient.contentUrl(this.apiClient.imageId);
     await this.canvasManager.loadFromUrl(url, {});
-    document.dispatchEvent(new CustomEvent('ic-operation'));
+    bus.emit(events.operation);
   }
 
   entryLabel(entry) {

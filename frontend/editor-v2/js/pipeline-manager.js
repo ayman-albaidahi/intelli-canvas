@@ -1,5 +1,6 @@
 import { escapeHtml } from './escape-html.js';
 import { iconMarkup } from './icons.js';
+import { bus, events } from './lib/events.js';
 
 const DEFAULT_PARAMETERS = {
   brightness: { value: 100 }, contrast: { value: 100 }, saturation: { value: 100 },
@@ -29,7 +30,7 @@ export class PipelineManager {
     this.pipeline = { version: 1, nodes: [] };
     this.busy = false;
     this.bind();
-    document.addEventListener('appstatechange', () => this.refresh());
+    bus.on(events.appStateChange, () => this.refresh());
     this.refresh();
   }
 
@@ -117,7 +118,7 @@ export class PipelineManager {
     // HistoryManager.refresh() returns immediately while any manager is
     // mid-operation, so firing earlier leaves the history list stale after
     // every pipeline apply.
-    document.dispatchEvent(new CustomEvent('ic-operation'));
+    bus.emit(events.operation);
   }
 
   async update(nodeId, changes) {
