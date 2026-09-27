@@ -1,4 +1,5 @@
 import { appState, setState } from './app-state.js';
+import { initKeyboardShortcuts } from './keyboard-shortcuts.js';
 import { initThemeManager } from './theme-manager.js';
 import { initUI, initDialogEscape, initDialogFocusTrap, setEditorReady, showToast } from './ui-manager.js';
 import { CanvasManager } from './canvas-manager.js';
@@ -224,43 +225,7 @@ canvasZone.addEventListener('drop', (event) => {
   uploadImageFile(file);
 });
 
-const TOOL_SHORTCUTS = {
-  v: 'select', m: 'move', c: 'crop', b: 'brush',
-  e: 'eraser', u: 'shape', t: 'text',
-};
-
-document.addEventListener('keydown', (event) => {
-  const target = event.target;
-  // Typing into a field must not trigger tool shortcuts. contentEditable
-  // covers the rename input, which is not a real input element.
-  if (target instanceof HTMLElement && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)) return;
-
-  // Undo/redo is the most expected editor shortcut and the plumbing already
-  // exists in transform-tools; it just was not wired to the keyboard.
-  const isMod = event.metaKey || event.ctrlKey;
-  if (isMod && event.key.toLowerCase() === 'z') {
-    event.preventDefault();
-    const action = event.shiftKey ? 'redo' : 'undo';
-    document.querySelector(`[data-action="${action}"]`)?.click();
-    return;
-  }
-  if (isMod && event.key.toLowerCase() === 'y') {
-    event.preventDefault();
-    document.querySelector('[data-action="redo"]')?.click();
-    return;
-  }
-  if (isMod && event.key.toLowerCase() === 'o') { event.preventDefault(); fileInput.click(); return; }
-  // Anything past this point is a single-key shortcut and must not fire while
-  // a modifier is held, so Ctrl+S and friends do not also switch tools.
-  if (isMod || event.altKey) return;
-
-  if (event.key === '+' || event.key === '=') canvasManager.zoomStep(10);
-  if (event.key === '-' || event.key === '_') canvasManager.zoomStep(-10);
-  if (event.key === '0') { canvasManager.fit(); showToast('Canvas fitted to workspace'); }
-  if (event.key === '1') canvasManager.setHundredPercent();
-  const tool = TOOL_SHORTCUTS[event.key.toLowerCase()];
-  if (tool) document.querySelector(`[data-tool="${tool}"]`)?.click();
-});
+initKeyboardShortcuts({ canvasManager, fileInput, showToast });
 
 function renderZoom() {
   // Before any image is loaded there is nothing to zoom, so reporting a
