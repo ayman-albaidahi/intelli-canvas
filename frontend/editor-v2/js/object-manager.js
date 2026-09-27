@@ -7,7 +7,14 @@ import {
   rotateOffset,
   toLocal,
 } from './object-geometry.js';
-import { DEFAULT_ACCENT, DEFAULT_ACCENT_STRONG, themeColor } from './theme-colors.js';
+import { DEFAULT_ACCENT, themeColor } from './theme-colors.js';
+import {
+  drawBrushStroke,
+  drawObject,
+  drawSelection,
+  drawShapePreview,
+  renderExport as renderExportDrawing,
+} from './object-drawing.js';
 import { openDialog, closeDialog, confirmDialog } from './ui-manager.js';
 
 const HANDLE_SIZE = 9;
@@ -637,185 +644,37 @@ export class ObjectManager {
 
   activeShapeType(type) { const select = document.querySelector('#shape-type'); if (select) select.value = type; }
 
+  // The geometry helpers the drawing module needs: the object-space helpers
+  // from object-geometry plus this canvas's image-to-screen projection.
+  drawingGeometry() {
+    return {
+      centerOf: (o) => this.centerOf(o),
+      imageToScreen: (ix, iy) => this._imageToScreen(ix, iy),
+      handles: (o) => this.handles(o),
+      rotateHandle: (o) => this.rotateHandle(o),
+    };
+  }
+
   render() {
     const bounds = this.canvas.parentElement.getBoundingClientRect();
     this.ctx.clearRect(0, 0, bounds.width, bounds.height);
+    const geo = this.drawingGeometry();
     for (const o of this.objects) {
       if (!o.visible) continue;
-      this.drawObject(o);
+      drawObject(this.ctx, o, geo);
     }
-    if (this.drawing) this.drawBrushStroke(this.drawing);
-    if (this.shapeStart && this.shapeCurrent) this.drawShapePreview();
+    if (this.drawing) drawBrushStroke(this.ctx, this.drawing, geo);
+    if (this.shapeStart && this.shapeCurrent) {
+      const color = document.querySelector('#drawing-color')?.value || themeColor('--accent', DEFAULT_ACCENT);
+      drawShapePreview(this.ctx, this.shapeStart, this.shapeCurrent, color);
+    }
     const selected = this.selected;
-    if (selected && ['select', 'move'].includes(appState.activeTool) && !this.drawing) this.drawSelection(selected);
-  }
-
-  drawObject(o) {
-    const ctx = this.ctx;
-    const c = this.centerOf(o);
-    ctx.save();
-    ctx.globalAlpha = o.opacity;
-
-    // Brush strokes are stored in image coordinates and drawBrushStroke()
-    // projects them into screen coordinates. Keep them out of the generic
-    // object transform below; otherwise the center translation is applied a
-    // second time and the visible stroke is displaced from the pointer.
-    if (o.type === 'brush') {
-      this.drawBrushStroke({ ...o, points: o.pointsRel });
-      ctx.restore();
-      return;
+    if (selected && ['select', 'move'].includes(appState.activeTool) && !this.drawing) {
+      drawSelection(this.ctx, selected, geo, this.angleReadout);
     }
-
-    ctx.globalCompositeOperation = o.blend || 'source-over';
-    ctx.translate(c.x, c.y);
-    ctx.rotate((o.rotation * Math.PI) / 180);
-    if (o.type === 'image') ctx.drawImage(o.img, -o.w / 2, -o.h / 2, o.w, o.h);
-    else if (o.type === 'text') {
-      ctx.font = `600 ${o.fontSize}px Inter, "Segoe UI", Tahoma, sans-serif`;
-      ctx.fillStyle = o.color;
-      ctx.textBaseline = 'middle';
-      if (o.rtl) { ctx.direction = 'rtl'; ctx.fillText(o.text, o.w / 2 - 6, 0); }
-      else ctx.fillText(o.text, -o.w / 2 + 6, 0);
-    } else if (o.type === 'shape') this.drawShape(ctx, o);
-    ctx.restore();
   }
 
   renderExport(ctx, imageRect, outputWidth, outputHeight) {
-    const scaleX = outputWidth / imageRect.width;
-    const scaleY = outputHeight / imageRect.height;
-    for (const object of this.objects) {
-      if (!object.visible) continue;
-      const center = this.centerOf(object);
-      ctx.save();
-      ctx.globalAlpha = object.opacity;
-      ctx.globalCompositeOperation = object.erasing ? 'destination-out' : (object.blend || 'source-over');
-      ctx.translate((center.x - imageRect.x) * scaleX, (center.y - imageRect.y) * scaleY);
-      ctx.rotate((object.rotation * Math.PI) / 180);
-      ctx.scale(scaleX, scaleY);
-      if (object.type === 'image') {
-        ctx.drawImage(object.img, -object.w / 2, -object.h / 2, object.w, object.h);
-      } else if (object.type === 'text') {
-        ctx.font = `600 ${object.fontSize}px Inter, "Segoe UI", Tahoma, sans-serif`;
-        ctx.fillStyle = object.color;
-        ctx.textBaseline = 'middle';
-        if (object.rtl) { ctx.direction = 'rtl'; ctx.fillText(object.text, object.w / 2 - 6, 0); }
-        else ctx.fillText(object.text, -object.w / 2 + 6, 0);
-      } else if (object.type === 'shape') {
-        this.drawShape(ctx, object);
-      } else if (object.type === 'brush') {
-        ctx.strokeStyle = object.color;
-        ctx.lineWidth = object.strokeWidth;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.beginPath();
-        (object.pointsRel || []).forEach(([x, y], index) => {
-          if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-        });
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-  }
-
-  drawBrushStroke(stroke) {
-    const ctx = this.ctx;
-    const c = stroke.x !== undefined ? this.centerOf(stroke) : { x: 0, y: 0 };
-    const screenC = this._imageToScreen(c.x, c.y);
-    const points = stroke.pointsRel || stroke.points;
-    const screenPoints = points.map(([px, py]) => {
-      const s = this._imageToScreen(c.x + px, c.y + py);
-      return [s.x - screenC.x, s.y - screenC.y];
-    });
-    ctx.save();
-    ctx.globalAlpha = stroke.opacity;
-    // An erasing stroke composites a hole into everything drawn before it on
-    // this canvas. The stored blend stays a supported mode for the API; only
-    // the on-canvas composite uses destination-out.
-    ctx.globalCompositeOperation = stroke.erasing ? 'destination-out' : (stroke.blend || 'source-over');
-    ctx.translate(screenC.x, screenC.y);
-    ctx.rotate((stroke.rotation || 0) * Math.PI / 180);
-    ctx.strokeStyle = stroke.color;
-    ctx.lineWidth = stroke.strokeWidth;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    screenPoints.forEach(([px, py], i) => { if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); });
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  drawShape(ctx, o) {
-    const half = { x: o.w / 2, y: o.h / 2 };
-    ctx.lineWidth = o.strokeWidth;
-    ctx.strokeStyle = o.stroke;
-    ctx.fillStyle = o.fill;
-    ctx.beginPath();
-    if (o.shape === 'ellipse') ctx.ellipse(0, 0, half.x, half.y, 0, 0, Math.PI * 2);
-    else if (o.shape === 'line') { ctx.moveTo(-half.x, half.y); ctx.lineTo(half.x, -half.y); }
-    else if (o.shape === 'arrow') {
-      ctx.moveTo(-half.x, half.y);
-      ctx.lineTo(half.x, -half.y);
-      const head = Math.min(18, o.w / 4);
-      const angle = Math.atan2(-o.h, o.w);
-      ctx.moveTo(half.x, -half.y);
-      ctx.lineTo(half.x - head * Math.cos(angle - 0.5), -half.y - head * Math.sin(angle - 0.5));
-      ctx.moveTo(half.x, -half.y);
-      ctx.lineTo(half.x - head * Math.cos(angle + 0.5), -half.y - head * Math.sin(angle + 0.5));
-    } else ctx.rect(-half.x, -half.y, o.w, o.h);
-    if (o.fillOn && o.shape !== 'line' && o.shape !== 'arrow') ctx.fill();
-    ctx.stroke();
-  }
-
-  drawShapePreview() {
-    const ctx = this.ctx;
-    const a = this.shapeStart;
-    const b = this.shapeCurrent;
-    const color = document.querySelector('#drawing-color')?.value || themeColor('--accent', DEFAULT_ACCENT);
-    ctx.save();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
-    ctx.setLineDash([6, 4]);
-    ctx.strokeRect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(b.x - a.x), Math.abs(b.y - a.y));
-    ctx.restore();
-  }
-
-  drawSelection(o) {
-    const ctx = this.ctx;
-    const c = this.centerOf(o);
-    ctx.save();
-    ctx.translate(c.x, c.y);
-    ctx.rotate((o.rotation * Math.PI) / 180);
-    ctx.strokeStyle = themeColor('--accent-strong', DEFAULT_ACCENT_STRONG);
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([6, 4]);
-    ctx.strokeRect(-o.w / 2 - 2, -o.h / 2 - 2, o.w + 4, o.h + 4);
-    ctx.setLineDash([]);
-    if (!o.locked) {
-      ctx.fillStyle = '#ffffff';
-      for (const h of this.handles(o)) {
-        const lx = h.sx * (o.w / 2 + 2);
-        const ly = h.sy * (o.h / 2 + 2);
-        ctx.fillRect(lx - 4.5, ly - 4.5, 9, 9);
-        ctx.strokeRect(lx - 4.5, ly - 4.5, 9, 9);
-      }
-      const rot = { x: 0, y: -o.h / 2 - 24 };
-      ctx.beginPath();
-      ctx.moveTo(0, -o.h / 2 - 2);
-      ctx.lineTo(rot.x, rot.y + 6);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(rot.x, rot.y, 6, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-    }
-    ctx.restore();
-    if (this.angleReadout) {
-      const rot = this.rotateHandle(o);
-      ctx.save();
-      ctx.font = '600 12px Inter, sans-serif';
-      ctx.fillStyle = themeColor('--accent-strong', DEFAULT_ACCENT_STRONG);
-      ctx.fillText(this.angleReadout, rot.x + 12, rot.y);
-      ctx.restore();
-    }
+    renderExportDrawing(ctx, this.objects, imageRect, outputWidth, outputHeight, this.drawingGeometry());
   }
 }
