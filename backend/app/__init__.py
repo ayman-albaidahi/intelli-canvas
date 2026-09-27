@@ -53,7 +53,9 @@ def create_app(database_path: str | None = None, storage_root=None) -> Flask:
     app.config["DATABASE_PATH"] = database_path or app.config["DATABASE_PATH"]
     app.config["IMAGE_SESSIONS"] = SQLiteSessionRepository(app.config["DATABASE_PATH"])
     app.config["AUTH_SERVICE"] = AuthService(
-        app.config["IMAGE_SESSIONS"], app.config["AUTH_SESSION_TTL_SECONDS"]
+        app.config["IMAGE_SESSIONS"],
+        app.config["IMAGE_SESSIONS"],
+        app.config["AUTH_SESSION_TTL_SECONDS"],
     )
     app.config["IMAGE_SESSION_SERVICE"] = ImageSessionService(
         app.config["IMAGE_SESSIONS"]

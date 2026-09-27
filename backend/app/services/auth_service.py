@@ -8,8 +8,10 @@ import time
 import uuid
 from typing import Any
 
+from ..domain.user import User
 from ..security import check_password_hash, generate_password_hash
-from .auth_store import AuthStore
+from .auth_session_repository import AuthSessionRepository
+from .user_repository import UserRepository
 
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 MIN_PASSWORD_LENGTH = 10
@@ -30,18 +32,19 @@ def hash_session_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
-def public_user(user: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "user_id": user["user_id"],
-        "email": user["email"],
-        "display_name": user.get("display_name"),
-        "created_at": user["created_at"],
-    }
+def public_user(user: User) -> dict[str, Any]:
+    return user.public_dict()
 
 
 class AuthService:
-    def __init__(self, repository: AuthStore, session_ttl: int):
-        self.repository = repository
+    def __init__(
+        self,
+        user_repository: UserRepository,
+        session_repository: AuthSessionRepository,
+        session_ttl: int,
+    ):
+        self.users = user_repository
+        self.sessions = session_repository
         self.session_ttl = session_ttl
 
     @staticmethod
@@ -75,7 +78,7 @@ class AuthService:
                     "INVALID_REQUEST", "Display name must be at most 80 characters."
                 )
             display_name = display_name.strip() or None
-        if self.repository.get_user_by_email(normalized_email) is not None:
+        if self.users.get_user_by_email(normalized_email) is not None:
             raise DuplicateEmailError("Email is already registered.")
         now = int(time.time())
         user = {
@@ -88,7 +91,7 @@ class AuthService:
             "updated_at": now,
         }
         try:
-            created = self.repository.create_user(user)
+            created = self.users.create_user(user)
         except sqlite3.IntegrityError as exc:
             # A unique constraint can still race between the pre-check and insert.
             if "UNIQUE constraint failed: users.email" in str(exc):
@@ -102,17 +105,17 @@ class AuthService:
         normalized_email = self.normalize_email(email)
         if not isinstance(password, str):
             return None
-        user = self.repository.get_user_by_email(normalized_email)
-        if user is None or not user.get("is_active"):
+        user = self.users.get_user_by_email(normalized_email)
+        if user is None or not user.is_active:
             return None
-        if not check_password_hash(user["password_hash"], password):
+        if not check_password_hash(user.password_hash, password):
             return None
         token = secrets.token_urlsafe(32)
         now = int(time.time())
-        self.repository.create_auth_session(
+        self.sessions.create_auth_session(
             {
                 "session_id": uuid.uuid4().hex,
-                "user_id": user["user_id"],
+                "user_id": user.user_id,
                 "token_hash": hash_session_token(token),
                 "expires_at": now + self.session_ttl,
                 "created_at": now,
@@ -124,19 +127,14 @@ class AuthService:
     def current_user(self, token: str | None) -> dict[str, Any] | None:
         if not token:
             return None
-        session = self.repository.get_auth_session(
+        session = self.sessions.get_auth_session(
             hash_session_token(token), int(time.time())
         )
         if session is None:
             return None
-        return {
-            "user_id": session["user_id"],
-            "email": session["email"],
-            "display_name": session.get("display_name"),
-            "created_at": session["created_at"],
-        }
+        return session.public_user_dict()
 
     def logout(self, token: str | None) -> None:
         if token:
-            self.repository.delete_auth_session(hash_session_token(token))
-        self.repository.delete_expired_auth_sessions(int(time.time()))
+            self.sessions.delete_auth_session(hash_session_token(token))
+        self.sessions.delete_expired_auth_sessions(int(time.time()))

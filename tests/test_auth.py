@@ -42,7 +42,7 @@ def test_register_normalizes_email_and_never_returns_password_data():
     assert "password_hash" not in payload["user"]
     stored = app.config["IMAGE_SESSIONS"].get_user_by_email("user@example.com")
     assert stored is not None
-    assert stored["password_hash"] != "correct horse battery staple"
+    assert stored.password_hash != "correct horse battery staple"
 
 
 def test_duplicate_email_and_invalid_registration_are_rejected():
@@ -132,7 +132,7 @@ def test_expired_and_unknown_session_tokens_are_rejected():
     app.config["IMAGE_SESSIONS"].create_auth_session(
         {
             "session_id": "expired-session",
-            "user_id": user["user_id"],
+            "user_id": user.user_id,
             "token_hash": hash_session_token("expired-token"),
             "expires_at": now - 1,
             "created_at": now - 10,

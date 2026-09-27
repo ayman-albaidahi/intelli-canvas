@@ -6,12 +6,15 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+from .domain.auth_session import AuthSession
 from .domain.history import HistoryEntry
 from .domain.layer import Layer
 from .domain.pipeline import Pipeline, PipelineNode
 from .domain.session import ImageSession
-from .services.auth_store import AuthStore
+from .domain.user import User
+from .services.auth_session_repository import AuthSessionRepository
 from .services.session_store import SessionStore
+from .services.user_repository import UserRepository
 
 SYSTEM_OWNER_USER_ID = "system-owner"
 SYSTEM_OWNER_EMAIL = "system-owner@internal.invalid"
@@ -115,7 +118,7 @@ CREATE INDEX IF NOT EXISTS idx_pipeline_nodes_pipeline_id ON pipeline_nodes(pipe
 """
 
 
-class SQLiteSessionRepository(SessionStore, AuthStore):
+class SQLiteSessionRepository(SessionStore, UserRepository, AuthSessionRepository):
     def __init__(self, database_path: str | Path):
         self.database_path = str(database_path)
         self._memory_connection = (
@@ -233,7 +236,7 @@ class SQLiteSessionRepository(SessionStore, AuthStore):
     def __len__(self) -> int:
         return self.count()
 
-    def create_user(self, user: dict[str, Any]) -> dict[str, Any]:
+    def create_user(self, user: dict[str, Any]) -> User:
         with self._connect() as connection:
             connection.execute(
                 "INSERT INTO users (user_id, email, password_hash, display_name, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -247,23 +250,26 @@ class SQLiteSessionRepository(SessionStore, AuthStore):
                     user["updated_at"],
                 ),
             )
-        return self.get_user(user["user_id"])  # type: ignore[return-value]
+        created = self.get_user(user["user_id"])
+        if created is None:
+            raise RuntimeError("User was not found after insert.")
+        return created
 
-    def get_user(self, user_id: str) -> dict[str, Any] | None:
+    def get_user(self, user_id: str) -> User | None:
         with self._connect() as connection:
             row = connection.execute(
                 "SELECT user_id, email, password_hash, display_name, is_active, created_at, updated_at FROM users WHERE user_id = ?",
                 (user_id,),
             ).fetchone()
-        return dict(row) if row else None
+        return User.from_row(dict(row)) if row else None
 
-    def get_user_by_email(self, email: str) -> dict[str, Any] | None:
+    def get_user_by_email(self, email: str) -> User | None:
         with self._connect() as connection:
             row = connection.execute(
                 "SELECT user_id, email, password_hash, display_name, is_active, created_at, updated_at FROM users WHERE email = ?",
                 (email,),
             ).fetchone()
-        return dict(row) if row else None
+        return User.from_row(dict(row)) if row else None
 
     def create_auth_session(self, session: dict[str, Any]) -> None:
         with self._connect() as connection:
@@ -279,7 +285,7 @@ class SQLiteSessionRepository(SessionStore, AuthStore):
                 ),
             )
 
-    def get_auth_session(self, token_hash: str, now: int) -> dict[str, Any] | None:
+    def get_auth_session(self, token_hash: str, now: int) -> AuthSession | None:
         with self._connect() as connection:
             row = connection.execute(
                 "SELECT s.session_id, s.user_id, s.expires_at, s.created_at, s.last_seen_at, u.email, u.display_name, u.is_active FROM auth_sessions s JOIN users u ON u.user_id = s.user_id WHERE s.token_hash = ? AND s.expires_at > ?",
@@ -291,7 +297,7 @@ class SQLiteSessionRepository(SessionStore, AuthStore):
                 "UPDATE auth_sessions SET last_seen_at = ? WHERE session_id = ?",
                 (now, row["session_id"]),
             )
-        return dict(row)
+        return AuthSession.from_row(dict(row))
 
     def delete_auth_session(self, token_hash: str) -> None:
         with self._connect() as connection:

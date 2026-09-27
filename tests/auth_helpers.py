@@ -40,4 +40,4 @@ def legacy_owner_id(app) -> str:
         "build a test client first; the legacy conftest registers this user "
         "when app.test_client() is called"
     )
-    return user["user_id"]
+    return user.user_id
