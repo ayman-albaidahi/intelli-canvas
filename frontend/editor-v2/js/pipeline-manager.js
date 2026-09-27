@@ -1,6 +1,7 @@
 import { escapeHtml } from './escape-html.js';
 import { iconMarkup } from './icons.js';
 import { bus, events } from './lib/events.js';
+import { qs } from './lib/dom.js';
 
 const DEFAULT_PARAMETERS = {
   brightness: { value: 100 }, contrast: { value: 100 }, saturation: { value: 100 },
@@ -21,12 +22,12 @@ export class PipelineManager {
     this.apiClient = apiClient;
     this.canvasManager = canvasManager;
     this.showToast = showToast;
-    this.list = document.querySelector('#pipeline-list');
-    this.operation = document.querySelector('#pipeline-operation');
-    this.version = document.querySelector('#pipeline-version');
-    this.status = document.querySelector('#pipeline-preview-status');
-    this.panel = document.querySelector('#pipeline-panel');
-    this.retry = document.querySelector('[data-action="pipeline-retry"]');
+    this.list = qs('#pipeline-list');
+    this.operation = qs('#pipeline-operation');
+    this.version = qs('#pipeline-version');
+    this.status = qs('#pipeline-preview-status');
+    this.panel = qs('#pipeline-panel');
+    this.retry = qs('[data-action="pipeline-retry"]');
     this.pipeline = { version: 1, nodes: [] };
     this.busy = false;
     this.bind();
@@ -35,9 +36,9 @@ export class PipelineManager {
   }
 
   bind() {
-    document.querySelector('[data-action="pipeline-add"]')?.addEventListener('click', () => this.add());
-    document.querySelector('[data-action="pipeline-preview"]')?.addEventListener('click', () => this.preview());
-    document.querySelector('[data-action="pipeline-apply"]')?.addEventListener('click', () => this.apply());
+    qs('[data-action="pipeline-add"]')?.addEventListener('click', () => this.add());
+    qs('[data-action="pipeline-preview"]')?.addEventListener('click', () => this.preview());
+    qs('[data-action="pipeline-apply"]')?.addEventListener('click', () => this.apply());
     this.retry?.addEventListener('click', () => this.refresh());
     this.list?.addEventListener('click', (event) => {
       const button = event.target.closest('[data-pipeline-action]');

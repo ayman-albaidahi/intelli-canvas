@@ -23,12 +23,13 @@
 import { appState } from './app-state.js';
 import { normalizeStrokeBox, resizeObjectFromDrag } from './object-geometry.js';
 import { DEFAULT_ACCENT, themeColor } from './theme-colors.js';
+import { qs } from './lib/dom.js';
 
 const MIN_SIZE = 8;
 
 function drawingControl(tool, name) {
   const prefix = tool === 'eraser' ? 'eraser' : 'brush';
-  return document.querySelector(`#${prefix}-${name}`);
+  return qs(`#${prefix}-${name}`);
 }
 
 export class ObjectInteraction {
@@ -161,7 +162,7 @@ export class ObjectInteraction {
     const host = this.host;
     if (host.mode === 'draw') { this.endBrush(); }
     else if (host.mode === 'shape-draw' && host.shapeStart && host.shapeCurrent) {
-      const shapeType = document.querySelector('#shape-type')?.value || 'rect';
+      const shapeType = qs('#shape-type')?.value || 'rect';
       host.addShape(shapeType, host.shapeStart, host.shapeCurrent);
     }
     else if (host.drag) { host.drag = null; }
@@ -198,7 +199,7 @@ export class ObjectInteraction {
   startBrush(point) {
     const host = this.host;
     const tool = appState.activeTool === 'eraser' ? 'eraser' : 'brush';
-    const color = document.querySelector('#drawing-color')?.value || themeColor('--accent', DEFAULT_ACCENT);
+    const color = qs('#drawing-color')?.value || themeColor('--accent', DEFAULT_ACCENT);
     const width = Number(drawingControl(tool, 'size')?.value || 8);
     const opacity = Number(drawingControl(tool, 'opacity')?.value ?? 100) / 100;
     const ip = host._screenToImage(point.x, point.y);

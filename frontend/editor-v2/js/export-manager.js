@@ -1,4 +1,5 @@
 import { openDialog, closeDialog } from './ui-manager.js';
+import { qs } from './lib/dom.js';
 
 export class ExportManager {
   constructor({ canvasManager, apiClient, objectManager, showToast }) {
@@ -6,24 +7,24 @@ export class ExportManager {
     this.apiClient = apiClient;
     this.objectManager = objectManager;
     this.showToast = showToast;
-    this.dialog = document.querySelector('#export-dialog');
-    this.format = document.querySelector('#export-format');
-    this.qualityField = document.querySelector('#export-quality-field');
-    this.quality = document.querySelector('#export-quality');
-    this.qualityVal = document.querySelector('#export-quality-val');
-    this.width = document.querySelector('#export-width');
-    this.height = document.querySelector('#export-height');
-    this.ratio = document.querySelector('#export-ratio');
-    this.name = document.querySelector('#export-name');
-    this.submit = document.querySelector('#export-submit');
+    this.dialog = qs('#export-dialog');
+    this.format = qs('#export-format');
+    this.qualityField = qs('#export-quality-field');
+    this.quality = qs('#export-quality');
+    this.qualityVal = qs('#export-quality-val');
+    this.width = qs('#export-width');
+    this.height = qs('#export-height');
+    this.ratio = qs('#export-ratio');
+    this.name = qs('#export-name');
+    this.submit = qs('#export-submit');
     this.busy = false;
     this.bind();
   }
 
   bind() {
-    document.querySelector('[data-action="export"]')?.addEventListener('click', () => this.open());
-    document.querySelector('#export-cancel')?.addEventListener('click', () => this.close());
-    document.querySelector('#export-cancel-secondary')?.addEventListener('click', () => this.close());
+    qs('[data-action="export"]')?.addEventListener('click', () => this.open());
+    qs('#export-cancel')?.addEventListener('click', () => this.close());
+    qs('#export-cancel-secondary')?.addEventListener('click', () => this.close());
     this.format?.addEventListener('change', () => {
       this.qualityField.hidden = !['jpeg', 'webp'].includes(this.format.value);
     });
@@ -48,7 +49,7 @@ export class ExportManager {
     const dims = this.canvasManager.getSourceDimensions();
     this.width.value = dims.width;
     this.height.value = dims.height;
-    this.name.value = (document.querySelector('#document-name')?.textContent || 'intellicanvas').replace(/\.[^.]+$/, '') || 'intellicanvas';
+    this.name.value = (qs('#document-name')?.textContent || 'intellicanvas').replace(/\.[^.]+$/, '') || 'intellicanvas';
     openDialog(this.dialog, { focus: '#export-format' });
   }
 

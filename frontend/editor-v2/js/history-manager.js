@@ -1,23 +1,24 @@
 import { escapeHtml } from './escape-html.js';
 import { confirmDialog } from './ui-manager.js';
 import { bus, events } from './lib/events.js';
+import { qs } from './lib/dom.js';
 
 export class HistoryManager {
   constructor({ canvasManager, apiClient, showToast }) {
     this.canvasManager = canvasManager;
     this.apiClient = apiClient;
     this.showToast = showToast;
-    this.list = document.querySelector('#history-list');
-    this.hint = document.querySelector('#history-hint');
-    this.undoButton = document.querySelector('[data-action="history-undo"]');
-    this.redoButton = document.querySelector('[data-action="history-redo"]');
-    this.clearButton = document.querySelector('[data-action="history-clear"]');
-    this.beforeSelect = document.querySelector('#history-before');
-    this.afterSelect = document.querySelector('#history-after');
-    this.comparison = document.querySelector('#history-comparison');
-    this.beforeImage = document.querySelector('#history-before-image');
-    this.afterImage = document.querySelector('#history-after-image');
-    this.diffImage = document.querySelector('#history-diff-image');
+    this.list = qs('#history-list');
+    this.hint = qs('#history-hint');
+    this.undoButton = qs('[data-action="history-undo"]');
+    this.redoButton = qs('[data-action="history-redo"]');
+    this.clearButton = qs('[data-action="history-clear"]');
+    this.beforeSelect = qs('#history-before');
+    this.afterSelect = qs('#history-after');
+    this.comparison = qs('#history-comparison');
+    this.beforeImage = qs('#history-before-image');
+    this.afterImage = qs('#history-after-image');
+    this.diffImage = qs('#history-diff-image');
     this.busy = false;
     this.bind();
     bus.on(events.operation, () => this.refresh());
@@ -31,8 +32,8 @@ export class HistoryManager {
     this.undoButton?.addEventListener('click', () => this.step('undo'));
     this.redoButton?.addEventListener('click', () => this.step('redo'));
     this.clearButton?.addEventListener('click', () => this.clear());
-    document.querySelector('[data-action="history-compare"]')?.addEventListener('click', () => this.compare());
-    document.querySelector('[data-action="history-diff"]')?.addEventListener('click', () => this.diff());
+    qs('[data-action="history-compare"]')?.addEventListener('click', () => this.compare());
+    qs('[data-action="history-diff"]')?.addEventListener('click', () => this.diff());
     this.list?.addEventListener('click', (event) => {
       const entry = event.target.closest('[data-index]');
       if (!entry || this.busy) return;
@@ -191,7 +192,7 @@ export class HistoryManager {
       // The most common cause is a session that expired, which leaves the
       // list empty for a real reason — but so does a dead backend, and the
       // user cannot tell them apart from a blank panel alone.
-      const list = document.querySelector('#history-list');
+      const list = qs('#history-list');
       if (list && !list.children.length) {
         list.innerHTML = '<p class="empty-panel-copy">History is unavailable — the session may have expired. Reopen the image to reload it.</p>';
       }

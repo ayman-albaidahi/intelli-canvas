@@ -51,6 +51,7 @@ import { ApiClient } from './api-client.js';
 import { renderImageContextSummary } from './inspector-context-view.js';
 import { AuthManager } from './auth-manager.js';
 import { bus, events } from './lib/events.js';
+import { qs, qsa } from './lib/dom.js';
 
 export class EditorApp {
   constructor() {
@@ -99,21 +100,21 @@ export class EditorApp {
 
     this.bindDrawingControls();
 
-    this.fileInput = document.querySelector('#file-input');
-    this.emptyCanvas = document.querySelector('#empty-canvas');
-    this.statusMessage = document.querySelector('#status-message');
+    this.fileInput = qs('#file-input');
+    this.emptyCanvas = qs('#empty-canvas');
+    this.statusMessage = qs('#status-message');
     this.canvasManager = new CanvasManager(
-      document.querySelector('#image-canvas'),
-      document.querySelector('#canvas-card'),
+      qs('#image-canvas'),
+      qs('#canvas-card'),
     );
     bindTransformTools(this.canvasManager, this.apiClient, showToast);
-    this.cropTool = new CropTool(this.canvasManager, document.querySelector('#canvas-card'), this.apiClient, showToast);
+    this.cropTool = new CropTool(this.canvasManager, qs('#canvas-card'), this.apiClient, showToast);
     initResizeTool(this.canvasManager, this.apiClient, showToast);
-    this.objectManager = new ObjectManager(document.querySelector('#object-canvas'), showToast, this.canvasManager);
+    this.objectManager = new ObjectManager(qs('#object-canvas'), showToast, this.canvasManager);
     new LayerManager(this.objectManager, {
-      list: document.querySelector('#layers-list'),
-      empty: document.querySelector('#layers-empty'),
-      count: document.querySelector('#layer-count'),
+      list: qs('#layers-list'),
+      empty: qs('#layers-empty'),
+      count: qs('#layer-count'),
       showToast,
     });
 
@@ -170,11 +171,11 @@ export class EditorApp {
       fileInput: this.fileInput,
       statusMessage: this.statusMessage,
       emptyCanvas: this.emptyCanvas,
-      documentName: document.querySelector('#document-name'),
-      canvasSize: document.querySelector('#canvas-size'),
-      saveState: document.querySelector('#save-state'),
+      documentName: qs('#document-name'),
+      canvasSize: qs('#canvas-size'),
+      saveState: qs('#save-state'),
     });
-    this.uploadManager.bindDropZone(document.querySelector('#canvas-zone'));
+    this.uploadManager.bindDropZone(qs('#canvas-zone'));
 
     this._teardown.push(initKeyboardShortcuts({ canvasManager: this.canvasManager, fileInput: this.fileInput, showToast }));
 
@@ -194,8 +195,8 @@ export class EditorApp {
       ['eraser-opacity', 'eraser-opacity-value', (value) => `${value}%`],
     ];
     controls.forEach(([inputId, outputId, format]) => {
-      const input = document.querySelector(`#${inputId}`);
-      const output = document.querySelector(`#${outputId}`);
+      const input = qs(`#${inputId}`);
+      const output = qs(`#${outputId}`);
       if (!input || !output) return;
       const render = () => {
         output.value = input.value;
@@ -204,17 +205,17 @@ export class EditorApp {
       input.addEventListener('input', render);
       render();
     });
-    document.querySelector('#brush-reset')?.addEventListener('click', () => {
-      const size = document.querySelector('#brush-size');
-      const opacity = document.querySelector('#brush-opacity');
+    qs('#brush-reset')?.addEventListener('click', () => {
+      const size = qs('#brush-size');
+      const opacity = qs('#brush-opacity');
       size.value = '8';
       opacity.value = '100';
       size.dispatchEvent(new Event('input', { bubbles: true }));
       opacity.dispatchEvent(new Event('input', { bubbles: true }));
     });
-    document.querySelector('#eraser-reset')?.addEventListener('click', () => {
-      const size = document.querySelector('#eraser-size');
-      const opacity = document.querySelector('#eraser-opacity');
+    qs('#eraser-reset')?.addEventListener('click', () => {
+      const size = qs('#eraser-size');
+      const opacity = qs('#eraser-opacity');
       size.value = '8';
       opacity.value = '100';
       size.dispatchEvent(new Event('input', { bubbles: true }));
@@ -247,17 +248,17 @@ export class EditorApp {
 
   /** Layer add buttons and the image-layer file reader. */
   bindLayerActions() {
-    document.querySelectorAll('[data-action="add-layer"]').forEach((button) => button.remove());
-    document.querySelector('[data-action="add-image-layer"]')?.addEventListener('click', () => document.querySelector('#layer-image-input').click());
-    document.querySelector('[data-action="add-shape-layer"]')?.addEventListener('click', () => {
-      document.querySelector('[data-tool="shape"]').click();
+    qsa('[data-action="add-layer"]').forEach((button) => button.remove());
+    qs('[data-action="add-image-layer"]')?.addEventListener('click', () => qs('#layer-image-input').click());
+    qs('[data-action="add-shape-layer"]')?.addEventListener('click', () => {
+      qs('[data-tool="shape"]').click();
       showToast('Drag on the canvas to draw the shape');
     });
-    document.querySelector('[data-action="add-text-layer"]')?.addEventListener('click', () => {
-      document.querySelector('[data-tool="text"]').click();
+    qs('[data-action="add-text-layer"]')?.addEventListener('click', () => {
+      qs('[data-tool="text"]').click();
       showToast('Click on the canvas to place the text');
     });
-    document.querySelector('#layer-image-input')?.addEventListener('change', ({ target }) => {
+    qs('#layer-image-input')?.addEventListener('change', ({ target }) => {
       const file = target.files?.[0];
       if (!file) return;
       const reader = new FileReader();
@@ -272,7 +273,7 @@ export class EditorApp {
   }
 
   bindCropOverlay() {
-    const cropOverlay = document.querySelector('#crop-overlay');
+    const cropOverlay = qs('#crop-overlay');
     cropOverlay.addEventListener('pointerdown', (event) => this.cropTool.onPointerDown(event));
     cropOverlay.addEventListener('pointermove', (event) => this.cropTool.onPointerMove(event));
     cropOverlay.addEventListener('pointerup', () => this.cropTool.stopDrag());
@@ -300,7 +301,7 @@ export class EditorApp {
       fullscreen: () => this.canvasManager.toggleFullscreen(),
       open: () => this.fileInput.click(),
     };
-    for (const button of document.querySelectorAll('[data-action]')) {
+    for (const button of qsa('[data-action]')) {
       const action = canvasViewActions[button.dataset.action];
       if (action) button.addEventListener('click', action);
     }
@@ -320,7 +321,7 @@ export class EditorApp {
     // Before any image is loaded there is nothing to zoom, so reporting a
     // percentage would describe a canvas that does not exist.
     const value = this.canvasManager.hasImage() ? `${appState.zoom}%` : '—';
-    document.querySelectorAll('[data-zoom-display]').forEach((element) => {
+    qsa('[data-zoom-display]').forEach((element) => {
       element.textContent = value;
     });
   }

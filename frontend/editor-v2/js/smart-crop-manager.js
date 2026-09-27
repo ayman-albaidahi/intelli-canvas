@@ -1,31 +1,32 @@
 import { bus, events } from './lib/events.js';
+import { qs, qsa } from './lib/dom.js';
 export class SmartCropManager {
   constructor({ canvasManager, apiClient, showToast }) {
     this.canvasManager = canvasManager;
     this.apiClient = apiClient;
     this.showToast = showToast;
-    this.previewImage = document.querySelector('#smart-crop-preview');
-    this.status = document.querySelector('#smart-crop-status');
+    this.previewImage = qs('#smart-crop-preview');
+    this.status = qs('#smart-crop-status');
     this.previewUrl = null;
     this.busy = false;
     this.bind();
   }
 
   bind() {
-    document.querySelector('[data-action="smart-crop-preview"]')?.addEventListener('click', () => this.preview());
-    document.querySelector('[data-action="smart-crop-apply"]')?.addEventListener('click', () => this.apply());
-    document.querySelector('[data-action="smart-crop-cancel"]')?.addEventListener('click', () => this.reset());
+    qs('[data-action="smart-crop-preview"]')?.addEventListener('click', () => this.preview());
+    qs('[data-action="smart-crop-apply"]')?.addEventListener('click', () => this.apply());
+    qs('[data-action="smart-crop-cancel"]')?.addEventListener('click', () => this.reset());
     bus.on(events.appStateChange, () => this.syncControls());
     this.syncControls();
   }
 
   ratio() {
-    return document.querySelector('#smart-crop-ratio')?.value || 'original';
+    return qs('#smart-crop-ratio')?.value || 'original';
   }
 
   syncControls() {
     const disabled = this.busy || !this.apiClient.imageId;
-    document.querySelectorAll('[data-smart-crop-action]').forEach((control) => { control.disabled = disabled; });
+    qsa('[data-smart-crop-action]').forEach((control) => { control.disabled = disabled; });
   }
 
   setStatus(message) {
@@ -66,7 +67,7 @@ export class SmartCropManager {
     try {
       const image = await this.apiClient.smartCropApply(this.ratio());
       await this.canvasManager.loadFromUrl(this.apiClient.contentUrl(image.image_id), image);
-      document.querySelector('#canvas-size').textContent = `${image.width} × ${image.height}`;
+      qs('#canvas-size').textContent = `${image.width} × ${image.height}`;
       this.setStatus('Smart Crop applied and added to History');
       this.showToast('Smart Crop applied');
       this.resetPreviewOnly();

@@ -18,6 +18,7 @@ import {
 } from './object-drawing.js';
 import { openDialog, closeDialog, confirmDialog } from './ui-manager.js';
 import { ObjectInteraction } from './object-interaction.js';
+import { qs } from './lib/dom.js';
 
 const HANDLE_SIZE = 9;
 const MIN_SIZE = 8;
@@ -62,11 +63,11 @@ export class ObjectManager {
     this.canvas.addEventListener('dblclick', (e) => this.interaction.onDoubleClick(e));
     // The text popover's own cancel buttons close it through the shared
     // closer so focus still returns to whatever opened it.
-    document.querySelector('#text-popover-cancel')?.addEventListener('click', () => {
-      closeDialog(document.querySelector('#text-popover'));
+    qs('#text-popover-cancel')?.addEventListener('click', () => {
+      closeDialog(qs('#text-popover'));
     });
-    document.querySelector('#text-popover-cancel-secondary')?.addEventListener('click', () => {
-      closeDialog(document.querySelector('#text-popover'));
+    qs('#text-popover-cancel-secondary')?.addEventListener('click', () => {
+      closeDialog(qs('#text-popover'));
     });
     document.addEventListener('keydown', (e) => {
       if (!this.selected) return;
@@ -226,7 +227,7 @@ export class ObjectManager {
   /* ---------- creation ---------- */
 
   addShape(type, start, end) {
-    const color = document.querySelector('#drawing-color')?.value || themeColor('--accent', DEFAULT_ACCENT);
+    const color = qs('#drawing-color')?.value || themeColor('--accent', DEFAULT_ACCENT);
     const x = Math.min(start.x, end.x);
     const y = Math.min(start.y, end.y);
     const w = Math.max(MIN_SIZE, Math.abs(end.x - start.x));
@@ -243,7 +244,7 @@ export class ObjectManager {
   // for a cancelled dialog, which is indistinguishable from empty input. The
   // inline popover is a real focus-managed dialog instead.
   openTextPopover({ title = 'Add text', value = '', submitLabel = 'Add text', onSubmit } = {}) {
-    const popover = document.querySelector('#text-popover');
+    const popover = qs('#text-popover');
     const heading = popover?.querySelector('#text-popover-heading');
     const input = popover?.querySelector('#text-popover-input');
     const submit = popover?.querySelector('#text-popover-submit');
@@ -270,7 +271,7 @@ export class ObjectManager {
   }
 
   addText(point) {
-    const color = document.querySelector('#drawing-color')?.value || themeColor('--accent', DEFAULT_ACCENT);
+    const color = qs('#drawing-color')?.value || themeColor('--accent', DEFAULT_ACCENT);
     const size = 26;
     this.openTextPopover({
       onSubmit: (text) => {
@@ -412,7 +413,7 @@ export class ObjectManager {
     this.render();
   }
 
-  activeShapeType(type) { const select = document.querySelector('#shape-type'); if (select) select.value = type; }
+  activeShapeType(type) { const select = qs('#shape-type'); if (select) select.value = type; }
 
   // The geometry helpers the drawing module needs: the object-space helpers
   // from object-geometry plus this canvas's image-to-screen projection.
@@ -435,7 +436,7 @@ export class ObjectManager {
     }
     if (this.drawing) drawBrushStroke(this.ctx, this.drawing, geo);
     if (this.shapeStart && this.shapeCurrent) {
-      const color = document.querySelector('#drawing-color')?.value || themeColor('--accent', DEFAULT_ACCENT);
+      const color = qs('#drawing-color')?.value || themeColor('--accent', DEFAULT_ACCENT);
       drawShapePreview(this.ctx, this.shapeStart, this.shapeCurrent, color);
     }
     const selected = this.selected;

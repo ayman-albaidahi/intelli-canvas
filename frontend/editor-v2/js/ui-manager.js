@@ -6,9 +6,9 @@ import { openDialog, closeDialog } from './lib/dialogs.js';
 import { bus, events } from './lib/events.js';
 import { showToast } from './lib/toast.js';
 
-const inspector = document.querySelector('#inspector');
-const inspectorScrim = document.querySelector('#inspector-scrim');
-const inspectorToggle = document.querySelector('[data-action="inspector-toggle"]');
+const inspector = qs('#inspector');
+const inspectorScrim = qs('#inspector-scrim');
+const inspectorToggle = qs('[data-action="inspector-toggle"]');
 // jsdom has no matchMedia; the optional chain keeps the module importable in
 // unit tests, where the drawer simply reports "not mobile".
 const mobileQuery = () =>
@@ -60,7 +60,7 @@ export function renderInspectorContext(state = appState) {
   renderInspectorContextContainers(context);
   renderTransientContext(state);
   updateTransientControls(state);
-  document.querySelectorAll('[data-contextual-actions] [data-context]').forEach((action) => {
+  qsa('[data-contextual-actions] [data-context]').forEach((action) => {
     action.hidden = action.dataset.context !== context && !(context === 'crop' && action.dataset.context === 'image');
   });
   return context;
@@ -68,7 +68,7 @@ export function renderInspectorContext(state = appState) {
 
 function updateTransientControls(state) {
   const busy = Boolean(state.processing?.active);
-  document.querySelectorAll('[data-tool], [data-action]').forEach((control) => {
+  qsa('[data-tool], [data-action]').forEach((control) => {
     if (control.id === 'error-retry' || control.id === 'error-dismiss') return;
     if (busy) {
       if (control.dataset.transientDisabled === undefined) {
@@ -104,10 +104,10 @@ export function setEditorReady(ready) {
   const isReady = Boolean(ready);
   setState({ editorReady: isReady, hasImage: isReady });
   document.body.dataset.editorReady = String(isReady);
-  document.querySelectorAll('[data-requires-image]').forEach((control) => {
+  qsa('[data-requires-image]').forEach((control) => {
     setControlReady(control, isReady);
   });
-  document.querySelectorAll('[data-inspector]').forEach((tab) => {
+  qsa('[data-inspector]').forEach((tab) => {
     const available = isReady || tab.dataset.inspector === 'edit';
     tab.disabled = !available;
     tab.classList.toggle('is-disabled', !available);
@@ -118,13 +118,13 @@ export function setEditorReady(ready) {
 export function initUI() {
   mountInspectorContextContainers();
   bus.on(events.appStateChange, (state) => renderInspectorContext(state));
-  document.querySelector('#error-retry')?.addEventListener('click', () => retryOperation());
-  document.querySelector('#error-dismiss')?.addEventListener('click', () => dismissError());
+  qs('#error-retry')?.addEventListener('click', () => retryOperation());
+  qs('#error-dismiss')?.addEventListener('click', () => dismissError());
   setEditorReady(false);
   renderInspectorContext(appState);
-  document.querySelectorAll('[data-tool]').forEach((button) => {
+  qsa('[data-tool]').forEach((button) => {
     button.addEventListener('click', () => {
-      document.querySelectorAll('[data-tool]').forEach((item) => {
+      qsa('[data-tool]').forEach((item) => {
         item.classList.remove('is-active');
         // aria-pressed mirrors the class so the selected tool is announced on
         // first load and after every switch, not only when it was clicked.
@@ -137,7 +137,7 @@ export function initUI() {
     });
   });
 
-  const tabs = Array.from(document.querySelectorAll('[data-inspector]'));
+  const tabs = Array.from(qsa('[data-inspector]'));
   tabs.forEach((tab) => {
     tab.addEventListener('click', () => switchInspector(tab.dataset.inspector));
   });
@@ -145,7 +145,7 @@ export function initUI() {
   // A tablist is only operable from the keyboard if the arrows move between
   // tabs and Home/End jump to the ends. Roving tabindex keeps one predictable
   // entry point while the arrow handlers retain access to every tab.
-  const tablist = document.querySelector('.inspector-tabs');
+  const tablist = qs('.inspector-tabs');
   if (tablist && tabs.length) {
     tablist.addEventListener('keydown', (event) => {
       const current = tabs.indexOf(document.activeElement);
@@ -163,24 +163,24 @@ export function initUI() {
   }
   initInspectorTabScroller(tabs);
 
-  document.querySelectorAll('[data-panel]').forEach((button) => {
+  qsa('[data-panel]').forEach((button) => {
     const panel = button.dataset.panel;
     if (panel === 'shortcuts') {
-      document.querySelector('.avatar')?.addEventListener('click', () => {
-    openDialog(document.querySelector('#shortcuts-dialog'), { focus: '#shortcuts-cancel-secondary' });
+      qs('.avatar')?.addEventListener('click', () => {
+    openDialog(qs('#shortcuts-dialog'), { focus: '#shortcuts-cancel-secondary' });
   });
 
-  document.querySelector('#shortcuts-cancel')?.addEventListener('click', () => {
-    closeDialog(document.querySelector('#shortcuts-dialog'));
+  qs('#shortcuts-cancel')?.addEventListener('click', () => {
+    closeDialog(qs('#shortcuts-dialog'));
   });
-  document.querySelector('#shortcuts-cancel-secondary')?.addEventListener('click', () => {
-    closeDialog(document.querySelector('#shortcuts-dialog'));
+  qs('#shortcuts-cancel-secondary')?.addEventListener('click', () => {
+    closeDialog(qs('#shortcuts-dialog'));
   });
 
   // The keyboard help used to mark itself aria-disabled and toast on
       // click, which is a discoverability affordance that does nothing.
       button.addEventListener('click', () => {
-        const dialog = document.querySelector('#shortcuts-dialog');
+        const dialog = qs('#shortcuts-dialog');
         openDialog(dialog, { focus: '#shortcuts-cancel-secondary' });
       });
     } else if (READY_PANELS.has(panel)) {
@@ -195,14 +195,14 @@ export function initUI() {
     }
   });
 
-  document.querySelector('[data-action="new"]')?.addEventListener('click', () => showToast('New project workspace is ready'));
-  document.querySelector('[data-action="add-layer"]')?.addEventListener('click', () => showToast('Layer creation will be enabled in the layers stage'));
-  document.querySelector('[data-action="help"]')?.addEventListener('click', () => {
-    openDialog(document.querySelector('#help-dialog'), { focus: '#help-cancel-secondary' });
+  qs('[data-action="new"]')?.addEventListener('click', () => showToast('New project workspace is ready'));
+  qs('[data-action="add-layer"]')?.addEventListener('click', () => showToast('Layer creation will be enabled in the layers stage'));
+  qs('[data-action="help"]')?.addEventListener('click', () => {
+    openDialog(qs('#help-dialog'), { focus: '#help-cancel-secondary' });
   });
-  document.querySelector('#help-cancel')?.addEventListener('click', () => closeDialog(document.querySelector('#help-dialog')));
-  document.querySelector('#help-cancel-secondary')?.addEventListener('click', () => closeDialog(document.querySelector('#help-dialog')));
-  document.querySelectorAll('#edit-panel details.panel-accordion').forEach((section) => {
+  qs('#help-cancel')?.addEventListener('click', () => closeDialog(qs('#help-dialog')));
+  qs('#help-cancel-secondary')?.addEventListener('click', () => closeDialog(qs('#help-dialog')));
+  qsa('#edit-panel details.panel-accordion').forEach((section) => {
     section.addEventListener('toggle', () => {
       if (!section.open) return;
       closeOtherAccordions(section);
@@ -257,7 +257,7 @@ export function toggleInspectorDrawer() {
 
 function focusPanel(panel) {
   switchInspector('edit');
-  const section = document.querySelector(`#${panel}-accordion`);
+  const section = qs(`#${panel}-accordion`);
   if (!section) return;
   closeOtherAccordions(section);
   section.open = true;
@@ -270,7 +270,7 @@ function focusPanel(panel) {
 }
 
 function closeOtherAccordions(activeSection) {
-  document.querySelectorAll('#edit-panel details.panel-accordion').forEach((section) => {
+  qsa('#edit-panel details.panel-accordion').forEach((section) => {
     if (section !== activeSection) section.open = false;
   });
 }
@@ -279,7 +279,7 @@ function closeOtherAccordions(activeSection) {
 export function switchInspector(name) {
   if (document.body.dataset.editorReady !== 'true' && name !== 'edit') return;
   setState({ activeInspector: name });
-  document.querySelectorAll('[data-inspector]').forEach((tab) => {
+  qsa('[data-inspector]').forEach((tab) => {
     const active = tab.dataset.inspector === name;
     tab.classList.toggle('is-active', active);
     tab.setAttribute('aria-selected', String(active));
@@ -287,13 +287,13 @@ export function switchInspector(name) {
     if (active) tab.scrollIntoView?.({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest', inline: 'nearest' });
   });
   updateInspectorTabScroller();
-  document.querySelector('#edit-panel').hidden = name !== 'edit';
-  document.querySelector('#layers-panel').hidden = name !== 'layers';
-  const analysisPanel = document.querySelector('#insights-panel');
+  qs('#edit-panel').hidden = name !== 'edit';
+  qs('#layers-panel').hidden = name !== 'layers';
+  const analysisPanel = qs('#insights-panel');
   if (analysisPanel) analysisPanel.hidden = name !== 'insights';
-  const historyPanel = document.querySelector('#history-panel');
+  const historyPanel = qs('#history-panel');
   if (historyPanel) historyPanel.hidden = name !== 'history';
-  const pipelinePanel = document.querySelector('#pipeline-panel');
+  const pipelinePanel = qs('#pipeline-panel');
   if (pipelinePanel) pipelinePanel.hidden = name !== 'pipeline';
   // On mobile the panels live in the drawer, so switching to one must also
   // reveal it — otherwise the tap changes hidden state behind nothing.
@@ -348,11 +348,12 @@ export {
   initDialogFocusTrap,
   openDialogCount,
 } from './lib/dialogs.js';
+import { qs, qsa } from './lib/dom.js';
 
 function initInspectorTabScroller(tabs) {
-  const strip = document.querySelector('.inspector-tabs');
+  const strip = qs('.inspector-tabs');
   if (!strip) return;
-  document.querySelectorAll('[data-tab-scroll]').forEach((button) => {
+  qsa('[data-tab-scroll]').forEach((button) => {
     button.addEventListener('click', () => {
       const amount = Math.max(strip.clientWidth * 0.75, 140) * (button.dataset.tabScroll === 'prev' ? -1 : 1);
       strip.scrollBy({ left: amount, behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
@@ -365,13 +366,13 @@ function initInspectorTabScroller(tabs) {
 }
 
 function updateInspectorTabScroller() {
-  const strip = document.querySelector('.inspector-tabs');
+  const strip = qs('.inspector-tabs');
   if (!strip) return;
   const overflow = strip.scrollWidth > strip.clientWidth + 1;
   const atStart = strip.scrollLeft <= 1;
   const atEnd = strip.scrollLeft + strip.clientWidth >= strip.scrollWidth - 1;
-  const prev = document.querySelector('[data-tab-scroll="prev"]');
-  const next = document.querySelector('[data-tab-scroll="next"]');
+  const prev = qs('[data-tab-scroll="prev"]');
+  const next = qs('[data-tab-scroll="next"]');
   if (prev) { prev.hidden = !overflow; prev.disabled = atStart; }
   if (next) { next.hidden = !overflow; next.disabled = atEnd; }
   strip.dataset.overflow = String(overflow);

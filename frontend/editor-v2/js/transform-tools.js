@@ -1,5 +1,6 @@
 import { withBusy } from './ui-manager.js';
 import { bus, events } from './lib/events.js';
+import { qs, qsa } from './lib/dom.js';
 
 async function applyServerTransform(canvasManager, apiClient, path, data) {
   const image = await apiClient.transform(path, data);
@@ -15,7 +16,7 @@ export function bindTransformTools(canvasManager, apiClient, showToast) {
     'flip-vertical': () => applyServerTransform(canvasManager, apiClient, 'flip', { direction: 'vertical' }),
   };
 
-  document.querySelectorAll('[data-action]').forEach((button) => {
+  qsa('[data-action]').forEach((button) => {
     const action = actions[button.dataset.action];
     if (!action) return;
     button.addEventListener('click', async () => {
@@ -33,7 +34,7 @@ export function bindTransformTools(canvasManager, apiClient, showToast) {
   });
 
   for (const [action, label] of [['undo', 'Undid last transform'], ['redo', 'Redid transform']]) {
-    document.querySelector(`[data-action="${action}"]`)?.addEventListener('click', async () => {
+    qs(`[data-action="${action}"]`)?.addEventListener('click', async () => {
       if (!apiClient.imageId) return showToast('Upload an image first');
       try {
         const state = action === 'undo' ? await apiClient.undoHistory() : await apiClient.redoHistory();

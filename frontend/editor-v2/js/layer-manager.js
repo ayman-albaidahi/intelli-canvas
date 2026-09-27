@@ -2,6 +2,7 @@ import { TYPE_LABEL, BLEND_MODES } from './object-manager.js';
 import { escapeHtml } from './escape-html.js';
 import { iconMarkup } from './icons.js';
 import { renderLayerContextSummary } from './inspector-context-view.js';
+import { qs } from './lib/dom.js';
 
 export class LayerManager {
   constructor(objectManager, { list, empty, count, showToast }) {
@@ -11,20 +12,20 @@ export class LayerManager {
     this.count = count;
     this.showToast = showToast;
     this.dragId = null;
-    this.menu = document.querySelector('#layer-menu');
+    this.menu = qs('#layer-menu');
     this.props = {
-      box: document.querySelector('#object-properties'),
-      empty: document.querySelector('#object-empty'),
-      name: document.querySelector('#obj-name'),
-      type: document.querySelector('#obj-type'),
-      x: document.querySelector('#obj-x'),
-      y: document.querySelector('#obj-y'),
-      w: document.querySelector('#obj-w'),
-      h: document.querySelector('#obj-h'),
-      rotation: document.querySelector('#obj-rotation'),
-      opacity: document.querySelector('#obj-opacity'),
-      opacityVal: document.querySelector('#obj-opacity-val'),
-      blend: document.querySelector('#obj-blend'),
+      box: qs('#object-properties'),
+      empty: qs('#object-empty'),
+      name: qs('#obj-name'),
+      type: qs('#obj-type'),
+      x: qs('#obj-x'),
+      y: qs('#obj-y'),
+      w: qs('#obj-w'),
+      h: qs('#obj-h'),
+      rotation: qs('#obj-rotation'),
+      opacity: qs('#obj-opacity'),
+      opacityVal: qs('#obj-opacity-val'),
+      blend: qs('#obj-blend'),
     };
     this.props.blend.innerHTML = BLEND_MODES.map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
     objectManager.onChange = () => this.refresh();
@@ -121,7 +122,7 @@ export class LayerManager {
 
   closeMenu() {
     this.menu.hidden = true;
-    const trigger = document.querySelector('.layer-row.is-selected .layer-more');
+    const trigger = qs('.layer-row.is-selected .layer-more');
     if (trigger) trigger.setAttribute('aria-expanded', 'false');
   }
 
@@ -162,7 +163,7 @@ export class LayerManager {
 
   bindInspector() {
     const numberField = (selector, apply) => {
-      const input = document.querySelector(selector);
+      const input = qs(selector);
       input.addEventListener('change', () => {
         const selected = this.objects.selected;
         if (!selected) return;
@@ -175,37 +176,37 @@ export class LayerManager {
     numberField('#obj-w', (o, v) => { o.w = Math.max(8, v); });
     numberField('#obj-h', (o, v) => { o.h = Math.max(8, v); });
     numberField('#obj-rotation', (o, v) => { o.rotation = ((v % 360) + 360) % 360; });
-    document.querySelector('#obj-opacity').addEventListener('input', (event) => {
+    qs('#obj-opacity').addEventListener('input', (event) => {
       const selected = this.objects.selected;
       if (!selected) return;
       selected.opacity = Number(event.target.value) / 100;
-      document.querySelector('#obj-opacity-val').textContent = `${event.target.value}%`;
+      qs('#obj-opacity-val').textContent = `${event.target.value}%`;
       this.objects.render();
     });
-    document.querySelector('#obj-blend').addEventListener('change', (event) => {
+    qs('#obj-blend').addEventListener('change', (event) => {
       const selected = this.objects.selected;
       if (!selected) return;
       selected.blend = event.target.value;
       this.objects.changed();
     });
-    document.querySelector('#obj-name').addEventListener('change', (event) => {
+    qs('#obj-name').addEventListener('change', (event) => {
       const selected = this.objects.selected;
       if (!selected) return;
       this.objects.rename(selected.id, event.target.value);
     });
-    document.querySelector('#obj-duplicate')?.addEventListener('click', () => {
+    qs('#obj-duplicate')?.addEventListener('click', () => {
       const selected = this.objects.selected;
       if (selected) this.objects.duplicate(selected.id);
     });
-    document.querySelector('#obj-delete')?.addEventListener('click', () => this.objects.deleteSelected());
-    document.querySelector('#layer-context-toggle-visibility')?.addEventListener('click', () => {
+    qs('#obj-delete')?.addEventListener('click', () => this.objects.deleteSelected());
+    qs('#layer-context-toggle-visibility')?.addEventListener('click', () => {
       const selected = this.objects.selected;
       if (selected && !selected.locked) this.objects.toggleVisibility(selected.id);
     });
     // The properties panel's "more" button was labelled "More property
     // options" and did nothing at all. It duplicates the selected object,
     // which is the action its position next to the heading suggests.
-    document.querySelector('.more-button')?.addEventListener('click', () => {
+    qs('.more-button')?.addEventListener('click', () => {
       const selected = this.objects.selected;
       if (!selected) { this.showToast('Select a layer first'); return; }
       this.objects.duplicate(selected.id);

@@ -1,3 +1,4 @@
+import { qs } from './dom.js';
 /**
  * The toast, split out of ui-manager.js.
  *
@@ -24,7 +25,7 @@ let timer;
  * @param {string} message
  */
 export function showToast(message) {
-  const toast = document.querySelector('#toast');
+  const toast = qs('#toast');
   if (!toast) {
     // No toast surface (a page without the editor chrome, or a unit test
     // that forgot the fixture): logging keeps the message visible in devtools

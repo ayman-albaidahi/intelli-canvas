@@ -1,4 +1,5 @@
 import { bus, events } from './lib/events.js';
+import { qs, qsa } from './lib/dom.js';
 const NEUTRAL_SLIDERS = { brightness: 100, contrast: 100, saturation: 100, blur: 0, sharpen: 0 };
 const VALUE_SUFFIXES = { brightness: '', contrast: '', saturation: '', blur: 'px', sharpen: '' };
 
@@ -10,33 +11,33 @@ export class AdjustmentsManager {
     this.lastApplied = null;
     this.lastSubmitted = null;
     this.busy = false;
-    this.applyButton = document.querySelector('[data-action="apply-adjustments"]');
-    this.appliedLine = document.querySelector('#applied-line');
-    this.statusMessage = document.querySelector('#status-message');
+    this.applyButton = qs('[data-action="apply-adjustments"]');
+    this.appliedLine = qs('#applied-line');
+    this.statusMessage = qs('#status-message');
     this.bind();
   }
 
   bind() {
-    document.querySelectorAll('[data-adjustment]').forEach((input) => {
+    qsa('[data-adjustment]').forEach((input) => {
       input.addEventListener('input', () => { this.updateValueLabels(); this.applyPreview(); });
       input.addEventListener('change', () => this.applyPreview());
     });
-    document.querySelectorAll('[data-reset]').forEach((button) => {
+    qsa('[data-reset]').forEach((button) => {
       button.addEventListener('click', () => this.resetOne(button.dataset.reset));
     });
-    document.querySelector('[data-action="reset-adjustments"]')?.addEventListener('click', () => {
+    qs('[data-action="reset-adjustments"]')?.addEventListener('click', () => {
       this.resetAll();
       this.applyPreview();
       this.showToast('All adjustments reset');
     });
-    document.querySelector('#preview-toggle')?.addEventListener('change', (event) => {
+    qs('#preview-toggle')?.addEventListener('change', (event) => {
       this.canvasManager.setPreview(event.target.checked);
       this.showToast(event.target.checked
         ? 'Live preview on — sliders show a local estimate'
         : 'Live preview off — showing the saved result');
     });
-    document.querySelector('[data-action="toggle-before-after"]')?.addEventListener('click', () => {
-      document.querySelector('[data-action="compare"]')?.click();
+    qs('[data-action="toggle-before-after"]')?.addEventListener('click', () => {
+      qs('[data-action="compare"]')?.click();
     });
     this.applyButton?.addEventListener('click', () => this.applyInPython());
     bus.on(events.appStateChange, () => this.syncApplyButton());
@@ -49,13 +50,13 @@ export class AdjustmentsManager {
 
   values() {
     return {
-      brightness: Number(document.querySelector('[data-adjustment="brightness"]')?.value || 100),
-      contrast: Number(document.querySelector('[data-adjustment="contrast"]')?.value || 100),
-      saturation: Number(document.querySelector('[data-adjustment="saturation"]')?.value || 100),
-      blur: Number(document.querySelector('[data-adjustment="blur"]')?.value || 0),
-      sharpen: Number(document.querySelector('[data-adjustment="sharpen"]')?.value || 0),
-      grayscale: document.querySelector('[data-adjustment="grayscale"]')?.checked || false,
-      negative: document.querySelector('[data-adjustment="negative"]')?.checked || false,
+      brightness: Number(qs('[data-adjustment="brightness"]')?.value || 100),
+      contrast: Number(qs('[data-adjustment="contrast"]')?.value || 100),
+      saturation: Number(qs('[data-adjustment="saturation"]')?.value || 100),
+      blur: Number(qs('[data-adjustment="blur"]')?.value || 0),
+      sharpen: Number(qs('[data-adjustment="sharpen"]')?.value || 0),
+      grayscale: qs('[data-adjustment="grayscale"]')?.checked || false,
+      negative: qs('[data-adjustment="negative"]')?.checked || false,
     };
   }
 
@@ -66,7 +67,7 @@ export class AdjustmentsManager {
 
   updateValueLabels() {
     const values = this.sliderValues();
-    document.querySelectorAll('[data-value-for]').forEach((output) => {
+    qsa('[data-value-for]').forEach((output) => {
       const name = output.dataset.valueFor;
       output.textContent = `${values[name]}${VALUE_SUFFIXES[name] ?? ''}`;
     });
@@ -79,7 +80,7 @@ export class AdjustmentsManager {
   }
 
   updateSummary() {
-    const summary = document.querySelector('#adjustment-summary');
+    const summary = qs('#adjustment-summary');
     if (!summary) return;
     if (this.busy) { summary.textContent = 'Processing…'; return; }
     summary.textContent = this.hasUnappliedChanges() ? 'Unapplied changes' : this.canvasManager.adjustmentSummary();
@@ -112,7 +113,7 @@ export class AdjustmentsManager {
   }
 
   resetOne(name) {
-    const input = document.querySelector(`[data-adjustment="${name}"]`);
+    const input = qs(`[data-adjustment="${name}"]`);
     if (!input) return;
     if (input.type === 'checkbox') input.checked = false;
     else input.value = NEUTRAL_SLIDERS[name] ?? 100;
@@ -120,7 +121,7 @@ export class AdjustmentsManager {
   }
 
   resetAll() {
-    document.querySelectorAll('[data-adjustment]').forEach((input) => {
+    qsa('[data-adjustment]').forEach((input) => {
       if (input.type === 'checkbox') input.checked = false;
       else input.value = NEUTRAL_SLIDERS[input.dataset.adjustment] ?? 100;
       input.dispatchEvent(new Event('input'));

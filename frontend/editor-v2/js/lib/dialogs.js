@@ -1,3 +1,4 @@
+import { qs } from './dom.js';
 /**
  * Dialog lifecycle: open, close, Escape, focus trap, confirm.
  *
@@ -129,7 +130,7 @@ export function initDialogFocusTrap(documentRef = document) {
  */
 export function confirmDialog({ title = 'Are you sure?', body = 'This cannot be undone.', confirmLabel = 'Confirm' } = {}) {
   return new Promise((resolve) => {
-    const dialog = document.querySelector('#confirm-dialog');
+    const dialog = qs('#confirm-dialog');
     if (!dialog) { resolve(false); return; }
     const heading = dialog.querySelector('#confirm-dialog-heading');
     const bodyEl = dialog.querySelector('#confirm-dialog-body');
@@ -142,8 +143,8 @@ export function confirmDialog({ title = 'Are you sure?', body = 'This cannot be 
     // fire a stale callback from an earlier one.
     const done = (result) => {
       accept.removeEventListener('click', onAccept);
-      document.querySelector('#confirm-cancel')?.removeEventListener('click', onCancel);
-      document.querySelector('#confirm-cancel-secondary')?.removeEventListener('click', onCancel);
+      qs('#confirm-cancel')?.removeEventListener('click', onCancel);
+      qs('#confirm-cancel-secondary')?.removeEventListener('click', onCancel);
       closeDialog(dialog);
       resolve(result);
     };
@@ -151,8 +152,8 @@ export function confirmDialog({ title = 'Are you sure?', body = 'This cannot be 
     const onCancel = () => done(false);
 
     accept.addEventListener('click', onAccept);
-    document.querySelector('#confirm-cancel')?.addEventListener('click', onCancel);
-    document.querySelector('#confirm-cancel-secondary')?.addEventListener('click', onCancel);
+    qs('#confirm-cancel')?.addEventListener('click', onCancel);
+    qs('#confirm-cancel-secondary')?.addEventListener('click', onCancel);
     openDialog(dialog, { focus: '#confirm-accept' });
   });
 }

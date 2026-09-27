@@ -1,13 +1,14 @@
+import { qs } from './lib/dom.js';
 export class ComparisonTool {
   constructor(canvasManager, showToast) {
     this.canvasManager = canvasManager;
     this.showToast = showToast;
-    this.view = document.querySelector('#comparison-view');
-    this.original = document.querySelector('#comparison-original');
-    this.edited = document.querySelector('#comparison-edited');
-    this.handle = document.querySelector('#comparison-handle');
-    this.slider = document.querySelector('#comparison-slider');
-    document.querySelector('[data-action="compare"]')?.addEventListener('click', () => this.toggle());
+    this.view = qs('#comparison-view');
+    this.original = qs('#comparison-original');
+    this.edited = qs('#comparison-edited');
+    this.handle = qs('#comparison-handle');
+    this.slider = qs('#comparison-slider');
+    qs('[data-action="compare"]')?.addEventListener('click', () => this.toggle());
     this.slider.addEventListener('input', () => this.render());
     window.addEventListener('resize', () => { if (!this.view.hidden) this.render(); });
   }
