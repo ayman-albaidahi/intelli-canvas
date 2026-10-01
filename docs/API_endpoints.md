@@ -155,7 +155,7 @@ The preferred editor URL is:
 http://localhost:5000/editor-v2/
 ```
 
-The root URL `/` serves the same editor and resolves its assets through the Editor V2 base path.
+The root URL `/` serves the project landing page; the editor is also available at `/editor`.
 
 ## Scope note
 

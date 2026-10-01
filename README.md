@@ -85,7 +85,8 @@ remain in the configured file-storage directories, including image-layer assets
 under the `layer-assets` storage category.
 
 The preferred editor URL is `http://localhost:5000/editor-v2/`. The root URL
-serves the same editor.
+serves the project landing page, and the editor is also available at
+`/editor`.
 
 ## Project Status
 
