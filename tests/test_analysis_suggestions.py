@@ -132,14 +132,27 @@ def test_suggestion_apply_brightens_and_records_history():
 def test_suggestion_dismiss_is_accepted():
     app = create_app()
     client = authenticated_client(app)
+    image_id = _upload_solid(client, (25, 25, 30))
+
+    before = client.post("/api/suggestions", json={"image_id": image_id})
+    assert any(
+        suggestion["type"] == "BRIGHTNESS_BOOST"
+        for suggestion in before.get_json()["suggestions"]
+    )
 
     response = client.post(
         "/api/suggestions/dismiss",
-        json={"image_id": "any", "type": "BRIGHTNESS_BOOST"},
+        json={"image_id": image_id, "type": "BRIGHTNESS_BOOST"},
     )
 
     assert response.status_code == 200
     assert response.get_json()["dismissed"] is True
+
+    after = client.post("/api/suggestions", json={"image_id": image_id})
+    assert not any(
+        suggestion["type"] == "BRIGHTNESS_BOOST"
+        for suggestion in after.get_json()["suggestions"]
+    )
 
 
 def test_suggestion_unavailable_for_balanced_image():
