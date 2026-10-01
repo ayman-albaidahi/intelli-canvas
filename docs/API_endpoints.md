@@ -22,6 +22,19 @@ Errors use:
 }
 ```
 
+## Authentication
+
+Most endpoints require an authenticated session (the `ic_session` cookie set by `POST /api/auth/login`). Endpoints that accept an `image_id` additionally verify that the session belongs to the caller: anonymous requests receive `401` with `AUTH_REQUIRED`, and requests quoting another user's image receive `404` with `IMAGE_SESSION_NOT_FOUND`, so callers cannot probe which image ids exist.
+
+Public endpoints (no session required):
+
+- `GET /api/health`, `GET /api/capabilities`
+- `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`
+- `GET /api/background/backgrounds`, `GET /api/background/backgrounds/catalog`, `GET /api/background/backgrounds/<name>/thumbnail`
+- `POST /api/explain-operation` (stateless metadata only)
+
+All other endpoints require a session. `POST /api/background/backgrounds` adds to the shared background library and therefore requires authentication, and `POST /api/suggestions/dismiss` requires that the caller owns the quoted image.
+
 ## Health and frontend
 
 | Method | Path | Purpose |

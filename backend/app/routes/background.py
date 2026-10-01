@@ -2,7 +2,7 @@ import io
 
 from flask import Blueprint, jsonify, request, send_file
 
-from ..auth import require_owned_image
+from ..auth import require_current_user, require_owned_image
 from ..dependencies import get_background_service
 from ..error_codes import ErrorCodes
 from ..errors import error_response
@@ -141,6 +141,7 @@ def background_thumbnail(name):
 
 
 @background_bp.post("/backgrounds")
+@require_current_user
 def upload_background():
     uploaded_file = request.files.get("file")
     filename = uploaded_file.filename if uploaded_file else ""

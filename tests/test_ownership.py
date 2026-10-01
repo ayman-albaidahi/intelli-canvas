@@ -25,6 +25,11 @@ PROTECTED_IMAGE_ROUTES = [
     ("/api/pipeline", "get", None),
     ("/api/analysis", "post", {"image_id": "{id}"}),
     ("/api/suggestions", "post", {"image_id": "{id}"}),
+    (
+        "/api/suggestions/dismiss",
+        "post",
+        {"image_id": "{id}", "type": "BRIGHTNESS_BOOST"},
+    ),
 ]
 
 
@@ -33,7 +38,7 @@ def test_user_cannot_access_another_users_image(route, method, body):
     """The gap this guards: ownership was recorded at upload and checked
     nowhere else. A second user could quote the first user's image_id on any
     processing, history, layers, pipeline, analysis or suggestions endpoint
-    and read or mutate it."""
+    (including dismissing a suggestion) and read or mutate it."""
     app = create_app(":memory:")
     owner = authenticated_client(app, "owner-a@example.com")
 
@@ -66,6 +71,47 @@ def test_anonymous_request_to_a_protected_image_is_rejected():
 
     assert response.status_code == 401
     assert response.get_json()["error"]["code"] == "AUTH_REQUIRED"
+
+
+def test_anonymous_cannot_upload_a_shared_background():
+    """The shared background library is world-readable but only
+    authenticated users may add to it."""
+    client = create_app(":memory:").test_client()
+
+    response = client.post(
+        "/api/background/backgrounds",
+        data={"file": (io.BytesIO(_png_bytes()), "anonymous.png")},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 401
+    assert response.get_json()["error"]["code"] == "AUTH_REQUIRED"
+
+
+def test_anonymous_cannot_dismiss_a_suggestion():
+    client = create_app(":memory:").test_client()
+
+    response = client.post(
+        "/api/suggestions/dismiss",
+        json={"image_id": "any", "type": "BRIGHTNESS_BOOST"},
+    )
+
+    assert response.status_code == 401
+    assert response.get_json()["error"]["code"] == "AUTH_REQUIRED"
+
+
+def test_owner_can_dismiss_a_suggestion_on_their_image():
+    app = create_app(":memory:")
+    client = authenticated_client(app, "owner-a@example.com")
+    image_id = _upload(client).get_json()["image"]["image_id"]
+
+    response = client.post(
+        "/api/suggestions/dismiss",
+        json={"image_id": image_id, "type": "BRIGHTNESS_BOOST"},
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["dismissed"] is True
 
 
 def _png_bytes():

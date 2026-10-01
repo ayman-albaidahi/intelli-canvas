@@ -206,5 +206,8 @@ def dismiss_suggestion():
         return error_response(
             ErrorCodes.INVALID_REQUEST, "A suggestion type is required.", 400
         )
+    ownership_error = require_owned_image(image_id)
+    if ownership_error is not None:
+        return ownership_error
     _dismissed.setdefault(image_id, set()).add(sug_type)
     return jsonify(success=True, dismissed=True, type=sug_type)
