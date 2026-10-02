@@ -45,8 +45,15 @@ jobs:
         run: find frontend/editor-v2/js -maxdepth 1 -name '*.js' -print0 | xargs -0 -n1 node --check
       - name: Run ESLint
         run: npx eslint frontend
-      - name: Run Vitest
-        run: npx vitest run
+      - name: Run Vitest with coverage gate
+        run: npx vitest run --coverage
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: coverage/
+          retention-days: 7
 
   browser:
     runs-on: ubuntu-latest
