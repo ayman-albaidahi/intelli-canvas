@@ -4,7 +4,7 @@
      region through its aria-label — so it drops out on small screens, which
      is also what keeps the full tool list inside a short viewport. */
   .tool-rail-heading{display:none}}
-@media(max-width:1240px){.canvas-toolbar{bottom:12px;padding:var(--space-4)}.toolbar-button{min-width:26px;height:26px;font-size:var(--fs-10);padding:0 var(--space-6)}.zoom-display{min-width:46px}}
+@media(max-width:1240px){.canvas-toolbar{bottom:var(--space-12);padding:var(--space-4)}.toolbar-button{min-width:26px;height:26px;font-size:var(--fs-10);padding:0 var(--space-6)}.zoom-display{min-width:46px}}
 @media(max-width:900px){.canvas-toolbar{max-width:calc(100% - 20px);overflow-x:auto}}
 
 /* Cross-screen fit: the whole shell must stay inside the viewport on laptops,
@@ -31,7 +31,7 @@
   .statusbar{height:30px}
   .inspector-content{padding:var(--space-14) var(--space-14)}
   .panel-heading{margin-bottom:var(--space-16)}
-  .canvas-toolbar{bottom:10px}
+  .canvas-toolbar{bottom:var(--space-10)}
   .brand-logo{width:30px;height:30px;max-width:30px}
 }
 @media(max-height:680px){
@@ -45,7 +45,7 @@
   .tool-rail{padding:var(--space-6) var(--space-8);gap:var(--space-5)}
   .tool-button{height:44px}
   .tool-spacer{min-height:var(--space-2)}
-  .canvas-toolbar{bottom:8px;padding:var(--space-3)}
+  .canvas-toolbar{bottom:var(--space-8);padding:var(--space-3)}
   .toolbar-button{height:24px;min-width:24px;font-size:var(--fs-10);padding:0 var(--space-6)}
   .zoom-display{min-width:42px}
   .inspector-content{padding:var(--space-10) var(--space-12)}
