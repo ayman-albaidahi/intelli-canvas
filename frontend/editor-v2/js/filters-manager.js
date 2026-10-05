@@ -1,54 +1,56 @@
 import { escapeHtml } from './escape-html.js';
+import { bus, events } from './lib/events.js';
+import { qs, qsa } from './lib/dom.js';
 
 export class FiltersManager {
   constructor({ canvasManager, apiClient, showToast }) {
     this.canvasManager = canvasManager;
     this.apiClient = apiClient;
     this.showToast = showToast;
-    this.status = document.querySelector('#filters-status');
-    this.histogramOutput = document.querySelector('#histogram-output');
+    this.status = qs('#filters-status');
+    this.histogramOutput = qs('#histogram-output');
     this.busy = false;
     this.bind();
   }
 
   bind() {
-    document.querySelector('[data-action="apply-sobel"]')?.addEventListener('click', () => {
+    qs('[data-action="apply-sobel"]')?.addEventListener('click', () => {
       this.apply('sobel', { ksize: this.integerValue('#sobel-ksize', 3) }, 'Detail boost applied');
     });
-    document.querySelector('[data-action="apply-laplacian"]')?.addEventListener('click', () => {
+    qs('[data-action="apply-laplacian"]')?.addEventListener('click', () => {
       this.apply('laplacian', {}, 'Edge enhance applied');
     });
-    document.querySelector('[data-action="apply-median-filter"]')?.addEventListener('click', () => {
+    qs('[data-action="apply-median-filter"]')?.addEventListener('click', () => {
       this.apply('median-filter', { ksize: this.integerValue('#median-ksize', 3) }, 'Noise reducer applied');
     });
-    document.querySelector('[data-action="apply-morphology"]')?.addEventListener('click', () => {
+    qs('[data-action="apply-morphology"]')?.addEventListener('click', () => {
       this.apply('morphology', {
-        operation: document.querySelector('#morphology-operation')?.value || 'erode',
+        operation: qs('#morphology-operation')?.value || 'erode',
         ksize: this.integerValue('#morphology-ksize', 3),
       }, 'Texture refine applied');
     });
-    document.querySelector('[data-action="apply-gamma"]')?.addEventListener('click', () => {
+    qs('[data-action="apply-gamma"]')?.addEventListener('click', () => {
       this.apply('gamma', { value: this.numberValue('#gamma-value', 1) }, 'Tone balance applied');
     });
-    document.querySelector('[data-action="apply-threshold"]')?.addEventListener('click', () => {
+    qs('[data-action="apply-threshold"]')?.addEventListener('click', () => {
       this.apply('threshold', { value: this.integerValue('#threshold-value', 128) }, 'High contrast applied');
     });
-    document.querySelector('[data-action="compute-histogram"]')?.addEventListener('click', () => this.histogram());
-    document.addEventListener('appstatechange', () => this.syncControls());
+    qs('[data-action="compute-histogram"]')?.addEventListener('click', () => this.histogram());
+    bus.on(events.appStateChange, () => this.syncControls());
     this.syncControls();
   }
 
   integerValue(selector, fallback) {
-    return Number.parseInt(document.querySelector(selector)?.value ?? fallback, 10);
+    return Number.parseInt(qs(selector)?.value ?? fallback, 10);
   }
 
   numberValue(selector, fallback) {
-    return Number.parseFloat(document.querySelector(selector)?.value ?? fallback);
+    return Number.parseFloat(qs(selector)?.value ?? fallback);
   }
 
   syncControls() {
     const disabled = this.busy || !this.apiClient.imageId;
-    document.querySelectorAll('[data-filter-action]').forEach((control) => { control.disabled = disabled; });
+    qsa('[data-filter-action]').forEach((control) => { control.disabled = disabled; });
   }
 
   setStatus(message) {
@@ -64,7 +66,7 @@ export class FiltersManager {
     try {
       const result = await this.apiClient.process(operation, data);
       await this.canvasManager.loadFromUrl(this.apiClient.contentUrl(result.image_id), result);
-      document.querySelector('#canvas-size').textContent = `${result.width} × ${result.height}`;
+      qs('#canvas-size').textContent = `${result.width} × ${result.height}`;
       this.setStatus(successMessage);
       this.showToast(successMessage);
     } catch (error) {
@@ -77,7 +79,7 @@ export class FiltersManager {
     // After the busy flag clears: HistoryManager.refresh() bails out while any
     // manager is mid-operation, so an earlier dispatch is silently dropped and
     // the history list never reflects the applied filter.
-    document.dispatchEvent(new CustomEvent('ic-operation'));
+    bus.emit(events.operation);
   }
 
   async histogram() {

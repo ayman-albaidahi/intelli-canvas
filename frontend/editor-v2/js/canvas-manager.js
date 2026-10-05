@@ -1,6 +1,7 @@
 import { setState } from './app-state.js';
 import { clampCropSelection } from './transform-logic.js';
 import { DEFAULT_ACCENT_STRONG, themeColor } from './theme-colors.js';
+import { qs } from './lib/dom.js';
 
 const MIN_SCALE = 0.05;
 const MAX_SCALE = 8;
@@ -328,7 +329,7 @@ export class CanvasManager {
     // preview and its dimensions identical for crop, rotate, and flip.
     await this.loadFromUrl(sourceUrl, result);
     const size = `${result.width ?? this.documentSize.width} × ${result.height ?? this.documentSize.height}`;
-    document.querySelector('#canvas-size')?.replaceChildren(size);
+    qs('#canvas-size')?.replaceChildren(size);
     return result;
   }
 

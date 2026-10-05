@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { JSDOM } from 'jsdom';
 import { AdjustmentsManager } from './adjustments-manager.js';
+import { bus, events } from './lib/events.js';
 
 const ADJUSTMENTS_HTML = `
   <div>
@@ -118,16 +119,16 @@ describe('AdjustmentsManager — applyInPython', () => {
     expect(showToast).toHaveBeenLastCalledWith(expect.stringContaining('unchanged'));
   });
 
-  it('applies, reloads the canvas, and fires ic-operation exactly once', async () => {
+  it('applies, reloads the canvas, and fires the operation event exactly once', async () => {
     const { manager, calls, document } = makeManager();
     const fired = vi.fn();
-    global.document.addEventListener('ic-operation', fired);
+    const off = bus.on(events.operation, fired);
     document.querySelector('[data-adjustment="brightness"]').value = '130';
     await manager.applyInPython();
     expect(calls.process).toBe(1);
     expect(calls.loadFromUrl).toBe(1);
     expect(fired).toHaveBeenCalledTimes(1);
-    global.document.removeEventListener('ic-operation', fired);
+    off();
   });
 
   it('resets sliders to neutral after a successful apply', async () => {

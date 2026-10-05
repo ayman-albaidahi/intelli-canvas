@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { ApiClient } from './api-client.js';
+import { bus, events } from './lib/events.js';
 
 const SAMPLE_BASE = 'http://localhost:5000/api';
 
@@ -210,9 +211,9 @@ describe('ApiClient — authentication and request security', () => {
   it('dispatches an auth-required event for expired sessions', async () => {
     jsonOnce({ success: false, error: { code: 'AUTH_REQUIRED', message: 'required' } }, { status: 401 });
     const listener = vi.fn();
-    window.addEventListener('ic-auth-required', listener);
+    const off = bus.on(events.authRequired, listener);
     await expect(client().me()).rejects.toThrow('Your session has expired');
     expect(listener).toHaveBeenCalledOnce();
-    window.removeEventListener('ic-auth-required', listener);
+    off();
   });
 });

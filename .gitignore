@@ -14,7 +14,10 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# Anchored to the repo root. The unanchored `lib/` from the stock template
+# also matched frontend/editor-v2/js/lib/, hiding the editor's shared
+# library modules; the packaging output it targets only ever appears here.
+/lib/
 lib64/
 parts/
 sdist/

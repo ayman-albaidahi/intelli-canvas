@@ -1,5 +1,7 @@
 import { escapeHtml } from './escape-html.js';
 import { withBusy } from './ui-manager.js';
+import { bus, events } from './lib/events.js';
+import { qs } from './lib/dom.js';
 
 export class BackgroundManager {
   constructor({ canvasManager, apiClient, objectManager, showToast }) {
@@ -11,55 +13,55 @@ export class BackgroundManager {
     this.pickMode = false;
     this.pickedColor = null;
     this.controls = {
-      keyColor: document.querySelector('#bg-key-color'),
-      tolerance: document.querySelector('[data-bg-param="tolerance"]'),
-      feather: document.querySelector('[data-bg-param="feather"]'),
-      smooth: document.querySelector('[data-bg-param="smooth"]'),
-      invert: document.querySelector('#bg-invert'),
-      backgroundBlur: document.querySelector('[data-bg-param="background_blur"]'),
-      backgroundScale: document.querySelector('[data-bg-param="background_scale"]'),
-      backgroundX: document.querySelector('[data-bg-param="background_x"]'),
-      backgroundY: document.querySelector('[data-bg-param="background_y"]'),
-      shadow: document.querySelector('#bg-shadow'),
-      shadowOpacity: document.querySelector('[data-bg-param="shadow_opacity"]'),
-      shadowBlur: document.querySelector('[data-bg-param="shadow_blur"]'),
-      shadowOffsetY: document.querySelector('[data-bg-param="shadow_offset_y"]'),
-      library: document.querySelector('#bg-library'),
-      category: document.querySelector('#bg-category'),
-      libraryGrid: document.querySelector('#bg-library-grid'),
-      replaceColor: document.querySelector('#bg-replace-color'),
-      status: document.querySelector('#status-message'),
+      keyColor: qs('#bg-key-color'),
+      tolerance: qs('[data-bg-param="tolerance"]'),
+      feather: qs('[data-bg-param="feather"]'),
+      smooth: qs('[data-bg-param="smooth"]'),
+      invert: qs('#bg-invert'),
+      backgroundBlur: qs('[data-bg-param="background_blur"]'),
+      backgroundScale: qs('[data-bg-param="background_scale"]'),
+      backgroundX: qs('[data-bg-param="background_x"]'),
+      backgroundY: qs('[data-bg-param="background_y"]'),
+      shadow: qs('#bg-shadow'),
+      shadowOpacity: qs('[data-bg-param="shadow_opacity"]'),
+      shadowBlur: qs('[data-bg-param="shadow_blur"]'),
+      shadowOffsetY: qs('[data-bg-param="shadow_offset_y"]'),
+      library: qs('#bg-library'),
+      category: qs('#bg-category'),
+      libraryGrid: qs('#bg-library-grid'),
+      replaceColor: qs('#bg-replace-color'),
+      status: qs('#status-message'),
     };
     this.bind();
     this.refreshLibrary();
     objectManager.onPick = (point) => {
-      const rect = document.querySelector('#object-canvas').getBoundingClientRect();
+      const rect = qs('#object-canvas').getBoundingClientRect();
       const color = this.canvasManager.sampleImagePixel(rect.left + point.x, rect.top + point.y);
       if (!color) return this.showToast('Click inside the image to pick a color');
       this.pickedColor = color;
       this.controls.keyColor.value = color;
       this.pickMode = false;
       this.objectManager.pickMode = false;
-      document.querySelector('#object-canvas').style.cursor = '';
+      qs('#object-canvas').style.cursor = '';
       this.controls.keyColor.disabled = false;
       this.showToast(`Picked ${color} as the key color`);
     };
   }
 
   bind() {
-    document.querySelector('[data-action="pick-color"]')?.addEventListener('click', () => this.togglePickMode());
+    qs('[data-action="pick-color"]')?.addEventListener('click', () => this.togglePickMode());
     ['tolerance', 'feather', 'smooth', 'backgroundBlur', 'backgroundScale', 'shadowOpacity', 'shadowBlur']
       .forEach((name) => this.controls[name]?.addEventListener('input', () => this.updateLabels()));
     this.controls.keyColor?.addEventListener('input', () => { this.pickedColor = null; });
-    document.querySelector('[data-action="preview-mask"]')?.addEventListener('click', () => this.previewMask());
-    document.querySelector('[data-action="clear-mask"]')?.addEventListener('click', () => this.clearPreviews());
-    document.querySelector('[data-action="preview-replacement"]')?.addEventListener('click', () => this.previewReplacement());
-    document.querySelector('[data-action="reset-background"]')?.addEventListener('click', () => this.resetControls());
-    document.querySelector('[data-action="cancel-background"]')?.addEventListener('click', () => this.clearPreviews());
-    document.querySelector('[data-action="remove-background"]')?.addEventListener('click', () => this.applyOperation('remove'));
-    document.querySelector('[data-action="replace-background"]')?.addEventListener('click', () => this.applyOperation('replace'));
-    document.querySelector('[data-action="upload-background"]')?.addEventListener('click', () => document.querySelector('#bg-upload-input').click());
-    document.querySelector('#bg-upload-input')?.addEventListener('change', ({ target }) => {
+    qs('[data-action="preview-mask"]')?.addEventListener('click', () => this.previewMask());
+    qs('[data-action="clear-mask"]')?.addEventListener('click', () => this.clearPreviews());
+    qs('[data-action="preview-replacement"]')?.addEventListener('click', () => this.previewReplacement());
+    qs('[data-action="reset-background"]')?.addEventListener('click', () => this.resetControls());
+    qs('[data-action="cancel-background"]')?.addEventListener('click', () => this.clearPreviews());
+    qs('[data-action="remove-background"]')?.addEventListener('click', () => this.applyOperation('remove'));
+    qs('[data-action="replace-background"]')?.addEventListener('click', () => this.applyOperation('replace'));
+    qs('[data-action="upload-background"]')?.addEventListener('click', () => qs('#bg-upload-input').click());
+    qs('#bg-upload-input')?.addEventListener('change', ({ target }) => {
       const file = target.files?.[0];
       if (file) this.uploadLibraryBackground(file);
       target.value = '';
@@ -73,7 +75,7 @@ export class BackgroundManager {
     if (!this.apiClient.imageId) return this.showToast('Upload an image first');
     this.pickMode = !this.pickMode;
     this.objectManager.pickMode = this.pickMode;
-    document.querySelector('#object-canvas').style.cursor = this.pickMode ? 'crosshair' : '';
+    qs('#object-canvas').style.cursor = this.pickMode ? 'crosshair' : '';
     this.controls.keyColor.disabled = this.pickMode;
     this.showToast(this.pickMode ? 'Pick mode: click a pixel on the image' : 'Pick mode off');
   }
@@ -89,7 +91,7 @@ export class BackgroundManager {
       '#bg-shadow-blur-val': this.controls.shadowBlur.value,
     };
     Object.entries(labels).forEach(([selector, value]) => {
-      const element = document.querySelector(selector);
+      const element = qs(selector);
       if (element) element.textContent = value;
     });
   }
@@ -122,7 +124,7 @@ export class BackgroundManager {
 
   async previewMask() {
     if (!this.apiClient.imageId) return this.showToast('Upload an image first');
-    const trigger = document.querySelector('[data-action="preview-mask"]');
+    const trigger = qs('[data-action="preview-mask"]');
     await withBusy(trigger, 'Previewing mask', async () => {
       try {
         const blob = await this.apiClient.maskPreview(this.params());
@@ -171,7 +173,7 @@ export class BackgroundManager {
 
   async previewReplacement() {
     if (!this.apiClient.imageId) return this.showToast('Upload an image first');
-    const trigger = document.querySelector('[data-action="preview-replacement"]');
+    const trigger = qs('[data-action="preview-replacement"]');
     await withBusy(trigger, 'Previewing replacement', async () => {
       try {
         const blob = await this.apiClient.replaceBackgroundPreview(this.replacementPayload());
@@ -208,7 +210,7 @@ export class BackgroundManager {
     // After the busy flag clears: HistoryManager.refresh() bails out while any
     // manager is mid-operation, so an earlier dispatch is silently dropped and
     // the history list never reflects the background change.
-    document.dispatchEvent(new CustomEvent('ic-operation'));
+    bus.emit(events.operation);
   }
 
   async refreshLibrary() {

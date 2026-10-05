@@ -69,6 +69,9 @@ test.describe('surfacing failed loads', () => {
     await waitForImageLoaded(page);
 
     await page.locator('[data-inspector="edit"]').click();
+    // The background panel is mounted on first open (lazy), so a user must
+    // actually reach it before a failed library load can surface.
+    await page.locator('#background-accordion > summary').click();
     await expect(page.locator('#bg-library-grid')).toContainText(/could not be loaded/i);
   });
 });
