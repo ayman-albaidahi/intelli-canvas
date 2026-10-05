@@ -40,7 +40,23 @@ function jsonResponse(queue) {
 }
 
 function blobResponse(headers = {}) {
-  return new Response(new Blob(['bytes'], { type: 'image/png' }), { status: 200, headers });
+  // A plain byte body, not a Blob: the jsdom test env replaces the global Blob
+  // with jsdom's, whose instances lack .stream(). Node 20's undici Response()
+  // rejects such bodies (TypeError), while Node 24 silently stringifies them —
+  // an ArrayBuffer keeps the mock honest on every runtime.
+  return new Response(new TextEncoder().encode('bytes'), {
+    status: 200,
+    headers: { 'Content-Type': 'image/png', ...headers },
+  });
+}
+
+async function expectMockBlob(value) {
+  // blobResponse hands out the 5 bytes of 'bytes'; checking size and content
+  // keeps the mock honest so a corrupting runtime fails here instead of
+  // passing silently on an instanceof-only check.
+  expect(value).toBeInstanceOf(Blob);
+  expect(value.size).toBe(5);
+  expect(await value.text()).toBe('bytes');
 }
 
 function lastCall(calls) {
@@ -116,7 +132,7 @@ describe('ApiClient — endpoints', () => {
       calls = jsonResponse([blobResponse()]);
       const c = clientWithImage();
       const blob = await c.diffHistory(0, 1, 'absolute', 5);
-      expect(blob).toBeInstanceOf(Blob);
+      await expectMockBlob(blob);
       expect(lastCall(calls).url).toBe(`${SAMPLE_BASE}/history/diff`);
       expect(bodyOf(lastCall(calls))).toEqual({
         image_id: 'img-1', from_index: 0, to_index: 1, mode: 'absolute', threshold: 5,
@@ -179,7 +195,7 @@ describe('ApiClient — endpoints', () => {
       await c.previewPipeline([{ operation: 'blur' }]);
       expect(bodyOf(lastCall(calls))).toEqual({ image_id: 'img-1', nodes: [{ operation: 'blur' }] });
       const result = await c.previewPipeline();
-      expect(result).toBeInstanceOf(Blob);
+      await expectMockBlob(result);
       expect(bodyOf(lastCall(calls))).toEqual({ image_id: 'img-1' });
     });
 
@@ -213,7 +229,7 @@ describe('ApiClient — endpoints', () => {
     it('mask preview returns the blob and says so on HTTP failure', async () => {
       calls = jsonResponse([blobResponse()]);
       const c = clientWithImage();
-      expect(await c.maskPreview({ tolerance: 25 })).toBeInstanceOf(Blob);
+      await expectMockBlob(await c.maskPreview({ tolerance: 25 }));
       expect(bodyOf(lastCall(calls))).toMatchObject({ image_id: 'img-1', tolerance: 25 });
 
       global.fetch = vi.fn(async () => new Response('{}', { status: 500 }));
@@ -235,7 +251,7 @@ describe('ApiClient — endpoints', () => {
     it('replace preview maps the friendly error and returns the blob', async () => {
       calls = jsonResponse([blobResponse()]);
       const c = clientWithImage();
-      expect(await c.replaceBackgroundPreview({ background_name: 'studio' })).toBeInstanceOf(Blob);
+      await expectMockBlob(await c.replaceBackgroundPreview({ background_name: 'studio' }));
       global.fetch = vi.fn(async () => new Response(JSON.stringify({ success: false, error: { code: 'IMAGE_SESSION_NOT_FOUND' } }), { status: 404 }));
       await expect(c.replaceBackgroundPreview({})).rejects.toThrow('session expired');
     });
@@ -285,7 +301,7 @@ describe('ApiClient — endpoints', () => {
     it('previewSuggestion returns the blob; its HTTP failure has its own message', async () => {
       calls = jsonResponse([blobResponse()]);
       const c = clientWithImage();
-      expect(await c.previewSuggestion('img-1', 'SHARPEN')).toBeInstanceOf(Blob);
+      await expectMockBlob(await c.previewSuggestion('img-1', 'SHARPEN'));
       expect(bodyOf(lastCall(calls))).toEqual({ image_id: 'img-1', type: 'SHARPEN' });
       global.fetch = vi.fn(async () => new Response('{}', { status: 500 }));
       await expect(c.previewSuggestion('img-1', 'SHARPEN')).rejects.toThrow('suggestion preview could not be generated');
@@ -325,7 +341,7 @@ describe('ApiClient — endpoints', () => {
       calls = jsonResponse([blobResponse({ 'X-Smart-Crop': '0.1,0.2,0.8,0.7' })]);
       const c = clientWithImage();
       const { blob, metadata } = await c.smartCropPreview('1:1');
-      expect(blob).toBeInstanceOf(Blob);
+      await expectMockBlob(blob);
       expect(metadata).toBe('0.1,0.2,0.8,0.7');
       expect(bodyOf(lastCall(calls))).toEqual({ image_id: 'img-1', aspect_ratio: '1:1' });
     });
@@ -351,7 +367,7 @@ describe('ApiClient — endpoints', () => {
     it('export posts format/quality/dimensions/composite and returns the blob', async () => {
       calls = jsonResponse([blobResponse()]);
       const c = clientWithImage();
-      expect(await c.export('jpeg', 85, 800, 600, true)).toBeInstanceOf(Blob);
+      await expectMockBlob(await c.export('jpeg', 85, 800, 600, true));
       expect(bodyOf(lastCall(calls))).toEqual({
         image_id: 'img-1', format: 'jpeg', quality: 85, width: 800, height: 600, composite_layers: true,
       });
