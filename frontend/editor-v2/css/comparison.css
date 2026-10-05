@@ -1,7 +1,7 @@
 .comparison-view {
   position: absolute;
   inset: 0;
-  z-index: 8;
+  z-index: var(--z-comparison);
   background: var(--surface-muted);
   overflow: hidden;
 }
@@ -26,7 +26,7 @@
   background: var(--accent-strong);
   transform: translateX(-1px);
   pointer-events: none;
-  z-index: 3;
+  z-index: var(--z-local-3);
 }
 .comparison-handle span {
   position: absolute;
@@ -40,8 +40,8 @@
   place-items: center;
   background: var(--accent-button);
   color: var(--brand-ink);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-  font-size: 16px;
+  box-shadow: var(--shadow-handle);
+  font-size: var(--fs-16);
 }
 .comparison-slider {
   position: absolute;
@@ -50,23 +50,23 @@
   height: 100%;
   opacity: 0;
   cursor: ew-resize;
-  z-index: 4;
+  z-index: var(--z-local-4);
 }
 .comparison-label {
   position: absolute;
-  top: 18px;
-  z-index: 5;
-  padding: 6px 9px;
-  border-radius: 6px;
+  top: var(--space-18);
+  z-index: var(--z-local-5);
+  padding: var(--space-6) var(--space-9);
+  border-radius: var(--radius-6);
   background: color-mix(in srgb, var(--surface) 86%, transparent);
   border: 1px solid var(--line);
-  font-size: 10px;
+  font-size: var(--fs-10);
   font-weight: 700;
   color: var(--muted);
 }
 .comparison-original-label {
-  left: 18px;
+  left: var(--space-18);
 }
 .comparison-edited-label {
-  right: 18px;
+  right: var(--space-18);
 }
