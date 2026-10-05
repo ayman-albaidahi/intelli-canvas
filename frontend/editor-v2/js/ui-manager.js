@@ -2,13 +2,13 @@ import { appState, setState } from './app-state.js';
 import { deriveInspectorContext } from './inspector-context.js';
 import { mountInspectorContextContainers, renderInspectorContextContainers, renderTransientContext } from './inspector-context-view.js';
 import { beginOperation, completeOperation, dismissError, failOperation, retryOperation } from './operation-state.js';
+import { openDialog, closeDialog } from './lib/dialogs.js';
+import { bus, events } from './lib/events.js';
+import { showToast } from './lib/toast.js';
 
-const toast = document.querySelector('#toast');
-let toastTimer;
-
-const inspector = document.querySelector('#inspector');
-const inspectorScrim = document.querySelector('#inspector-scrim');
-const inspectorToggle = document.querySelector('[data-action="inspector-toggle"]');
+const inspector = qs('#inspector');
+const inspectorScrim = qs('#inspector-scrim');
+const inspectorToggle = qs('[data-action="inspector-toggle"]');
 // jsdom has no matchMedia; the optional chain keeps the module importable in
 // unit tests, where the drawer simply reports "not mobile".
 const mobileQuery = () =>
@@ -18,6 +18,35 @@ const mobileQuery = () =>
 const isMobile = () => mobileQuery()?.matches ?? false;
 
 const READY_PANELS = new Set(['adjustments', 'filters', 'background', 'smart-crop']);
+
+// Panels whose managers are mounted on first open rather than at boot (see
+// main.js). The activator fires whenever the panel becomes visible, however
+// the user got there — tab click, arrow key, or quick action. It is
+// fire-and-forget: a panel that fails to load surfaces its own error and
+// must never block the inspector switch.
+const panelActivators = new Map();
+
+export function onPanelOpened(panel, activate) {
+  panelActivators.set(panel, activate);
+}
+
+function activatePanel(panel) {
+  const activate = panelActivators.get(panel);
+  if (!activate) return;
+  panelActivators.delete(panel); // one-shot: the mount runs exactly once
+  try {
+    const result = activate();
+    if (result && typeof result.catch === 'function') {
+      result.catch((error) => {
+        // A failed dynamic import must not strand the empty panel with no
+        // explanation; the toast is the editor's standard error surface.
+        showToast(`Could not load the ${panel} panel: ${error.message}`);
+      });
+    }
+  } catch (error) {
+    showToast(`Could not load the ${panel} panel: ${error.message}`);
+  }
+}
 
 export function getInspectorContext({ ready, activeTool = 'select', selectedObjectId = null } = {}) {
   return deriveInspectorContext({ editorReady: ready, activeTool, selectedObjectId });
@@ -31,7 +60,7 @@ export function renderInspectorContext(state = appState) {
   renderInspectorContextContainers(context);
   renderTransientContext(state);
   updateTransientControls(state);
-  document.querySelectorAll('[data-contextual-actions] [data-context]').forEach((action) => {
+  qsa('[data-contextual-actions] [data-context]').forEach((action) => {
     action.hidden = action.dataset.context !== context && !(context === 'crop' && action.dataset.context === 'image');
   });
   return context;
@@ -39,7 +68,7 @@ export function renderInspectorContext(state = appState) {
 
 function updateTransientControls(state) {
   const busy = Boolean(state.processing?.active);
-  document.querySelectorAll('[data-tool], [data-action]').forEach((control) => {
+  qsa('[data-tool], [data-action]').forEach((control) => {
     if (control.id === 'error-retry' || control.id === 'error-dismiss') return;
     if (busy) {
       if (control.dataset.transientDisabled === undefined) {
@@ -75,10 +104,10 @@ export function setEditorReady(ready) {
   const isReady = Boolean(ready);
   setState({ editorReady: isReady, hasImage: isReady });
   document.body.dataset.editorReady = String(isReady);
-  document.querySelectorAll('[data-requires-image]').forEach((control) => {
+  qsa('[data-requires-image]').forEach((control) => {
     setControlReady(control, isReady);
   });
-  document.querySelectorAll('[data-inspector]').forEach((tab) => {
+  qsa('[data-inspector]').forEach((tab) => {
     const available = isReady || tab.dataset.inspector === 'edit';
     tab.disabled = !available;
     tab.classList.toggle('is-disabled', !available);
@@ -88,14 +117,14 @@ export function setEditorReady(ready) {
 
 export function initUI() {
   mountInspectorContextContainers();
-  document.addEventListener('appstatechange', ({ detail }) => renderInspectorContext(detail));
-  document.querySelector('#error-retry')?.addEventListener('click', () => retryOperation());
-  document.querySelector('#error-dismiss')?.addEventListener('click', () => dismissError());
+  bus.on(events.appStateChange, (state) => renderInspectorContext(state));
+  qs('#error-retry')?.addEventListener('click', () => retryOperation());
+  qs('#error-dismiss')?.addEventListener('click', () => dismissError());
   setEditorReady(false);
   renderInspectorContext(appState);
-  document.querySelectorAll('[data-tool]').forEach((button) => {
+  qsa('[data-tool]').forEach((button) => {
     button.addEventListener('click', () => {
-      document.querySelectorAll('[data-tool]').forEach((item) => {
+      qsa('[data-tool]').forEach((item) => {
         item.classList.remove('is-active');
         // aria-pressed mirrors the class so the selected tool is announced on
         // first load and after every switch, not only when it was clicked.
@@ -108,7 +137,7 @@ export function initUI() {
     });
   });
 
-  const tabs = Array.from(document.querySelectorAll('[data-inspector]'));
+  const tabs = Array.from(qsa('[data-inspector]'));
   tabs.forEach((tab) => {
     tab.addEventListener('click', () => switchInspector(tab.dataset.inspector));
   });
@@ -116,7 +145,7 @@ export function initUI() {
   // A tablist is only operable from the keyboard if the arrows move between
   // tabs and Home/End jump to the ends. Roving tabindex keeps one predictable
   // entry point while the arrow handlers retain access to every tab.
-  const tablist = document.querySelector('.inspector-tabs');
+  const tablist = qs('.inspector-tabs');
   if (tablist && tabs.length) {
     tablist.addEventListener('keydown', (event) => {
       const current = tabs.indexOf(document.activeElement);
@@ -134,24 +163,24 @@ export function initUI() {
   }
   initInspectorTabScroller(tabs);
 
-  document.querySelectorAll('[data-panel]').forEach((button) => {
+  qsa('[data-panel]').forEach((button) => {
     const panel = button.dataset.panel;
     if (panel === 'shortcuts') {
-      document.querySelector('.avatar')?.addEventListener('click', () => {
-    openDialog(document.querySelector('#shortcuts-dialog'), { focus: '#shortcuts-cancel-secondary' });
+      qs('.avatar')?.addEventListener('click', () => {
+    openDialog(qs('#shortcuts-dialog'), { focus: '#shortcuts-cancel-secondary' });
   });
 
-  document.querySelector('#shortcuts-cancel')?.addEventListener('click', () => {
-    closeDialog(document.querySelector('#shortcuts-dialog'));
+  qs('#shortcuts-cancel')?.addEventListener('click', () => {
+    closeDialog(qs('#shortcuts-dialog'));
   });
-  document.querySelector('#shortcuts-cancel-secondary')?.addEventListener('click', () => {
-    closeDialog(document.querySelector('#shortcuts-dialog'));
+  qs('#shortcuts-cancel-secondary')?.addEventListener('click', () => {
+    closeDialog(qs('#shortcuts-dialog'));
   });
 
   // The keyboard help used to mark itself aria-disabled and toast on
       // click, which is a discoverability affordance that does nothing.
       button.addEventListener('click', () => {
-        const dialog = document.querySelector('#shortcuts-dialog');
+        const dialog = qs('#shortcuts-dialog');
         openDialog(dialog, { focus: '#shortcuts-cancel-secondary' });
       });
     } else if (READY_PANELS.has(panel)) {
@@ -166,15 +195,21 @@ export function initUI() {
     }
   });
 
-  document.querySelector('[data-action="new"]')?.addEventListener('click', () => showToast('New project workspace is ready'));
-  document.querySelector('[data-action="add-layer"]')?.addEventListener('click', () => showToast('Layer creation will be enabled in the layers stage'));
-  document.querySelector('[data-action="help"]')?.addEventListener('click', () => {
-    openDialog(document.querySelector('#help-dialog'), { focus: '#help-cancel-secondary' });
+  qs('[data-action="new"]')?.addEventListener('click', () => showToast('New project workspace is ready'));
+  qs('[data-action="add-layer"]')?.addEventListener('click', () => showToast('Layer creation will be enabled in the layers stage'));
+  qs('[data-action="help"]')?.addEventListener('click', () => {
+    openDialog(qs('#help-dialog'), { focus: '#help-cancel-secondary' });
   });
-  document.querySelector('#help-cancel')?.addEventListener('click', () => closeDialog(document.querySelector('#help-dialog')));
-  document.querySelector('#help-cancel-secondary')?.addEventListener('click', () => closeDialog(document.querySelector('#help-dialog')));
-  document.querySelectorAll('#edit-panel details.panel-accordion').forEach((section) => {
-    section.addEventListener('toggle', () => { if (section.open) closeOtherAccordions(section); });
+  qs('#help-cancel')?.addEventListener('click', () => closeDialog(qs('#help-dialog')));
+  qs('#help-cancel-secondary')?.addEventListener('click', () => closeDialog(qs('#help-dialog')));
+  qsa('#edit-panel details.panel-accordion').forEach((section) => {
+    section.addEventListener('toggle', () => {
+      if (!section.open) return;
+      closeOtherAccordions(section);
+      // Opening an accordion directly (not through a data-panel quick
+      // action) must still mount a lazy panel — the id encodes the name.
+      activatePanel(section.id.replace(/-accordion$/, ''));
+    });
   });
 
   // Mobile drawer: the toggle, the scrim tap, and Escape all close it. The
@@ -222,10 +257,11 @@ export function toggleInspectorDrawer() {
 
 function focusPanel(panel) {
   switchInspector('edit');
-  const section = document.querySelector(`#${panel}-accordion`);
+  const section = qs(`#${panel}-accordion`);
   if (!section) return;
   closeOtherAccordions(section);
   section.open = true;
+  activatePanel(panel);
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   section.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' });
   section.classList.remove('is-flash');
@@ -234,7 +270,7 @@ function focusPanel(panel) {
 }
 
 function closeOtherAccordions(activeSection) {
-  document.querySelectorAll('#edit-panel details.panel-accordion').forEach((section) => {
+  qsa('#edit-panel details.panel-accordion').forEach((section) => {
     if (section !== activeSection) section.open = false;
   });
 }
@@ -243,7 +279,7 @@ function closeOtherAccordions(activeSection) {
 export function switchInspector(name) {
   if (document.body.dataset.editorReady !== 'true' && name !== 'edit') return;
   setState({ activeInspector: name });
-  document.querySelectorAll('[data-inspector]').forEach((tab) => {
+  qsa('[data-inspector]').forEach((tab) => {
     const active = tab.dataset.inspector === name;
     tab.classList.toggle('is-active', active);
     tab.setAttribute('aria-selected', String(active));
@@ -251,57 +287,19 @@ export function switchInspector(name) {
     if (active) tab.scrollIntoView?.({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest', inline: 'nearest' });
   });
   updateInspectorTabScroller();
-  document.querySelector('#edit-panel').hidden = name !== 'edit';
-  document.querySelector('#layers-panel').hidden = name !== 'layers';
-  const analysisPanel = document.querySelector('#insights-panel');
+  qs('#edit-panel').hidden = name !== 'edit';
+  qs('#layers-panel').hidden = name !== 'layers';
+  const analysisPanel = qs('#insights-panel');
   if (analysisPanel) analysisPanel.hidden = name !== 'insights';
-  const historyPanel = document.querySelector('#history-panel');
+  const historyPanel = qs('#history-panel');
   if (historyPanel) historyPanel.hidden = name !== 'history';
-  const pipelinePanel = document.querySelector('#pipeline-panel');
+  const pipelinePanel = qs('#pipeline-panel');
   if (pipelinePanel) pipelinePanel.hidden = name !== 'pipeline';
   // On mobile the panels live in the drawer, so switching to one must also
   // reveal it — otherwise the tap changes hidden state behind nothing.
   if (isMobile()) openInspectorDrawer();
+  activatePanel(name);
 }
-
-// A long-running operation that disables nothing leaves the user unable to
-// tell whether the click registered. This wraps the busy contract — disable
-// the trigger, swap its label, say what is happening in the status bar — and
-// always restores both, including on the failure path.
-//
-// Managers that already implement this inline (adjustments, filters,
-// smart-crop, export, pipeline) keep working; this is for the operations that
-// had a busy guard but no visible feedback.
-export function confirmDialog({ title = 'Are you sure?', body = 'This cannot be undone.', confirmLabel = 'Confirm' } = {}) {
-  return new Promise((resolve) => {
-    const dialog = document.querySelector('#confirm-dialog');
-    if (!dialog) { resolve(false); return; }
-    const heading = dialog.querySelector('#confirm-dialog-heading');
-    const bodyEl = dialog.querySelector('#confirm-dialog-body');
-    const accept = dialog.querySelector('#confirm-accept');
-    heading.textContent = title;
-    bodyEl.textContent = body;
-    accept.textContent = confirmLabel;
-
-    // The handlers are removed on every resolution so a later confirm cannot
-    // fire a stale callback from an earlier one.
-    const done = (result) => {
-      accept.removeEventListener('click', onAccept);
-      document.querySelector('#confirm-cancel')?.removeEventListener('click', onCancel);
-      document.querySelector('#confirm-cancel-secondary')?.removeEventListener('click', onCancel);
-      closeDialog(dialog);
-      resolve(result);
-    };
-    const onAccept = () => done(true);
-    const onCancel = () => done(false);
-
-    accept.addEventListener('click', onAccept);
-    document.querySelector('#confirm-cancel')?.addEventListener('click', onCancel);
-    document.querySelector('#confirm-cancel-secondary')?.addEventListener('click', onCancel);
-    openDialog(dialog, { focus: '#confirm-accept' });
-  });
-}
-
 export async function withBusy(button, message, fn, options = {}) {
   const { status = null, operation = message, retry = null } = options;
   if (!button) return fn();
@@ -334,92 +332,28 @@ export async function withBusy(button, message, fn, options = {}) {
 
 export { dismissError, retryOperation };
 
-export function showToast(message) {
-  toast.textContent = message;
-  toast.classList.add('is-visible');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('is-visible'), 2300);
-}
+// showToast lives in lib/toast.js; re-exported so the injected-dependency
+// call sites and main.js's import keep working unchanged.
+export { showToast };
 
-// A dialog is only a dialog if the rest of the page cannot take focus while it
-// is open. Each dialog records the element that opened it so focus lands back
-// there on close — otherwise it falls on the body, which screen readers report
-// as landing nowhere.
-const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
-
-function dialogAncestors(dialog) {
-  // Everything outside the dialog is made inert, so the background cannot be
-  // tabbed into or clicked through to while it is open.
-  return Array.from(document.body.children).filter((node) => !node.contains(dialog));
-}
-
-export function openDialog(dialog, options = {}) {
-  if (!dialog || !dialog.hidden) return;
-  const { focus = null } = options;
-  dialog._lastFocused = document.activeElement;
-  dialog.hidden = false;
-  dialog.classList.add('is-open');
-  const heading = dialog.querySelector('h2');
-  if (heading && !dialog.getAttribute('aria-labelledby')) {
-    if (!heading.id) heading.id = `dialog-label-${Math.random().toString(36).slice(2, 8)}`;
-    dialog.setAttribute('aria-labelledby', heading.id);
-  }
-  // Inert is a set-once property per element, but setting it again on a node
-  // that is still inert is harmless.
-  dialogAncestors(dialog).forEach((node) => { node.inert = true; });
-  (dialog.querySelector(focus) || dialog.querySelector(FOCUSABLE))?.focus();
-}
-
-export function closeDialog(dialog) {
-  if (!dialog || dialog.hidden) return;
-  dialog.hidden = true;
-  dialog.classList.remove('is-open');
-  dialogAncestors(dialog).forEach((node) => { node.inert = false; });
-  // Returning focus to the opener keeps keyboard users on the control they
-  // came from instead of stranding them at the top of the page.
-  const restore = dialog._lastFocused;
-  if (restore && document.contains(restore)) restore.focus();
-}
-
-// The one Escape handler for every dialog. A dialog that is open always wins
-// over the mobile drawer and the layer menu because it is the most restrictive
-// state on the page.
-export function initDialogEscape() {
-  document.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape') return;
-    const open = document.querySelector('.dialog-backdrop.is-open');
-    if (!open) return;
-    event.preventDefault();
-    closeDialog(open);
-  });
-}
-
-// A focus trap keeps Tab circulating inside the dialog. Without it, Tab at the
-// last control jumps out to the (now inert) background anyway, but the
-// sequence is unpredictable and Screen Reader users lose their place.
-export function initDialogFocusTrap() {
-  document.addEventListener('keydown', (event) => {
-    if (event.key !== 'Tab') return;
-    const dialog = document.querySelector('.dialog-backdrop.is-open');
-    if (!dialog) return;
-    const focusable = Array.from(dialog.querySelectorAll(FOCUSABLE)).filter((el) => el.offsetParent !== null);
-    if (!focusable.length) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  });
-}
+// Dialog lifecycle lives in lib/dialogs.js — the stack of open dialogs,
+// the single Escape handler, the focus trap and confirmDialog. ui-manager
+// owned these until Phase 4 of the restructuring plan; re-exporting keeps
+// every existing `from './ui-manager.js'` import working unchanged.
+export {
+  openDialog,
+  closeDialog,
+  confirmDialog,
+  initDialogEscape,
+  initDialogFocusTrap,
+  openDialogCount,
+} from './lib/dialogs.js';
+import { qs, qsa } from './lib/dom.js';
 
 function initInspectorTabScroller(tabs) {
-  const strip = document.querySelector('.inspector-tabs');
+  const strip = qs('.inspector-tabs');
   if (!strip) return;
-  document.querySelectorAll('[data-tab-scroll]').forEach((button) => {
+  qsa('[data-tab-scroll]').forEach((button) => {
     button.addEventListener('click', () => {
       const amount = Math.max(strip.clientWidth * 0.75, 140) * (button.dataset.tabScroll === 'prev' ? -1 : 1);
       strip.scrollBy({ left: amount, behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
@@ -432,13 +366,13 @@ function initInspectorTabScroller(tabs) {
 }
 
 function updateInspectorTabScroller() {
-  const strip = document.querySelector('.inspector-tabs');
+  const strip = qs('.inspector-tabs');
   if (!strip) return;
   const overflow = strip.scrollWidth > strip.clientWidth + 1;
   const atStart = strip.scrollLeft <= 1;
   const atEnd = strip.scrollLeft + strip.clientWidth >= strip.scrollWidth - 1;
-  const prev = document.querySelector('[data-tab-scroll="prev"]');
-  const next = document.querySelector('[data-tab-scroll="next"]');
+  const prev = qs('[data-tab-scroll="prev"]');
+  const next = qs('[data-tab-scroll="next"]');
   if (prev) { prev.hidden = !overflow; prev.disabled = atStart; }
   if (next) { next.hidden = !overflow; next.disabled = atEnd; }
   strip.dataset.overflow = String(overflow);

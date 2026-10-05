@@ -1,14 +1,16 @@
 import { aspectRatioDimensions } from './transform-logic.js';
 import { openDialog, closeDialog, withBusy } from './ui-manager.js';
+import { bus, events } from './lib/events.js';
+import { qs } from './lib/dom.js';
 
 export function initResizeTool(canvasManager, apiClient, showToast) {
-  const dialog = document.querySelector('#resize-dialog');
-  const form = document.querySelector('#resize-form');
-  const width = document.querySelector('#resize-width');
-  const height = document.querySelector('#resize-height');
-  const ratio = document.querySelector('#resize-ratio');
+  const dialog = qs('#resize-dialog');
+  const form = qs('#resize-form');
+  const width = qs('#resize-width');
+  const height = qs('#resize-height');
+  const ratio = qs('#resize-ratio');
 
-  document.querySelector('[data-action="resize"]')?.addEventListener('click', () => {
+  qs('[data-action="resize"]')?.addEventListener('click', () => {
     if (!canvasManager.hasImage()) return showToast('Choose an image before resizing');
     const dimensions = canvasManager.getSourceDimensions();
     width.value = dimensions.width;
@@ -16,8 +18,8 @@ export function initResizeTool(canvasManager, apiClient, showToast) {
     openDialog(dialog, { focus: '#resize-width' });
   });
   const close = () => closeDialog(dialog);
-  document.querySelector('#resize-cancel')?.addEventListener('click', close);
-  document.querySelector('#resize-cancel-secondary')?.addEventListener('click', close);
+  qs('#resize-cancel')?.addEventListener('click', close);
+  qs('#resize-cancel-secondary')?.addEventListener('click', close);
   width.addEventListener('input', () => {
     if (!ratio.checked) return;
     const source = canvasManager.getSourceDimensions();
@@ -35,7 +37,7 @@ export function initResizeTool(canvasManager, apiClient, showToast) {
     if (!Number.isInteger(nextWidth) || !Number.isInteger(nextHeight) || nextWidth * nextHeight > 24000000) {
       return showToast('Resize dimensions exceed the supported limit');
     }
-    const submit = document.querySelector('#resize-form button[type="submit"]');
+    const submit = qs('#resize-form button[type="submit"]');
     await withBusy(submit, 'Resizing', async () => {
     try {
       const image = await apiClient.transform('resize', {
@@ -44,7 +46,7 @@ export function initResizeTool(canvasManager, apiClient, showToast) {
         lock_aspect_ratio: ratio.checked,
       });
       await canvasManager.loadFromUrl(apiClient.contentUrl(image.image_id), image);
-      document.dispatchEvent(new CustomEvent('ic-operation'));
+      bus.emit(events.operation);
         closeDialog(dialog);
         showToast(`Canvas resized to ${image.width} × ${image.height}`);
       } catch (error) { showToast(error.message); throw error; }

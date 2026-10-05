@@ -1,4 +1,6 @@
 import { escapeHtml } from './escape-html.js';
+import { bus, events } from './lib/events.js';
+import { qs } from './lib/dom.js';
 
 const FINDING_LABELS = {
   LOW_BRIGHTNESS: 'سطوع منخفض',
@@ -17,14 +19,14 @@ export class AnalysisManager {
     this.canvasManager = canvasManager;
     this.apiClient = apiClient;
     this.showToast = showToast;
-    this.status = document.querySelector('#analysis-status');
-    this.metricsBox = document.querySelector('#analysis-metrics');
-    this.findingsBox = document.querySelector('#analysis-findings');
-    this.suggestionList = document.querySelector('#suggestion-list');
-    this.qualityBox = document.querySelector('#analysis-quality');
-    this.qualityScore = document.querySelector('#analysis-quality-score');
-    this.suggestionCard = document.querySelector('#suggestion-card');
-    this.previewImg = document.querySelector('#suggestion-preview');
+    this.status = qs('#analysis-status');
+    this.metricsBox = qs('#analysis-metrics');
+    this.findingsBox = qs('#analysis-findings');
+    this.suggestionList = qs('#suggestion-list');
+    this.qualityBox = qs('#analysis-quality');
+    this.qualityScore = qs('#analysis-quality-score');
+    this.suggestionCard = qs('#suggestion-card');
+    this.previewImg = qs('#suggestion-preview');
     this.activeSuggestion = null;
     this.suggestions = [];
     this.busy = false;
@@ -32,10 +34,10 @@ export class AnalysisManager {
   }
 
   bind() {
-    document.querySelector('[data-action="analyze-image"]')?.addEventListener('click', () => this.run());
-    document.querySelector('[data-action="preview-suggestion"]')?.addEventListener('click', () => this.preview());
-    document.querySelector('[data-action="dismiss-suggestion"]')?.addEventListener('click', () => this.dismiss());
-    document.querySelector('[data-action="apply-suggestion"]')?.addEventListener('click', () => this.apply());
+    qs('[data-action="analyze-image"]')?.addEventListener('click', () => this.run());
+    qs('[data-action="preview-suggestion"]')?.addEventListener('click', () => this.preview());
+    qs('[data-action="dismiss-suggestion"]')?.addEventListener('click', () => this.dismiss());
+    qs('[data-action="apply-suggestion"]')?.addEventListener('click', () => this.apply());
     this.suggestionList?.addEventListener('click', (event) => {
       const card = event.target.closest('[data-suggestion-type]');
       if (card) this.showSuggestion(this.suggestions.find((item) => item.type === card.dataset.suggestionType));
@@ -45,7 +47,7 @@ export class AnalysisManager {
   setBusy(value) {
     this.busy = value;
     if (this.status) this.status.textContent = value ? 'جارٍ التحليل…' : this.status.textContent;
-    const button = document.querySelector('[data-action="analyze-image"]');
+    const button = qs('[data-action="analyze-image"]');
     if (button) { button.disabled = value; button.classList.toggle('is-busy', value); }
   }
 
@@ -107,15 +109,15 @@ export class AnalysisManager {
     this.activeSuggestion = suggestion;
     if (this.suggestionCard) {
       this.suggestionCard.hidden = false;
-      const type = document.querySelector('#suggestion-type');
-      const reason = document.querySelector('#suggestion-reason');
-      const confidence = document.querySelector('#suggestion-confidence');
+      const type = qs('#suggestion-type');
+      const reason = qs('#suggestion-reason');
+      const confidence = qs('#suggestion-confidence');
       if (type) type.textContent = suggestion.type;
       if (reason) reason.textContent = suggestion.reason;
       if (confidence) confidence.textContent = `الثقة: ${Math.round(suggestion.confidence * 100)}%`;
-      const source = document.querySelector('#suggestion-source');
-      const evidence = document.querySelector('#suggestion-evidence');
-      const parameters = document.querySelector('#suggestion-parameters');
+      const source = qs('#suggestion-source');
+      const evidence = qs('#suggestion-evidence');
+      const parameters = qs('#suggestion-parameters');
       if (source) source.innerHTML = `<strong>مصدر الاقتراح</strong><p>${escapeHtml(`Rule engine ${suggestion.rule_version || '0.8.1'} من findings: ${(suggestion.source_findings || []).join(', ')}`)}</p>`;
       if (evidence) evidence.innerHTML = `<strong>Evidence</strong><code>${explainObject(suggestion.evidence)}</code>`;
       if (parameters) parameters.innerHTML = `<strong>Parameters</strong><code>${explainObject((suggestion.pipeline?.nodes || []).map((node) => ({ operation: node.operation, parameters: node.parameters })))}</code>`;
@@ -183,6 +185,6 @@ export class AnalysisManager {
     // After the busy flag clears: HistoryManager.refresh() bails out while any
     // manager is mid-operation, so an earlier dispatch is silently dropped and
     // the history list never reflects the applied suggestion.
-    document.dispatchEvent(new CustomEvent('ic-operation'));
+    bus.emit(events.operation);
   }
 }

@@ -3,6 +3,8 @@ import { setState } from './app-state.js';
 import {
   CROP_HANDLES, clampCropRect, cropSelectionToSource, moveCropRect, resizeCropRect,
 } from './transform-logic.js';
+import { bus, events } from './lib/events.js';
+import { qs } from './lib/dom.js';
 
 // A selection smaller than this in view pixels maps to under 2 source pixels
 // once rounded, which the API would reject. The floor scales with zoom so a
@@ -16,7 +18,7 @@ export class CropTool {
     this.card = card;
     this.apiClient = apiClient;
     this.showToast = showToast;
-    this.overlay = document.querySelector('#crop-overlay');
+    this.overlay = qs('#crop-overlay');
     this.selection = null;
     this.drag = null;
     this.active = false;
@@ -24,10 +26,10 @@ export class CropTool {
   }
 
   bindEvents() {
-    document.querySelector('[data-tool="crop"]')?.addEventListener('click', () => this.activate());
-    document.querySelector('#crop-apply')?.addEventListener('click', () => this.apply());
-    document.querySelector('#crop-cancel')?.addEventListener('click', () => this.deactivate());
-    document.querySelector('#crop-reset')?.addEventListener('click', () => this.reset());
+    qs('[data-tool="crop"]')?.addEventListener('click', () => this.activate());
+    qs('#crop-apply')?.addEventListener('click', () => this.apply());
+    qs('#crop-cancel')?.addEventListener('click', () => this.deactivate());
+    qs('#crop-reset')?.addEventListener('click', () => this.reset());
     this.overlay?.addEventListener('pointerdown', (event) => this.onPointerDown(event));
     this.overlay?.addEventListener('pointermove', (event) => this.onPointerMove(event));
     this.overlay?.addEventListener('pointerup', () => this.stopDrag());
@@ -53,7 +55,7 @@ export class CropTool {
     // The image is locked in place for the duration of the crop instead.
     this.canvasManager.panLocked = true;
     this.overlay.hidden = false;
-    document.querySelector('#crop-controls').hidden = false;
+    qs('#crop-controls').hidden = false;
     this.syncToImage();
     this.showToast('Drag the handles to resize, or the middle to move');
   }
@@ -78,9 +80,9 @@ export class CropTool {
     // The readout reports what the crop will actually produce — source
     // pixels — rather than view pixels, which change with zoom.
     const payload = cropSelectionToSource(this.selection, this.canvasManager.getImageRect(), this.canvasManager.getSourceDimensions());
-    const size = document.querySelector('#crop-size');
-    const contextSize = document.querySelector('#crop-context-size');
-    const apply = document.querySelector('#crop-apply');
+    const size = qs('#crop-size');
+    const contextSize = qs('#crop-context-size');
+    const apply = qs('#crop-apply');
     if (payload) {
       const label = `${payload.width} × ${payload.height} px`;
       if (size) size.textContent = label;
@@ -120,7 +122,7 @@ export class CropTool {
 
   async apply() {
     if (!this.active || !this.selection) return;
-    const button = document.querySelector('#crop-apply');
+    const button = qs('#crop-apply');
     await withBusy(button, 'Applying crop', async () => {
       // The final clamp happens here, at the boundary: whatever the drag or a
       // view change left behind, the payload is clamped and validated before
@@ -139,7 +141,7 @@ export class CropTool {
       try {
         const image = await this.apiClient.transform('crop', payload);
         await this.canvasManager.loadFromUrl(this.apiClient.contentUrl(image.image_id), image);
-        document.dispatchEvent(new CustomEvent('ic-operation'));
+        bus.emit(events.operation);
         this.deactivate();
         this.showToast('Crop applied');
       } catch (error) { this.showToast(error.message); throw error; }
@@ -157,7 +159,7 @@ export class CropTool {
     this.selection = null;
     this.canvasManager.panLocked = false;
     this.overlay.hidden = true;
-    document.querySelector('#crop-controls').hidden = true;
+    qs('#crop-controls').hidden = true;
     setState({ activeTool: 'select' });
   }
 }

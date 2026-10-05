@@ -1,3 +1,4 @@
+import { bus, events } from './lib/events.js';
 const detectedApiHost = window.location.hostname || 'localhost';
 const detectedApiBase = window.location.port === '5000' ? `${window.location.origin}/api` : `http://${detectedApiHost}:5000/api`;
 const API_BASE = window.INTELLICANVAS_API_BASE || detectedApiBase;
@@ -52,7 +53,7 @@ async function request(url, options = {}) {
   }
   const payload = await response.json().catch(() => ({}));
   if (response.status === 401 && payload.error?.code === 'AUTH_REQUIRED') {
-    window.dispatchEvent(new CustomEvent('ic-auth-required', { detail: payload.error }));
+    bus.emit(events.authRequired, payload.error);
   }
   if (!response.ok || payload.success === false) {
     throw new Error(friendlyMessage(payload, response.status));

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ObjectManager } from './object-manager.js';
+import { drawObject } from './object-drawing.js';
 import { setState } from './app-state.js';
 
 // jsdom does not implement the canvas API, so a real <canvas> yields no
@@ -172,7 +173,7 @@ describe('eraser layer hygiene', () => {
       color: '#0e9c81', opacity: 1, rotation: 0, blend: 'source-over', visible: true,
     }];
 
-    mgr.drawObject(mgr.objects[0]);
+    drawObject(ctx, mgr.objects[0], mgr.drawingGeometry());
 
     // The brush renderer owns the image-to-screen translation. drawObject must
     // not add the object's local center translation before calling it.

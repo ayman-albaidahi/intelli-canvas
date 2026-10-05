@@ -3,12 +3,22 @@ import {
   centerOf,
   handles,
   hitObject,
+  normalizeStrokeBox,
   rotateHandle,
   rotateOffset,
   toLocal,
 } from './object-geometry.js';
-import { DEFAULT_ACCENT, DEFAULT_ACCENT_STRONG, themeColor } from './theme-colors.js';
+import { DEFAULT_ACCENT, themeColor } from './theme-colors.js';
+import {
+  drawBrushStroke,
+  drawObject,
+  drawSelection,
+  drawShapePreview,
+  renderExport as renderExportDrawing,
+} from './object-drawing.js';
 import { openDialog, closeDialog, confirmDialog } from './ui-manager.js';
+import { ObjectInteraction } from './object-interaction.js';
+import { qs } from './lib/dom.js';
 
 const HANDLE_SIZE = 9;
 const MIN_SIZE = 8;
@@ -23,11 +33,6 @@ const BLEND_MODES = [
 
 const TYPE_GLYPH = { brush: '✎', shape: '▭', text: 'T', image: '🖼' };
 const TYPE_LABEL = { brush: 'Brush', shape: 'Shape', text: 'Text', image: 'Image' };
-
-function drawingControl(tool, name) {
-  const prefix = tool === 'eraser' ? 'eraser' : 'brush';
-  return document.querySelector(`#${prefix}-${name}`);
-}
 
 export { BLEND_MODES, TYPE_GLYPH, TYPE_LABEL };
 
@@ -48,18 +53,21 @@ export class ObjectManager {
     this.counters = { brush: 0, shape: 0, text: 0, image: 0 };
     this.resize();
     window.addEventListener('resize', () => this.resize());
-    this.canvas.addEventListener('pointerdown', (e) => this.onPointerDown(e));
-    this.canvas.addEventListener('pointermove', (e) => this.onPointerMove(e));
-    this.canvas.addEventListener('pointerup', (e) => this.onPointerEnd(e));
-    this.canvas.addEventListener('pointercancel', (e) => this.onPointerCancel(e));
-    this.canvas.addEventListener('dblclick', (e) => this.onDoubleClick(e));
+    // The pointer tool/drag/rotate/resize machine is a separate concern with
+    // its own module; it operates on this manager's state and operations.
+    this.interaction = new ObjectInteraction(this);
+    this.canvas.addEventListener('pointerdown', (e) => this.interaction.onPointerDown(e));
+    this.canvas.addEventListener('pointermove', (e) => this.interaction.onPointerMove(e));
+    this.canvas.addEventListener('pointerup', (e) => this.interaction.onPointerEnd(e));
+    this.canvas.addEventListener('pointercancel', (e) => this.interaction.onPointerCancel(e));
+    this.canvas.addEventListener('dblclick', (e) => this.interaction.onDoubleClick(e));
     // The text popover's own cancel buttons close it through the shared
     // closer so focus still returns to whatever opened it.
-    document.querySelector('#text-popover-cancel')?.addEventListener('click', () => {
-      closeDialog(document.querySelector('#text-popover'));
+    qs('#text-popover-cancel')?.addEventListener('click', () => {
+      closeDialog(qs('#text-popover'));
     });
-    document.querySelector('#text-popover-cancel-secondary')?.addEventListener('click', () => {
-      closeDialog(document.querySelector('#text-popover'));
+    qs('#text-popover-cancel-secondary')?.addEventListener('click', () => {
+      closeDialog(qs('#text-popover'));
     });
     document.addEventListener('keydown', (e) => {
       if (!this.selected) return;
@@ -136,7 +144,7 @@ export class ObjectManager {
       // box needs recomputing, since the stored box was normalised at save time
       // and the points are the source of truth.
       if (layer.type === 'brush' && layer.points && layer.points.length) {
-        this.normalizeBrush(layer);
+        normalizeStrokeBox(layer);
       }
     });
     this.render();
@@ -219,7 +227,7 @@ export class ObjectManager {
   /* ---------- creation ---------- */
 
   addShape(type, start, end) {
-    const color = document.querySelector('#drawing-color')?.value || themeColor('--accent', DEFAULT_ACCENT);
+    const color = qs('#drawing-color')?.value || themeColor('--accent', DEFAULT_ACCENT);
     const x = Math.min(start.x, end.x);
     const y = Math.min(start.y, end.y);
     const w = Math.max(MIN_SIZE, Math.abs(end.x - start.x));
@@ -236,7 +244,7 @@ export class ObjectManager {
   // for a cancelled dialog, which is indistinguishable from empty input. The
   // inline popover is a real focus-managed dialog instead.
   openTextPopover({ title = 'Add text', value = '', submitLabel = 'Add text', onSubmit } = {}) {
-    const popover = document.querySelector('#text-popover');
+    const popover = qs('#text-popover');
     const heading = popover?.querySelector('#text-popover-heading');
     const input = popover?.querySelector('#text-popover-input');
     const submit = popover?.querySelector('#text-popover-submit');
@@ -263,7 +271,7 @@ export class ObjectManager {
   }
 
   addText(point) {
-    const color = document.querySelector('#drawing-color')?.value || themeColor('--accent', DEFAULT_ACCENT);
+    const color = qs('#drawing-color')?.value || themeColor('--accent', DEFAULT_ACCENT);
     const size = 26;
     this.openTextPopover({
       onSubmit: (text) => {
@@ -302,65 +310,6 @@ export class ObjectManager {
     return ctx.measureText(text).width;
   }
 
-  startBrush(point) {
-    const tool = appState.activeTool === 'eraser' ? 'eraser' : 'brush';
-    const color = document.querySelector('#drawing-color')?.value || themeColor('--accent', DEFAULT_ACCENT);
-    const width = Number(drawingControl(tool, 'size')?.value || 8);
-    const opacity = Number(drawingControl(tool, 'opacity')?.value ?? 100) / 100;
-    const ip = this._screenToImage(point.x, point.y);
-    this.drawing = {
-      id: 'o' + Math.random().toString(36).slice(2, 9), type: 'brush', name: this.nextName('brush'),
-      color, strokeWidth: width, points: [[ip.x, ip.y]],
-      rotation: 0, opacity,
-      // The eraser is an erasing brush, not a new blend mode: it is stored with
-      // a supported blend so the backend accepts the layer, and flagged so the
-      // renderer punches a hole through the layers below it instead of painting
-      // over them. Sending "destination-out" as the stored blend is rejected by
-      // the API with "Layer blend mode is not supported".
-      blend: 'source-over',
-      erasing: appState.activeTool === 'eraser',
-      visible: true, locked: false,
-    };
-  }
-
-  extendBrush(point) {
-    if (!this.drawing) return;
-    const last = this.drawing.points[this.drawing.points.length - 1];
-    const ip = this._screenToImage(point.x, point.y);
-    if (Math.hypot(ip.x - last[0], ip.y - last[1]) < 1.5) return;
-    this.drawing.points.push([ip.x, ip.y]);
-    this.normalizeBrush(this.drawing);
-    this.render();
-  }
-
-  endBrush() {
-    if (!this.drawing) return;
-    if (this.drawing.points.length < 2) this.drawing.points.push([this.drawing.points[0][0] + 1, this.drawing.points[0][1] + 1]);
-    const stroke = this.drawing;
-    this.drawing = null;
-    this.normalizeBrush(stroke);
-    this.objects.push(stroke);
-    this.select(stroke.id);
-    this.changed();
-  }
-
-  normalizeBrush(stroke) {
-    const xs = stroke.points.map((p) => p[0]);
-    const ys = stroke.points.map((p) => p[1]);
-    const pad = stroke.strokeWidth / 2 + 2;
-    const minX = Math.min(...xs) - pad;
-    const minY = Math.min(...ys) - pad;
-    const maxX = Math.max(...xs) + pad;
-    const maxY = Math.max(...ys) + pad;
-    stroke.x = minX;
-    stroke.y = minY;
-    stroke.w = Math.max(MIN_SIZE, maxX - minX);
-    stroke.h = Math.max(MIN_SIZE, maxY - minY);
-    const cx = stroke.x + stroke.w / 2;
-    const cy = stroke.y + stroke.h / 2;
-    stroke.pointsRel = stroke.points.map(([px, py]) => [px - cx, py - cy]);
-  }
-
   addImageLayer(img, name) {
     const zone = this.canvas.getBoundingClientRect();
     const scale = Math.min((zone.width * 0.6) / img.naturalWidth, (zone.height * 0.6) / img.naturalHeight, 1);
@@ -375,6 +324,16 @@ export class ObjectManager {
     });
     this.showToast(`${name} added as a layer`);
   }
+
+  /* ---------- brush strokes ---------- */
+
+  // The stroke state machine lives in object-interaction.js; these forward to
+  // it so callers that hold a manager (tests, future code) keep working, in
+  // the same spirit as the geometry forwarders below.
+
+  startBrush(point) { this.interaction.startBrush(point); }
+  extendBrush(point) { this.interaction.extendBrush(point); }
+  endBrush() { this.interaction.endBrush(); }
 
   /* ---------- geometry ---------- */
 
@@ -441,187 +400,6 @@ export class ObjectManager {
 
   setInteractive(active) { this.canvas.style.pointerEvents = active ? 'auto' : 'none'; }
 
-  point(event) {
-    const rect = this.canvas.getBoundingClientRect();
-    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
-  }
-
-  onPointerDown(event) {
-    if (event.button !== 0) return;
-    const point = this.point(event);
-    if (this.pickMode) {
-      if (this.onPick) this.onPick(point);
-      return;
-    }
-    const tool = appState.activeTool;
-
-    if (tool === 'brush' || tool === 'eraser') {
-      this.startBrush(point);
-      this.mode = 'draw';
-      this.canvas.setPointerCapture(event.pointerId);
-      return;
-    }
-    if (tool === 'shape') {
-      this.shapeStart = point;
-      this.mode = 'shape-draw';
-      this.canvas.setPointerCapture(event.pointerId);
-      return;
-    }
-    if (tool === 'text') {
-      this.addText(point);
-      return;
-    }
-    if (tool !== 'select' && tool !== 'move') return;
-
-    const handle = this.hitHandle(point.x, point.y);
-    if (handle) {
-      const o = this.selected;
-      this.mode = handle.key === 'rotate' ? 'rotate' : 'resize';
-      const c = this.centerOf(o);
-      const anchor = handle.key === 'rotate' ? null : { sx: -handle.sx, sy: -handle.sy };
-      this.drag = {
-        id: o.id,
-        start: point,
-        startAngle: Math.atan2(point.y - c.y, point.x - c.x) * 180 / Math.PI + 90,
-        startRotation: o.rotation,
-        startW: o.w, startH: o.h, startX: o.x, startY: o.y, startStrokeWidth: o.strokeWidth,
-        handle,
-        anchor,
-        anchorScreen: anchor ? (() => {
-          const a = { x: (anchor.sx * o.w) / 2, y: (anchor.sy * o.h) / 2 };
-          const r = this.rotateOffset(o, a.x, a.y);
-          return { x: c.x + r.x, y: c.y + r.y };
-        })() : null,
-      };
-      this.canvas.setPointerCapture(event.pointerId);
-      return;
-    }
-
-    const hit = this.hitObject(point.x, point.y);
-    if (hit) {
-      this.mode = 'move';
-      this.select(hit.id);
-      this.drag = { id: hit.id, start: point, startX: hit.x, startY: hit.y };
-      this.canvas.setPointerCapture(event.pointerId);
-    } else if (this.selectedId) {
-      this.select(null);
-    }
-  }
-
-  onPointerMove(event) {
-    const point = this.point(event);
-
-    if (this.mode === 'draw') { this.extendBrush(point); return; }
-    if (this.mode === 'shape-draw') { this.shapeCurrent = point; this.render(); return; }
-
-    if (!this.drag) {
-      this.updateCursor(point);
-      return;
-    }
-    const o = this.getObject(this.drag.id);
-    if (!o) return;
-
-    if (this.mode === 'move') {
-      o.x = this.drag.startX + point.x - this.drag.start.x;
-      o.y = this.drag.startY + point.y - this.drag.start.y;
-    } else if (this.mode === 'rotate') {
-      const c = this.centerOf(o);
-      const angle = Math.atan2(point.y - c.y, point.x - c.x) * 180 / Math.PI + 90;
-      let rotation = this.drag.startRotation + (angle - this.drag.startAngle);
-      rotation = ((rotation % 360) + 360) % 360;
-      if (event.shiftKey) rotation = Math.round(rotation / 15) * 15;
-      o.rotation = Math.round(rotation * 10) / 10;
-      this.angleReadout = `${o.rotation}°`;
-    } else if (this.mode === 'resize') {
-      this.applyResize(o, point, event.shiftKey);
-    }
-    this.render();
-    if (this.onSelectionChange) this.onSelectionChange(this.selectedId);
-  }
-
-  applyResize(o, point, keepRatio) {
-    const { handle, anchor } = this.drag;
-    const startCenter = { x: this.drag.startX + this.drag.startW / 2, y: this.drag.startY + this.drag.startH / 2 };
-    const rad = -o.rotation * Math.PI / 180;
-    const dx = point.x - startCenter.x;
-    const dy = point.y - startCenter.y;
-    const local = { x: dx * Math.cos(rad) - dy * Math.sin(rad), y: dx * Math.sin(rad) + dy * Math.cos(rad) };
-    const anchorStart = { x: (anchor.sx * this.drag.startW) / 2, y: (anchor.sy * this.drag.startH) / 2 };
-    let newW = this.drag.startW;
-    let newH = this.drag.startH;
-    if (handle.sx !== 0) newW = Math.max(MIN_SIZE, Math.abs(local.x - anchorStart.x));
-    if (handle.sy !== 0) newH = Math.max(MIN_SIZE, Math.abs(local.y - anchorStart.y));
-    if (keepRatio && handle.sx !== 0 && handle.sy !== 0) {
-      const ratio = this.drag.startH / this.drag.startW;
-      if (newW / this.drag.startW > newH / this.drag.startH) newH = Math.max(MIN_SIZE, newW * ratio);
-      else newW = Math.max(MIN_SIZE, newH / ratio);
-    }
-    o.w = Math.round(newW);
-    o.h = Math.round(newH);
-    const anchorNew = { x: (anchor.sx * o.w) / 2, y: (anchor.sy * o.h) / 2 };
-    const anchorRotated = this.rotateOffset(o, anchorNew.x, anchorNew.y);
-    o.x = Math.round(this.drag.anchorScreen.x - anchorRotated.x - o.w / 2);
-    o.y = Math.round(this.drag.anchorScreen.y - anchorRotated.y - o.h / 2);
-    if (o.type === 'brush' && o.pointsRel && this.drag.startW && this.drag.startH) {
-      const kx = o.w / this.drag.startW;
-      const ky = o.h / this.drag.startH;
-      o.pointsRel = o.pointsRel.map(([px, py]) => [px * kx, py * ky]);
-      o.strokeWidth = Math.max(1, Math.round((this.drag.startStrokeWidth || o.strokeWidth) * ((kx + ky) / 2)));
-    }
-  }
-
-  // A pointercancel is the browser saying the gesture was interrupted (a
-  // system gesture, a window blur, a tablet lift). It is not a completed
-  // stroke, so the in-flight brush is dropped instead of being committed as a
-  // partial layer — otherwise a cancelled drag leaves a fragment behind.
-  onPointerCancel(_event) {
-    if (this.mode === 'draw') {
-      this.drawing = null;
-      this.render();
-    } else if (this.drag) {
-      this.drag = null;
-    }
-    this.mode = null;
-    this.shapeStart = null;
-    this.shapeCurrent = null;
-    this.angleReadout = null;
-    this.render();
-    if (this.onSelectionChange) this.onSelectionChange(this.selectedId);
-  }
-
-  onPointerEnd(_event) {
-    if (this.mode === 'draw') { this.endBrush(); }
-    else if (this.mode === 'shape-draw' && this.shapeStart && this.shapeCurrent) {
-      const shapeType = document.querySelector('#shape-type')?.value || 'rect';
-      this.addShape(shapeType, this.shapeStart, this.shapeCurrent);
-    }
-    else if (this.drag) { this.drag = null; }
-    this.mode = null;
-    this.shapeStart = null;
-    this.shapeCurrent = null;
-    this.angleReadout = null;
-    this.render();
-    if (this.onSelectionChange) this.onSelectionChange(this.selectedId);
-  }
-
-  updateCursor(point) {
-    const tool = appState.activeTool;
-    if (tool === 'brush' || tool === 'eraser' || tool === 'shape' || tool === 'text') { this.canvas.style.cursor = 'crosshair'; return; }
-    const handle = this.hitHandle(point.x, point.y);
-    if (handle) {
-      const cursors = { nw: 'nwse-resize', se: 'nwse-resize', ne: 'nesw-resize', sw: 'nesw-resize', n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize', rotate: 'grab' };
-      this.canvas.style.cursor = cursors[handle.key] || 'default';
-      return;
-    }
-    this.canvas.style.cursor = this.hitObject(point.x, point.y) ? 'move' : 'default';
-  }
-
-  onDoubleClick(event) {
-    const point = this.point(event);
-    const hit = this.hitObject(point.x, point.y);
-    if (hit && hit.type === 'text') this.editText(hit.id);
-  }
-
   /* ---------- rendering ---------- */
 
   resize() {
@@ -635,187 +413,39 @@ export class ObjectManager {
     this.render();
   }
 
-  activeShapeType(type) { const select = document.querySelector('#shape-type'); if (select) select.value = type; }
+  activeShapeType(type) { const select = qs('#shape-type'); if (select) select.value = type; }
+
+  // The geometry helpers the drawing module needs: the object-space helpers
+  // from object-geometry plus this canvas's image-to-screen projection.
+  drawingGeometry() {
+    return {
+      centerOf: (o) => this.centerOf(o),
+      imageToScreen: (ix, iy) => this._imageToScreen(ix, iy),
+      handles: (o) => this.handles(o),
+      rotateHandle: (o) => this.rotateHandle(o),
+    };
+  }
 
   render() {
     const bounds = this.canvas.parentElement.getBoundingClientRect();
     this.ctx.clearRect(0, 0, bounds.width, bounds.height);
+    const geo = this.drawingGeometry();
     for (const o of this.objects) {
       if (!o.visible) continue;
-      this.drawObject(o);
+      drawObject(this.ctx, o, geo);
     }
-    if (this.drawing) this.drawBrushStroke(this.drawing);
-    if (this.shapeStart && this.shapeCurrent) this.drawShapePreview();
+    if (this.drawing) drawBrushStroke(this.ctx, this.drawing, geo);
+    if (this.shapeStart && this.shapeCurrent) {
+      const color = qs('#drawing-color')?.value || themeColor('--accent', DEFAULT_ACCENT);
+      drawShapePreview(this.ctx, this.shapeStart, this.shapeCurrent, color);
+    }
     const selected = this.selected;
-    if (selected && ['select', 'move'].includes(appState.activeTool) && !this.drawing) this.drawSelection(selected);
-  }
-
-  drawObject(o) {
-    const ctx = this.ctx;
-    const c = this.centerOf(o);
-    ctx.save();
-    ctx.globalAlpha = o.opacity;
-
-    // Brush strokes are stored in image coordinates and drawBrushStroke()
-    // projects them into screen coordinates. Keep them out of the generic
-    // object transform below; otherwise the center translation is applied a
-    // second time and the visible stroke is displaced from the pointer.
-    if (o.type === 'brush') {
-      this.drawBrushStroke({ ...o, points: o.pointsRel });
-      ctx.restore();
-      return;
+    if (selected && ['select', 'move'].includes(appState.activeTool) && !this.drawing) {
+      drawSelection(this.ctx, selected, geo, this.angleReadout);
     }
-
-    ctx.globalCompositeOperation = o.blend || 'source-over';
-    ctx.translate(c.x, c.y);
-    ctx.rotate((o.rotation * Math.PI) / 180);
-    if (o.type === 'image') ctx.drawImage(o.img, -o.w / 2, -o.h / 2, o.w, o.h);
-    else if (o.type === 'text') {
-      ctx.font = `600 ${o.fontSize}px Inter, "Segoe UI", Tahoma, sans-serif`;
-      ctx.fillStyle = o.color;
-      ctx.textBaseline = 'middle';
-      if (o.rtl) { ctx.direction = 'rtl'; ctx.fillText(o.text, o.w / 2 - 6, 0); }
-      else ctx.fillText(o.text, -o.w / 2 + 6, 0);
-    } else if (o.type === 'shape') this.drawShape(ctx, o);
-    ctx.restore();
   }
 
   renderExport(ctx, imageRect, outputWidth, outputHeight) {
-    const scaleX = outputWidth / imageRect.width;
-    const scaleY = outputHeight / imageRect.height;
-    for (const object of this.objects) {
-      if (!object.visible) continue;
-      const center = this.centerOf(object);
-      ctx.save();
-      ctx.globalAlpha = object.opacity;
-      ctx.globalCompositeOperation = object.erasing ? 'destination-out' : (object.blend || 'source-over');
-      ctx.translate((center.x - imageRect.x) * scaleX, (center.y - imageRect.y) * scaleY);
-      ctx.rotate((object.rotation * Math.PI) / 180);
-      ctx.scale(scaleX, scaleY);
-      if (object.type === 'image') {
-        ctx.drawImage(object.img, -object.w / 2, -object.h / 2, object.w, object.h);
-      } else if (object.type === 'text') {
-        ctx.font = `600 ${object.fontSize}px Inter, "Segoe UI", Tahoma, sans-serif`;
-        ctx.fillStyle = object.color;
-        ctx.textBaseline = 'middle';
-        if (object.rtl) { ctx.direction = 'rtl'; ctx.fillText(object.text, object.w / 2 - 6, 0); }
-        else ctx.fillText(object.text, -object.w / 2 + 6, 0);
-      } else if (object.type === 'shape') {
-        this.drawShape(ctx, object);
-      } else if (object.type === 'brush') {
-        ctx.strokeStyle = object.color;
-        ctx.lineWidth = object.strokeWidth;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.beginPath();
-        (object.pointsRel || []).forEach(([x, y], index) => {
-          if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-        });
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-  }
-
-  drawBrushStroke(stroke) {
-    const ctx = this.ctx;
-    const c = stroke.x !== undefined ? this.centerOf(stroke) : { x: 0, y: 0 };
-    const screenC = this._imageToScreen(c.x, c.y);
-    const points = stroke.pointsRel || stroke.points;
-    const screenPoints = points.map(([px, py]) => {
-      const s = this._imageToScreen(c.x + px, c.y + py);
-      return [s.x - screenC.x, s.y - screenC.y];
-    });
-    ctx.save();
-    ctx.globalAlpha = stroke.opacity;
-    // An erasing stroke composites a hole into everything drawn before it on
-    // this canvas. The stored blend stays a supported mode for the API; only
-    // the on-canvas composite uses destination-out.
-    ctx.globalCompositeOperation = stroke.erasing ? 'destination-out' : (stroke.blend || 'source-over');
-    ctx.translate(screenC.x, screenC.y);
-    ctx.rotate((stroke.rotation || 0) * Math.PI / 180);
-    ctx.strokeStyle = stroke.color;
-    ctx.lineWidth = stroke.strokeWidth;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    screenPoints.forEach(([px, py], i) => { if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); });
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  drawShape(ctx, o) {
-    const half = { x: o.w / 2, y: o.h / 2 };
-    ctx.lineWidth = o.strokeWidth;
-    ctx.strokeStyle = o.stroke;
-    ctx.fillStyle = o.fill;
-    ctx.beginPath();
-    if (o.shape === 'ellipse') ctx.ellipse(0, 0, half.x, half.y, 0, 0, Math.PI * 2);
-    else if (o.shape === 'line') { ctx.moveTo(-half.x, half.y); ctx.lineTo(half.x, -half.y); }
-    else if (o.shape === 'arrow') {
-      ctx.moveTo(-half.x, half.y);
-      ctx.lineTo(half.x, -half.y);
-      const head = Math.min(18, o.w / 4);
-      const angle = Math.atan2(-o.h, o.w);
-      ctx.moveTo(half.x, -half.y);
-      ctx.lineTo(half.x - head * Math.cos(angle - 0.5), -half.y - head * Math.sin(angle - 0.5));
-      ctx.moveTo(half.x, -half.y);
-      ctx.lineTo(half.x - head * Math.cos(angle + 0.5), -half.y - head * Math.sin(angle + 0.5));
-    } else ctx.rect(-half.x, -half.y, o.w, o.h);
-    if (o.fillOn && o.shape !== 'line' && o.shape !== 'arrow') ctx.fill();
-    ctx.stroke();
-  }
-
-  drawShapePreview() {
-    const ctx = this.ctx;
-    const a = this.shapeStart;
-    const b = this.shapeCurrent;
-    const color = document.querySelector('#drawing-color')?.value || themeColor('--accent', DEFAULT_ACCENT);
-    ctx.save();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
-    ctx.setLineDash([6, 4]);
-    ctx.strokeRect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(b.x - a.x), Math.abs(b.y - a.y));
-    ctx.restore();
-  }
-
-  drawSelection(o) {
-    const ctx = this.ctx;
-    const c = this.centerOf(o);
-    ctx.save();
-    ctx.translate(c.x, c.y);
-    ctx.rotate((o.rotation * Math.PI) / 180);
-    ctx.strokeStyle = themeColor('--accent-strong', DEFAULT_ACCENT_STRONG);
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([6, 4]);
-    ctx.strokeRect(-o.w / 2 - 2, -o.h / 2 - 2, o.w + 4, o.h + 4);
-    ctx.setLineDash([]);
-    if (!o.locked) {
-      ctx.fillStyle = '#ffffff';
-      for (const h of this.handles(o)) {
-        const lx = h.sx * (o.w / 2 + 2);
-        const ly = h.sy * (o.h / 2 + 2);
-        ctx.fillRect(lx - 4.5, ly - 4.5, 9, 9);
-        ctx.strokeRect(lx - 4.5, ly - 4.5, 9, 9);
-      }
-      const rot = { x: 0, y: -o.h / 2 - 24 };
-      ctx.beginPath();
-      ctx.moveTo(0, -o.h / 2 - 2);
-      ctx.lineTo(rot.x, rot.y + 6);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(rot.x, rot.y, 6, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-    }
-    ctx.restore();
-    if (this.angleReadout) {
-      const rot = this.rotateHandle(o);
-      ctx.save();
-      ctx.font = '600 12px Inter, sans-serif';
-      ctx.fillStyle = themeColor('--accent-strong', DEFAULT_ACCENT_STRONG);
-      ctx.fillText(this.angleReadout, rot.x + 12, rot.y);
-      ctx.restore();
-    }
+    renderExportDrawing(ctx, this.objects, imageRect, outputWidth, outputHeight, this.drawingGeometry());
   }
 }
