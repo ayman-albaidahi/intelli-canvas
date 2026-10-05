@@ -1,2 +1,10 @@
-
-.smart-crop-preview{display:block;width:100%;max-height:150px;object-fit:contain;margin-top:var(--space-8);border-radius:var(--radius-6);background:var(--surface);border:1px solid var(--line)}
+.smart-crop-preview {
+  display: block;
+  width: 100%;
+  max-height: 150px;
+  object-fit: contain;
+  margin-top: var(--space-8);
+  border-radius: var(--radius-6);
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
