@@ -67,3 +67,63 @@ def test_suggestion_pipeline_preview_is_read_only_and_apply_records_one_entry():
     assert history["entries"][-1]["operation"] == "Apply pipeline"
     assert history["entries"][-1]["parameters"]["source"] == "smart-suggestion"
     assert history["entries"][-1]["parameters"]["suggestion_id"] == suggestion_type
+
+
+def _mean_luminance(png_bytes):
+    with Image.open(io.BytesIO(png_bytes)) as image:
+        gray = image.convert("L")
+        return sum(gray.tobytes()) / (gray.width * gray.height)
+
+
+def _content_mean(client, image_id):
+    return _mean_luminance(client.get(f"/api/images/{image_id}/content").data)
+
+
+def test_suggestion_preview_and_apply_build_on_current_image_not_original():
+    app = create_app()
+    client = app.test_client()
+    image_id = _upload(client)
+    original_mean = _content_mean(client, image_id)
+
+    # Edit the image so the current file (history index 1) differs from the
+    # original upload (history index 0).
+    edited = client.post(
+        "/api/pipeline/apply",
+        json={
+            "image_id": image_id,
+            "nodes": [
+                {
+                    "id": "brightness",
+                    "operation": "brightness",
+                    "parameters": {"value": 150},
+                    "enabled": True,
+                }
+            ],
+        },
+    )
+    assert edited.status_code == 200
+    edited_mean = _content_mean(client, image_id)
+    assert edited_mean > original_mean
+
+    suggestion_type = "EXPOSURE_AND_CONTRAST"
+    preview = client.post(
+        "/api/suggestions/preview", json={"image_id": image_id, "type": suggestion_type}
+    )
+    assert preview.status_code == 200
+    # The preview must build on the edit; re-rendering from the original
+    # upload would come out dimmer than the edited image.
+    assert _mean_luminance(preview.data) > edited_mean
+    assert _content_mean(client, image_id) == edited_mean
+
+    applied = client.post(
+        "/api/suggestions/apply", json={"image_id": image_id, "type": suggestion_type}
+    )
+    assert applied.status_code == 200
+    assert applied.get_json()["image"]["source_history_index"] == 1
+    applied_mean = _content_mean(client, image_id)
+    assert applied_mean > edited_mean
+    history = client.get(f"/api/history?image_id={image_id}").get_json()["image"]
+    assert history["total"] == 3
+    assert history["entries"][-1]["operation"] == "Apply pipeline"
+    assert history["entries"][-1]["parameters"]["source"] == "smart-suggestion"
+    assert history["entries"][-1]["parameters"]["source_history_index"] == 1
