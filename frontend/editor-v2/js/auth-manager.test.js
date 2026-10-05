@@ -1,6 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AuthManager } from './auth-manager.js';
 
+// jsdom marks Location methods as unforgeable (non-writable, non-configurable),
+// so reload() can neither be spied on nor reassigned. Swap the whole location
+// global instead; auth-manager only needs reload() from it.
+function stubReload() {
+  const calls = [];
+  vi.stubGlobal('location', { reload: () => calls.push(1) });
+  return {
+    calls,
+    restore: () => vi.unstubAllGlobals(),
+  };
+}
+
 function fixture() {
   document.body.innerHTML = `
     <section id="auth-gate"><div id="login-view"></div><div id="register-view" hidden></div><form id="login-form"><input id="login-email"><input id="login-password"><button id="login-submit"></button><span id="auth-loading"></span><p id="login-error"></p></form><form id="register-form" hidden><input id="register-name"><input id="register-email"><input id="register-password"><input id="register-confirm-password"><button id="register-submit"></button><span id="register-loading"></span><p id="register-error"></p></form><button id="show-register"></button><button id="show-login" hidden></button></section>
@@ -27,15 +39,23 @@ describe('AuthManager', () => {
 
   it('shows the editor after a successful login', async () => {
     const { apiClient, manager } = fixture();
+    const reload = stubReload();
     apiClient.me.mockResolvedValue({ authenticated: false, user: null });
     apiClient.login.mockResolvedValue({ user: { email: 'user@example.com', display_name: 'Test User' } });
     await manager.start();
     document.querySelector('#login-email').value = 'user@example.com';
     document.querySelector('#login-password').value = 'correct horse battery staple';
-    await manager.login();
-    expect(document.querySelector('.app-shell').hidden).toBe(false);
-    expect(document.querySelector('#account-label').textContent).toBe('Test User');
-    expect(document.querySelector('#logout-button').hidden).toBe(false);
+    try {
+      await manager.login();
+      expect(document.querySelector('.app-shell').hidden).toBe(false);
+      expect(document.querySelector('#account-label').textContent).toBe('Test User');
+      expect(document.querySelector('#logout-button').hidden).toBe(false);
+      // The editor wiring in main.js runs once at startup, so a fresh login must
+      // reload the page to boot a fully wired editor.
+      expect(reload.calls).toHaveLength(1);
+    } finally {
+      reload.restore();
+    }
   });
 
   it('returns to login and clears local session state on logout', async () => {
@@ -85,6 +105,7 @@ describe('AuthManager', () => {
 
   it('registers the user and signs them in automatically', async () => {
     const { apiClient, manager } = fixture();
+    const reload = stubReload();
     apiClient.register.mockResolvedValue({ success: true, user: { email: 'new@example.com' } });
     apiClient.login.mockResolvedValue({ user: { email: 'new@example.com', display_name: 'New User' } });
     manager.showRegister();
@@ -92,9 +113,14 @@ describe('AuthManager', () => {
     document.querySelector('#register-email').value = 'new@example.com';
     document.querySelector('#register-password').value = 'password123';
     document.querySelector('#register-confirm-password').value = 'password123';
-    await manager.register();
-    expect(apiClient.register).toHaveBeenCalledWith('new@example.com', 'password123', 'New User');
-    expect(apiClient.login).toHaveBeenCalledWith('new@example.com', 'password123');
-    expect(document.querySelector('.app-shell').hidden).toBe(false);
+    try {
+      await manager.register();
+      expect(apiClient.register).toHaveBeenCalledWith('new@example.com', 'password123', 'New User');
+      expect(apiClient.login).toHaveBeenCalledWith('new@example.com', 'password123');
+      expect(document.querySelector('.app-shell').hidden).toBe(false);
+      expect(reload.calls).toHaveLength(1);
+    } finally {
+      reload.restore();
+    }
   });
 });
