@@ -1,5 +1,5 @@
 :root {
-  --icon-size: 18px;
+  --icon-size: var(--icon-md);
   --icon-stroke: 1.8;
 }
 
@@ -47,7 +47,7 @@
 }
 
 .tool-button {
-  gap: 5px;
+  gap: var(--space-5);
 }
 
 .tool-button > span:first-child:not(.icon) {
@@ -55,8 +55,8 @@
 }
 
 .tool-button .icon {
-  width: 20px;
-  height: 20px;
+  width: var(--icon-lg);
+  height: var(--icon-lg);
   color: currentColor;
 }
 
@@ -65,8 +65,8 @@
 }
 
 .quick-action > .icon {
-  width: 20px;
-  height: 20px;
+  width: var(--icon-lg);
+  height: var(--icon-lg);
   margin-inline-end: 0;
   color: var(--accent);
 }
@@ -80,25 +80,25 @@
 .toolbar-button .icon,
 .mini-button .icon,
 .list-action .icon {
-  width: 16px;
-  height: 16px;
+  width: var(--icon-sm);
+  height: var(--icon-sm);
 }
 
 .button-large > .icon {
-  width: 18px;
-  height: 18px;
+  width: var(--icon-md);
+  height: var(--icon-md);
 }
 
 .layer-vis .icon,
 .layer-lock .icon,
 .layer-more .icon {
-  width: 15px;
-  height: 15px;
+  width: var(--icon-xs);
+  height: var(--icon-xs);
 }
 
 .layer-thumb .icon {
-  width: 16px;
-  height: 16px;
+  width: var(--icon-sm);
+  height: var(--icon-sm);
 }
 
 .icon-button:hover .icon,
@@ -110,7 +110,7 @@
 
 .icon,
 .icon svg {
-  transition: transform .16s ease, color .16s ease;
+  transition: transform var(--duration-fast) ease, color var(--duration-fast) ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
