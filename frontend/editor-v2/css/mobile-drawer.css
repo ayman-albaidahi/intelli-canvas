@@ -53,17 +53,17 @@
     top: 0;
     right: 0;
     bottom: 0;
-    z-index: 70;
+    z-index: var(--z-drawer);
     display: flex;
     flex-direction: column;
     width: min(400px, 94vw);
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
-    background: var(--surface, #fff);
-    border-left: 1px solid var(--line, rgba(0, 0, 0, 0.08));
-    box-shadow: -18px 0 44px rgba(0, 0, 0, 0.22);
+    background: var(--surface);
+    border-left: 1px solid var(--line);
+    box-shadow: var(--shadow-drawer);
     transform: translateX(105%);
-    transition: transform 0.25s ease;
+    transition: transform var(--duration-slow) ease;
     visibility: hidden;
   }
 
@@ -100,14 +100,14 @@
     display: block;
     position: fixed;
     inset: 0;
-    z-index: 60;
-    background: rgba(0, 0, 0, 0.45);
+    z-index: var(--z-scrim);
+    background: var(--scrim);
     backdrop-filter: blur(1px);
   }
 
   /* The canvas-toolbar already scrolls; keep it clear of the bottom edge. */
   .canvas-toolbar {
-    bottom: max(10px, env(safe-area-inset-bottom));
+    bottom: max(var(--space-10), env(safe-area-inset-bottom));
   }
 
   /* Touch targets: 44px is the floor a finger can hit reliably. Measured at
