@@ -78,6 +78,34 @@
   --radius-11: 11px;
   --radius-16: 16px;
   --radius-17: 17px;
+  --danger: #b42318;
+  --scrim: rgba(0, 0, 0, 0.45);
+  --icon-xs: 15px;
+  --icon-sm: 16px;
+  --icon-md: 18px;
+  --icon-lg: 20px;
+  --duration-fast: 160ms;
+  --duration-base: 180ms;
+  --duration-slow: 250ms;
+  /* Global stacking order, lowest to highest. */
+  --z-canvas-card: 1;
+  --z-canvas-layer: 2;
+  --z-canvas-object: 3;
+  --z-canvas-crop: 4;
+  --z-crop-controls: 5;
+  --z-canvas-toolbar: 6;
+  --z-drop-overlay: 7;
+  --z-comparison: 8;
+  --z-floating: 10;
+  --z-dialog: 20;
+  --z-menu: 40;
+  --z-scrim: 60;
+  --z-drawer: 70;
+  /* Ordering inside a local stacking context (crop handles, comparison parts). */
+  --z-local-1: 1;
+  --z-local-3: 3;
+  --z-local-4: 4;
+  --z-local-5: 5;
 }
 [data-theme='dark'] {
   color-scheme: dark;
@@ -104,6 +132,7 @@
   --success: #68c595;
   --shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
   --shadow-soft: 0 6px 18px rgba(0, 0, 0, 0.18);
+  --danger: #ef5350;
 }
 * {
   box-sizing: border-box;
