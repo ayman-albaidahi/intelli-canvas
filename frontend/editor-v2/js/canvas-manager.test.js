@@ -499,4 +499,3 @@ describe('canvas manager — overlays', () => {
     expect(cm.previewOverlay).toBe(null);
   });
 });
-
