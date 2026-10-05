@@ -119,7 +119,10 @@ def preview_suggestion():
     try:
         PipelineService.validate_nodes(suggestion["pipeline"]["nodes"])
         result = get_pipeline_execution_service().execute(
-            image_id, suggestion["pipeline"], persist=False
+            image_id,
+            suggestion["pipeline"],
+            persist=False,
+            use_current_image=True,
         )
         with result.path.open("rb") as rendered:
             png_bytes = rendered.read()
@@ -159,6 +162,7 @@ def apply_suggestion():
             image_id,
             suggestion["pipeline"],
             persist=True,
+            use_current_image=True,
             metadata={
                 "source": "smart-suggestion",
                 "suggestion_id": sug_type,

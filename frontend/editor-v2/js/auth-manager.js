@@ -145,6 +145,9 @@ export class AuthManager {
     try {
       const result = await this.apiClient.login(email, password);
       this.showEditor(result.user);
+      // main.js wires the editor once at startup; reload so the fresh
+      // authenticated session boots the full editor instead of a dead shell.
+      window.location.reload();
       return result.user;
     } catch (error) {
       this.setLoading(false);
@@ -176,6 +179,7 @@ export class AuthManager {
       await this.apiClient.register(email, password, displayName);
       const result = await this.apiClient.login(email, password);
       this.showEditor(result.user);
+      window.location.reload();
       return result.user;
     } catch (error) {
       this.setRegisterLoading(false);

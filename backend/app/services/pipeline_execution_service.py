@@ -29,8 +29,19 @@ class PipelineExecutionService:
         *,
         persist: bool,
         metadata: dict[str, Any] | None = None,
+        use_current_image: bool = False,
     ) -> dict[str, Any]:
-        source_path = self._source_path(image_id)
+        session = self.session_service.get_session(image_id)
+        if session is None:
+            raise FileNotFoundError("Image session was not found.")
+        if use_current_image:
+            # Suggestions (and any future caller) must build on the edits the
+            # user already made, not silently restart from the original upload.
+            source_path = self._current_source_path(session)
+            source_index = int(session.get("history_index", 0))
+        else:
+            source_path = self._fixed_source_path(image_id)
+            source_index = 0
         nodes = PipelineService.validate_nodes(pipeline.get("nodes", []))
         active_nodes = [node for node in nodes if node.get("enabled", True)]
         cache_hash = self.cache_hash(source_path, nodes)
@@ -41,13 +52,10 @@ class PipelineExecutionService:
         if not cache_hit:
             self._render(source_path, cache_path, active_nodes)
         if persist:
-            session = self.session_service.get_session(image_id)
-            if session is None:
-                raise FileNotFoundError("Image session was not found.")
             history_parameters = {
                 "pipeline_hash": cache_hash,
                 "enabled_nodes": len(active_nodes),
-                "source_history_index": 0,
+                "source_history_index": source_index,
             }
             if metadata:
                 history_parameters.update(metadata)
@@ -71,7 +79,7 @@ class PipelineExecutionService:
             public_extras={
                 "pipeline_hash": cache_hash,
                 "cache_hit": cache_hit,
-                "source_history_index": 0,
+                "source_history_index": source_index,
                 "persisted": persist,
             },
         )
@@ -85,14 +93,27 @@ class PipelineExecutionService:
         digest.update(json.dumps(nodes, sort_keys=True, separators=(",", ":")).encode())
         return digest.hexdigest()[:32]
 
-    def _source_path(self, image_id: str) -> Path:
-        if self.session_service.get_session(image_id) is None:
-            raise FileNotFoundError("Image session was not found.")
+    def _fixed_source_path(self, image_id: str) -> Path:
         entry = self.session_service.repository.get_history_entry(image_id, 0)
         if entry is None:
             raise ValueError("Pipeline source history state was not found.")
         directory = self.storage_service.resolve_storage_dir(entry["storage"])
         path = (directory / entry["filename"]).resolve()
+        try:
+            path.relative_to(directory.resolve())
+        except ValueError as exc:
+            raise ValueError("Pipeline source path is invalid.") from exc
+        if not path.is_file():
+            raise FileNotFoundError("Pipeline source image was not found.")
+        return path
+
+    def _current_source_path(self, session: dict[str, Any]) -> Path:
+        filename = session.get("current_filename")
+        storage = session.get("current_storage")
+        if not filename or not storage:
+            raise ValueError("Pipeline source history state was not found.")
+        directory = self.storage_service.resolve_storage_dir(storage)
+        path = (directory / str(filename)).resolve()
         try:
             path.relative_to(directory.resolve())
         except ValueError as exc:
