@@ -25,9 +25,10 @@
   font-weight: 800;
 }
 
-.auth-brand img {
+.auth-brand svg {
   width: 32px;
   height: 32px;
+  color: var(--accent);
 }
 
 .auth-card h1 {

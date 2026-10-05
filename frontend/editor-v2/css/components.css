@@ -322,8 +322,7 @@
   width: 34px;
   height: 34px;
   max-width: 34px;
-  object-fit: contain;
-  object-position: center;
+  color: var(--accent);
 }
 .brand-block {
   gap: var(--space-10);
